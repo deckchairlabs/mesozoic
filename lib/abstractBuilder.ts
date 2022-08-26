@@ -9,6 +9,7 @@ import {
 import { ISource } from "./source.ts";
 import { SourceFileBag } from "./sourceFileBag.ts";
 import { SourceFile } from "./sourceFile.ts";
+import { ImportMap } from "./types.ts";
 
 export type BuildContext = {
   root: string;
@@ -129,7 +130,9 @@ export abstract class AbstractBuilder {
   }
 
   async vendorSources(sources: SourceFileBag, output = "") {
-    const outputPath = join(this.context.output, "vendor", output);
+    const relativePath = join("vendor", output);
+    const outputPath = join(this.context.output, relativePath);
+
     const paths: string[] = [];
 
     for (const source of sources.values()) {
@@ -161,7 +164,46 @@ export abstract class AbstractBuilder {
     vendor.close();
 
     if (status.code === 0) {
-      return this.gatherSources(outputPath);
+      const vendored = await this.gatherSources(outputPath);
+
+      /**
+       * Fix output of vendor importMap
+       */
+      const importMapSource = vendored.find((source) =>
+        source.relativePath() === "./import_map.json"
+      );
+
+      if (importMapSource) {
+        const importMap: ImportMap = await importMapSource.readAsJson();
+
+        const newImportMap: ImportMap = {
+          imports: {},
+          scopes: {},
+        };
+
+        if (importMap.imports && newImportMap.imports) {
+          for (const [specifier, value] of Object.entries(importMap.imports)) {
+            newImportMap.imports[specifier] = `./${join(relativePath, value)}`;
+          }
+        }
+
+        if (importMap.scopes && newImportMap.scopes) {
+          for (let [scope, imports] of Object.entries(importMap.scopes)) {
+            scope = `./${join(relativePath, scope)}`;
+            newImportMap.scopes[scope] = {};
+            for (let [specifier, value] of Object.entries(imports)) {
+              specifier = `./${join(relativePath, specifier)}`;
+              newImportMap.scopes[scope][specifier] = `./${
+                join(relativePath, value)
+              }`;
+            }
+          }
+        }
+
+        await importMapSource.writeJson(newImportMap, true);
+      }
+
+      return vendored;
     } else {
       const error = new TextDecoder().decode(stderr);
       console.error(error);
