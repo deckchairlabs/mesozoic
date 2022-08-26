@@ -1,6 +1,7 @@
 import { globToRegExp, join, resolve, sprintf, walk } from "./deps.ts";
 import { SourceFile } from "./sourceFile.ts";
 import { SourceFileBag } from "./sourceFileBag.ts";
+import { MesozoicLogger } from "./logger.ts";
 
 export type BuildContext = {
   root: string;
@@ -16,6 +17,7 @@ export type BuildContext = {
   manifest?: {
     exclude?: string[];
   };
+  debug?: boolean;
 };
 
 export type BuildResult = {
@@ -26,6 +28,8 @@ export type BuildResult = {
 export class Builder {
   private sources: SourceFileBag;
   private hasCopied = false;
+  private isValid = false;
+  private logger: MesozoicLogger;
 
   public entrypoints: RegExp[];
   public exclude: RegExp[];
@@ -52,54 +56,83 @@ export class Builder {
     this.manifestExclude = this.#buildPatterns(
       this.context?.manifest?.exclude,
     );
+    this.logger = new MesozoicLogger(context.debug ? "DEBUG" : "INFO");
   }
 
   async build(sources: SourceFileBag): Promise<BuildResult> {
     this.#valid();
 
+    this.logger.debug("Build starting");
+
     /**
      * Gather compilable sources and compile them
      */
-    const compilable = sources.filter((source) => this.isCompilable(source));
-    const compiled = await this.compileSources(compilable);
+    try {
+      const compilable = sources.filter((source) => this.isCompilable(source));
+      const compiled = await this.compileSources(compilable);
 
-    return {
-      sources,
-      compiled,
-    };
-  }
+      this.logger.debug("Build complete");
 
-  #valid() {
-    if (!this.hasCopied) {
-      throw new Error("must copy sources before performing a build.");
+      return {
+        sources,
+        compiled,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
     }
   }
 
-  isEntrypoint(source: SourceFile, aliased = true) {
-    return this.entrypoints.some((pattern) => {
-      const alias = source.relativeAlias();
-      if (alias && aliased) {
-        return pattern.test(alias);
-      }
-      return pattern.test(source.relativePath());
-    });
+  #valid() {
+    if (this.isValid) {
+      return;
+    }
+
+    if (!this.hasCopied) {
+      throw new Error("must copy sources before performing a build.");
+    }
+
+    this.isValid = true;
+    this.logger.debug("Build valid");
   }
 
-  isIgnored(source: SourceFile) {
-    return this.exclude.some((pattern) => pattern.test(source.relativePath()));
+  isEntrypoint(source: SourceFile, aliased = true): boolean {
+    const alias = source.relativeAlias();
+    const path = (alias && aliased) ? alias : source.relativePath();
+
+    return this.logger.test(
+      sprintf("isEntrypoint: %s", path),
+      this.entrypoints.some((pattern) => pattern.test(path)),
+    );
   }
 
-  isCompilable(source: SourceFile) {
-    return this.compile.some((pattern) => pattern.test(source.relativePath()));
+  isIgnored(source: SourceFile): boolean {
+    return this.logger.test(
+      sprintf("isIgnored: %s", source.relativePath()),
+      this.exclude.some((pattern) => pattern.test(source.relativePath())),
+    );
   }
 
-  isHashable(source: SourceFile) {
-    return this.hash.some((pattern) => pattern.test(source.relativePath()));
+  isCompilable(source: SourceFile): boolean {
+    return this.logger.test(
+      sprintf("isCompilable: %s", source.relativePath()),
+      this.compile.some((pattern) => pattern.test(source.relativePath())),
+    );
   }
 
-  isManifestExcluded(source: SourceFile) {
-    return this.manifestExclude.some((pattern) =>
-      pattern.test(source.relativePath())
+  isHashable(source: SourceFile): boolean {
+    return this.logger.test(
+      sprintf("isHashable: %s", source.relativePath()),
+      this.hash.some((pattern) => pattern.test(source.relativePath())),
+    );
+  }
+
+  isManifestExcluded(source: SourceFile): boolean {
+    return this.logger.test(
+      sprintf("isManifestExcluded: %s", source.relativePath()),
+      this.manifestExclude.some((pattern) =>
+        pattern.test(source.relativePath())
+      ),
     );
   }
 
@@ -119,8 +152,10 @@ export class Builder {
 
   async cleanOutput() {
     try {
+      this.logger.debug(sprintf("Cleaning: %s", this.context.output));
       await Deno.remove(this.context.output, { recursive: true });
-    } catch (_error) {
+    } catch (error) {
+      this.logger.error(error);
       // whatever
     }
   }
@@ -128,6 +163,7 @@ export class Builder {
   add(path: string) {
     const sourceFile = new SourceFile(path, this.context.root);
     this.sources.add(sourceFile);
+    this.logger.added(sourceFile);
 
     return sourceFile;
   }
@@ -141,6 +177,7 @@ export class Builder {
       );
     }
 
+    this.logger.resolved(sourceFile);
     return sourceFile;
   }
 
@@ -168,7 +205,7 @@ export class Builder {
       stderr: "piped",
     });
 
-    const [status, stdout, stderr] = await Promise.all([
+    const [status, stderr] = await Promise.all([
       vendor.status(),
       vendor.output(),
       vendor.stderrOutput(),
@@ -177,7 +214,7 @@ export class Builder {
     vendor.close();
 
     if (status.code === 0) {
-      console.log(new TextDecoder().decode(stdout));
+      this.logger.vendored(sources);
     } else {
       const error = new TextDecoder().decode(stderr);
       throw new Error(error);
@@ -193,11 +230,15 @@ export class Builder {
     for (const source of sources.values()) {
       try {
         if (!this.isIgnored(source)) {
+          let copiedSource: SourceFile;
           if (this.isHashable(source)) {
-            copied.add(await source.copyToHashed(destination));
+            copiedSource = await source.copyToHashed(destination);
           } else {
-            copied.add(await source.copyTo(destination));
+            copiedSource = await source.copyTo(destination);
           }
+
+          copied.add(copiedSource);
+          this.logger.copied(source, copiedSource);
         }
       } catch (error) {
         throw error;
@@ -231,6 +272,8 @@ export class Builder {
         minify: this.context?.compiler?.minify,
         sourceMaps: this.context?.compiler?.sourceMaps,
       });
+
+      this.logger.compiled(sourceFile);
 
       await sourceFile.write(compiled.code);
     }
