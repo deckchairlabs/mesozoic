@@ -100,6 +100,12 @@ export abstract class Source implements ISource {
     return Deno.writeFile(this.path(), bytes);
   }
 
+  // deno-lint-ignore no-explicit-any
+  writeJson(value: any, pretty = false) {
+    const json = JSON.stringify(value, null, pretty ? 2 : undefined);
+    return this.write(json);
+  }
+
   copyTo(_to: string, _filePath?: string | undefined): Promise<ISource> {
     throw new Error("Method not implemented.");
   }
