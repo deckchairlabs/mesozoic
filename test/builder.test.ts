@@ -1,5 +1,6 @@
 import { Builder } from "../lib/builder.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
+import { assertSnapshot } from "./deps.ts";
 
 const outputDir = getOutputDir();
 
@@ -8,7 +9,7 @@ async function createBuilder() {
     root: getFixtureDir(),
     output: outputDir,
     entrypoints: ["./client.ts", "./server.ts"],
-    ignore: [
+    exclude: [
       "./README.md",
       "./.private/**/*",
       "./.git/**/*",
@@ -20,6 +21,12 @@ async function createBuilder() {
     compilable: [
       "./**/*.+(ts|tsx|js|jsx)",
     ],
+    manifest: {
+      exclude: [
+        "./deno.json",
+        "./public/robots.txt",
+      ],
+    },
   });
 
   await builder.cleanOutput();
@@ -27,10 +34,10 @@ async function createBuilder() {
   return builder;
 }
 
-Deno.test("it works", async () => {
+Deno.test("it works", async (t) => {
   const builder = await createBuilder();
-  await builder.gatherSources();
-  const sources = await builder.copySources();
-  const compiled = sources.filter((source) => builder.isCompilable(source));
-  console.log(compiled);
+  const sources = await builder.gatherSources();
+  const buildSources = await builder.copySources(sources);
+
+  assertSnapshot(t, builder.toManifest(buildSources, "/_builder/static"));
 });

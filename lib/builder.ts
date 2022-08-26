@@ -5,89 +5,92 @@ import { SourceFileBag } from "./sourceFileBag.ts";
 export type BuildContext = {
   root: string;
   output: string;
+  exclude?: string[];
   entrypoints?: string[];
   hashable?: string[];
   compilable?: string[];
-  ignore?: string[];
   compiler?: {
     minify?: boolean;
     sourceMaps?: boolean;
+  };
+  manifest?: {
+    exclude?: string[];
   };
 };
 
 export class Builder {
   private sources: SourceFileBag;
-  private ignored: SourceFileBag;
-  private entrypoints: SourceFileBag;
+  private hasCopied = false;
 
-  public ignorePatterns: RegExp[];
-  public hashPatterns: RegExp[];
-  public compilePatterns: RegExp[];
+  public entrypoints: RegExp[];
+  public exclude: RegExp[];
+  public hash: RegExp[];
+  public compile: RegExp[];
+  public manifestExclude: RegExp[];
 
   /**
    * @param context
    */
   constructor(public readonly context: BuildContext) {
     this.sources = new SourceFileBag();
-    this.ignored = new SourceFileBag();
-    this.entrypoints = this.#resolveEntrypoints(this.context);
 
-    this.ignorePatterns = this.#buildPatterns(
-      this.context?.ignore,
+    this.exclude = this.#buildPatterns(
+      this.context?.exclude,
     );
-    this.hashPatterns = this.#buildPatterns(
+    this.entrypoints = this.#buildPatterns(this.context?.entrypoints);
+    this.hash = this.#buildPatterns(
       this.context?.hashable,
     );
-    this.compilePatterns = this.#buildPatterns(
+    this.compile = this.#buildPatterns(
       this.context?.compilable,
+    );
+    this.manifestExclude = this.#buildPatterns(
+      this.context?.manifest?.exclude,
     );
   }
 
-  get(bag: "sources" | "ignored" | "entrypoints") {
-    switch (bag) {
-      case "sources":
-        return this.sources;
-      case "entrypoints":
-        return this.entrypoints;
-      case "ignored":
-        return this.ignored;
+  #valid() {
+    if (!this.hasCopied) {
+      throw new Error("must copy sources");
     }
   }
 
-  isEntrypoint(path: string) {
-    return this.entrypoints.has(this.relative(path));
+  isEntrypoint(source: SourceFile) {
+    return this.entrypoints.some((pattern) => {
+      const alias = source.relativeAlias();
+      if (alias) {
+        return pattern.test(alias);
+      }
+      return pattern.test(source.relativePath());
+    });
   }
 
   isIgnored(source: SourceFile) {
-    return this.ignorePatterns.some((pattern) =>
-      pattern.test(source.relativePath())
-    );
+    return this.exclude.some((pattern) => pattern.test(source.relativePath()));
   }
 
   isCompilable(source: SourceFile) {
-    return this.compilePatterns.some((pattern) =>
-      pattern.test(source.relativePath())
-    );
+    return this.compile.some((pattern) => pattern.test(source.relativePath()));
   }
 
   isHashable(source: SourceFile) {
-    return this.hashPatterns.some((pattern) =>
+    return this.hash.some((pattern) => pattern.test(source.relativePath()));
+  }
+
+  isManifestExcluded(source: SourceFile) {
+    return this.manifestExclude.some((pattern) =>
       pattern.test(source.relativePath())
     );
   }
 
   /**
-   * Walk the root for files obeying exclusion patterns
+   * Walk the root for SourceFiles obeying exclusion patterns
    */
   async gatherSources() {
     for await (const entry of walk(this.context.root)) {
       if (entry.isFile) {
         const sourceFile = new SourceFile(entry.path, this.context.root);
-        if (this.isIgnored(sourceFile)) {
-          this.ignored.add(sourceFile);
-        } else {
-          this.sources.add(sourceFile);
-        }
+        this.sources.add(sourceFile);
       }
     }
 
@@ -121,28 +124,33 @@ export class Builder {
     return sourceFile;
   }
 
-  async execute() {
-  }
-
-  async copySources(destination: string = this.context.output) {
+  async copySources(
+    sources: SourceFileBag,
+    destination: string = this.context.output,
+  ) {
     const copied: SourceFileBag = new SourceFileBag();
 
-    for (const source of this.sources.values()) {
+    for (const source of sources.values()) {
       try {
-        if (this.isHashable(source)) {
-          copied.add(await source.copyToHashed(destination));
-        } else {
-          copied.add(await source.copyTo(destination));
+        if (!this.isIgnored(source)) {
+          if (this.isHashable(source)) {
+            copied.add(await source.copyToHashed(destination));
+          } else {
+            copied.add(await source.copyTo(destination));
+          }
         }
       } catch (error) {
         throw error;
       }
     }
 
+    this.hasCopied = true;
+
     return copied;
   }
 
   async compileSources(sources: SourceFileBag) {
+    this.#valid();
     const { compile } = await import("./compiler.ts");
 
     for (const sourceFile of sources.values()) {
@@ -170,15 +178,28 @@ export class Builder {
     return sources;
   }
 
+  processSources(
+    sources: SourceFileBag,
+    processor: (source: SourceFile) => Promise<SourceFile> | SourceFile,
+  ) {
+    this.#valid();
+    return Promise.all(sources.toArray().map((source) => processor(source)));
+  }
+
   /**
    * @param prefix
    * @returns
    */
-  toJSON(prefix?: string) {
+  toManifest(sources: SourceFileBag, prefix?: string) {
     const json = [];
 
-    for (const source of this.sources.values()) {
-      json.push(source.toJSON(prefix));
+    for (const source of sources.values()) {
+      if (!this.isManifestExcluded(source)) {
+        json.push([
+          source.relativeAlias() ?? source.relativePath(),
+          prefix ? resolve(prefix, source.relativePath()) : source.path(),
+        ]);
+      }
     }
 
     return json;
@@ -190,18 +211,6 @@ export class Builder {
 
   resolve(path: string, from: string = this.context.root) {
     return resolve(from, path);
-  }
-
-  #resolveEntrypoints(context: BuildContext) {
-    const entrypoints = new SourceFileBag();
-
-    if (context.entrypoints) {
-      for (const entrypoint of context.entrypoints) {
-        entrypoints.add(new SourceFile(entrypoint, this.context.root));
-      }
-    }
-
-    return entrypoints;
   }
 
   #buildPatterns(patterns?: string[]) {

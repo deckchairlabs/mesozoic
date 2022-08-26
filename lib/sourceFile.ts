@@ -1,31 +1,39 @@
-import { dirname, ensureDir, extname, join, resolve } from "./deps.ts";
+import { dirname, ensureDir, extname, join } from "./deps.ts";
 
 export class SourceFile {
-  private alias?: string;
+  private aliasPath?: string;
   private locked = true;
 
   /**
-   * @param filepath The absolute filepath to the file.
-   * @param rootpath The absolute filepath to the root of this file.
+   * @param filePath The absolute filepath to the file.
+   * @param rootPath The absolute filepath to the root of this file.
    */
   constructor(
-    private readonly filepath: string,
-    private readonly rootpath: string,
+    private readonly filePath: string,
+    private readonly rootPath: string,
   ) {}
 
   path() {
-    return this.filepath;
-  }
-
-  root() {
-    return this.rootpath;
+    return this.filePath;
   }
 
   /**
    * @returns The relative path of this file to its root.
    */
   relativePath() {
-    return this.path().replace(this.rootpath, ".");
+    return this.path().replace(this.rootPath, ".");
+  }
+
+  alias() {
+    return this.aliasPath;
+  }
+
+  relativeAlias() {
+    return this.alias()?.replace(this.rootPath, ".");
+  }
+
+  root() {
+    return this.rootPath;
   }
 
   getExtension() {
@@ -87,7 +95,7 @@ export class SourceFile {
     );
 
     const copied = await this.copyTo(to, path);
-    copied.alias = join(to, this.relativePath());
+    copied.aliasPath = join(to, this.relativePath());
 
     return copied;
   }
@@ -127,13 +135,5 @@ export class SourceFile {
     );
 
     return hashHex.slice(0, length);
-  }
-
-  toJSON(prefix?: string) {
-    const relativePath = this.relativePath();
-    return [
-      this.alias ?? relativePath,
-      prefix ? resolve(prefix, relativePath) : relativePath,
-    ];
   }
 }

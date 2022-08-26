@@ -1,0 +1,22 @@
+export const snapshot = {};
+
+snapshot[`it works 1`] = `
+[
+  [
+    "./src/app.tsx",
+    "/_builder/static/src/app.e893365e.tsx",
+  ],
+  [
+    "./server.ts",
+    "/_builder/static/server.ts",
+  ],
+  [
+    "./client.ts",
+    "/_builder/static/client.52cdde54.ts",
+  ],
+  [
+    "./public/style.css",
+    "/_builder/static/public/style.a0b6f196.css",
+  ],
+]
+`;
