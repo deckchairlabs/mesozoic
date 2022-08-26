@@ -20,6 +20,25 @@ export class SourceFileBag {
     return fileBag;
   }
 
+  /**
+   * Merge this SourceFileBag with another
+   * @param other
+   * @returns A new SourceFileBag with the merged result
+   */
+  merge(other: SourceFileBag) {
+    const sources = new SourceFileBag();
+
+    for (const source of this.values()) {
+      sources.add(source);
+    }
+
+    for (const source of other.values()) {
+      sources.add(source);
+    }
+
+    return sources;
+  }
+
   find(predicate: (file: ISourceFile) => boolean) {
     return this.toArray().find(predicate);
   }

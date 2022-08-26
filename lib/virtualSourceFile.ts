@@ -1,20 +1,19 @@
-import { BuildContext } from "./builder.ts";
 import { extname, join } from "./deps.ts";
 import { ISourceFile } from "./interfaces.ts";
 import { SourceFile } from "./sourceFile.ts";
 
 export class VirtualSourceFile implements ISourceFile {
   private filePath: string;
-  private aliasPath?: string;
   private rootPath: string;
+  private aliasPath?: string;
   private content: string | Uint8Array;
 
   constructor(
-    private context: BuildContext,
     filePath: string,
+    rootPath: string,
     content: string | Uint8Array,
   ) {
-    this.rootPath = context.root;
+    this.rootPath = rootPath;
     this.filePath = join(this.rootPath, filePath);
     this.content = content;
   }
@@ -70,7 +69,7 @@ export class VirtualSourceFile implements ISourceFile {
     const path = join(to, this.relativePath());
     await Deno.writeFile(path, await this.readBytes());
 
-    return new SourceFile(path, this.rootPath);
+    return new SourceFile(path, to);
   }
 
   copyToHashed(to: string): Promise<ISourceFile> {
