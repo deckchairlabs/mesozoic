@@ -81,7 +81,6 @@ export class Builder extends AbstractBuilder {
     destination: string = this.context.output,
   ) {
     try {
-      this.logger.info(sprintf("Copy %d sources", sources.size));
       const copied = await super.copySources(sources, destination);
       this.logger.info(sprintf("Copied %d sources", copied.size));
 
@@ -106,7 +105,6 @@ export class Builder extends AbstractBuilder {
 
   async compileSources(sources: SourceFileBag) {
     try {
-      this.logger.debug(sprintf("Compiling %d sources", sources.size));
       const compiled = await super.compileSources(sources);
       this.logger.debug(sprintf("Compiled %d sources", compiled.size));
 
