@@ -44,7 +44,8 @@ Deno.test("it works", async (t) => {
     sources.filter((source) => builder.isEntrypoint(source)),
   );
 
-  await builder.build(buildSources);
+  const result = await builder.build(buildSources);
 
   assertSnapshot(t, builder.toManifest(buildSources, "/_builder/static"));
+  console.log(result);
 });

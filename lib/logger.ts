@@ -19,7 +19,7 @@ export class MesozoicLogger extends log.Logger {
   context(context: BuildContext) {
     this.debug(
       sprintf(
-        "%s: %s",
+        "%s %s",
         crayon.bold.yellow("Context"),
         JSON.stringify(context, null, 2),
       ),
@@ -29,7 +29,7 @@ export class MesozoicLogger extends log.Logger {
   cleaning(path: string) {
     this.info(
       sprintf(
-        "%s: %s",
+        "%s %s",
         crayon.green("Cleaning"),
         path,
       ),
@@ -39,7 +39,7 @@ export class MesozoicLogger extends log.Logger {
   test(message: string, condition: boolean) {
     this.info(
       sprintf(
-        "%s: %s = %s",
+        "%s %s = %s",
         crayon.green("Test"),
         message,
         condition ? crayon.green("true") : crayon.red("false"),
@@ -60,7 +60,7 @@ export class MesozoicLogger extends log.Logger {
     const endTime = performance.now();
     this.info(
       sprintf(
-        "%s: %s %s %s %s",
+        "%s %s %s %s %s",
         crayon.green("Copied"),
         from.relativePath(),
         crayon.bold.blue("to"),
@@ -74,7 +74,7 @@ export class MesozoicLogger extends log.Logger {
     const endTime = performance.now();
     this.info(
       sprintf(
-        "%s: %d files %s",
+        "%s %d files %s",
         crayon.green("Copied"),
         sources.size,
         this.#formatMilliseconds(endTime - startTime),
@@ -86,7 +86,7 @@ export class MesozoicLogger extends log.Logger {
     const endTime = performance.now();
     this.info(
       sprintf(
-        "%s: %s %s",
+        "%s %s %s",
         crayon.green("Compiled"),
         source.relativePath(),
         this.#formatMilliseconds(endTime - startTime),
@@ -99,7 +99,7 @@ export class MesozoicLogger extends log.Logger {
     for (const source of sources.values()) {
       this.info(
         sprintf(
-          "%s: %s",
+          "%s %s",
           crayon.green("Vendor"),
           source.relativePath(),
         ),
@@ -107,7 +107,7 @@ export class MesozoicLogger extends log.Logger {
     }
 
     this.info(sprintf(
-      "%s: %s",
+      "%s %s",
       crayon.green("Vendored"),
       this.#formatMilliseconds(endTime - startTime),
     ));

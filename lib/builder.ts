@@ -103,35 +103,35 @@ export class Builder {
     const path = (alias && aliased) ? alias : source.relativePath();
 
     return this.logger.test(
-      sprintf("isEntrypoint: %s", path),
+      sprintf("isEntrypoint %s", path),
       this.entrypoints.some((pattern) => pattern.test(path)),
     );
   }
 
   isIgnored(source: ISource): boolean {
     return this.logger.test(
-      sprintf("isIgnored: %s", source.relativePath()),
+      sprintf("isIgnored %s", source.relativePath()),
       this.exclude.some((pattern) => pattern.test(source.relativePath())),
     );
   }
 
   isCompilable(source: ISource): boolean {
     return this.logger.test(
-      sprintf("isCompilable: %s", source.relativePath()),
+      sprintf("isCompilable %s", source.relativePath()),
       this.compile.some((pattern) => pattern.test(source.relativePath())),
     );
   }
 
   isHashable(source: ISource): boolean {
     return this.logger.test(
-      sprintf("isHashable: %s", source.relativePath()),
+      sprintf("isHashable %s", source.relativePath()),
       this.hash.some((pattern) => pattern.test(source.relativePath())),
     );
   }
 
   isManifestExcluded(source: ISource): boolean {
     return this.logger.test(
-      sprintf("isManifestExcluded: %s", source.relativePath()),
+      sprintf("isManifestExcluded %s", source.relativePath()),
       this.manifestExclude.some((pattern) =>
         pattern.test(source.relativePath())
       ),
