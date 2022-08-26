@@ -1,8 +1,6 @@
 import { Builder } from "../lib/builder.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
 import { assertSnapshot } from "./deps.ts";
-import { VirtualSourceFile } from "../lib/virtualSourceFile.ts";
-import { SourceFileBag } from "../lib/sourceFileBag.ts";
 
 const outputDir = getOutputDir();
 
@@ -25,6 +23,7 @@ async function createBuilder() {
     ],
     manifest: {
       exclude: [
+        "./importMap.json",
         "./deno.json",
         "./public/robots.txt",
       ],
@@ -38,18 +37,7 @@ async function createBuilder() {
 
 Deno.test("it works", async (t) => {
   const builder = await createBuilder();
-  let sources = await builder.gatherSources();
-  const virtualSources = new SourceFileBag();
-
-  const importMap = new VirtualSourceFile(
-    "importMap.json",
-    builder.context.root,
-    "{\n}",
-  );
-
-  virtualSources.add(importMap);
-
-  sources = sources.merge(virtualSources);
+  const sources = await builder.gatherSources();
   const buildSources = await builder.copySources(sources);
 
   await builder.vendorSources(

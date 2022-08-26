@@ -1,16 +1,16 @@
-import { ISourceFile } from "./interfaces.ts";
+import { ISource } from "./source.ts";
 
 /**
- * A SourceFileBag holds ISourceFile
+ * A SourceFileBag holds ISource
  */
 export class SourceFileBag {
-  items: Map<string, ISourceFile>;
+  items: Map<string, ISource>;
 
   constructor() {
     this.items = new Map();
   }
 
-  private static create(items: ISourceFile[]): SourceFileBag {
+  private static create(items: ISource[]): SourceFileBag {
     const fileBag = new SourceFileBag();
     if (items) {
       for (const item of items) {
@@ -39,15 +39,15 @@ export class SourceFileBag {
     return sources;
   }
 
-  find(predicate: (file: ISourceFile) => boolean) {
+  find(predicate: (file: ISource) => boolean) {
     return this.toArray().find(predicate);
   }
 
-  filter(predicate: (file: ISourceFile) => boolean) {
+  filter(predicate: (file: ISource) => boolean) {
     return SourceFileBag.create(this.toArray().filter(predicate));
   }
 
-  add(value: ISourceFile) {
+  add(value: ISource) {
     this.items.set(value.path(), value);
     return this;
   }

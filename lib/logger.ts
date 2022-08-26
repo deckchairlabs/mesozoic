@@ -1,5 +1,5 @@
 import { crayon, log, sprintf } from "./deps.ts";
-import { ISourceFile } from "./interfaces.ts";
+import { ISource } from "./source.ts";
 import { SourceFileBag } from "./sourceFileBag.ts";
 
 export class MesozoicLogger extends log.Logger {
@@ -26,15 +26,15 @@ export class MesozoicLogger extends log.Logger {
     return condition;
   }
 
-  added(source: ISourceFile) {
+  added(source: ISource) {
     this.debug(sprintf(crayon.green("Add: %s"), source.path()));
   }
 
-  resolved(source: ISourceFile) {
+  resolved(source: ISource) {
     this.debug(sprintf(crayon.green("Resolved: %s"), source.path()));
   }
 
-  copied(from: ISourceFile, source: ISourceFile) {
+  copied(from: ISource, source: ISource) {
     this.info(
       sprintf(
         crayon.green("Copied: %s -> %s"),
@@ -44,7 +44,7 @@ export class MesozoicLogger extends log.Logger {
     );
   }
 
-  compiled(source: ISourceFile) {
+  compiled(source: ISource) {
     this.info(
       sprintf(
         crayon.green("Compiled: %s"),
