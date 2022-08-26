@@ -1,3 +1,4 @@
+import { BuildContext } from "./builder.ts";
 import { crayon, log, sprintf } from "./deps.ts";
 import { ISource } from "./source.ts";
 import { SourceFileBag } from "./sourceFileBag.ts";
@@ -15,12 +16,33 @@ export class MesozoicLogger extends log.Logger {
     });
   }
 
-  test(message: string, condition: boolean) {
+  context(context: BuildContext) {
     this.debug(
       sprintf(
-        "%s = %s",
-        condition ? crayon.green("true") : crayon.red("false"),
+        "%s: %s",
+        crayon.bold.yellow("Context"),
+        JSON.stringify(context, null, 2),
+      ),
+    );
+  }
+
+  cleaning(path: string) {
+    this.info(
+      sprintf(
+        "%s: %s",
+        crayon.green("Cleaning"),
+        path,
+      ),
+    );
+  }
+
+  test(message: string, condition: boolean) {
+    this.info(
+      sprintf(
+        "%s: %s = %s",
+        crayon.green("Test"),
         message,
+        condition ? crayon.green("true") : crayon.red("false"),
       ),
     );
     return condition;
@@ -34,33 +56,66 @@ export class MesozoicLogger extends log.Logger {
     this.debug(sprintf(crayon.green("Resolved: %s"), source.path()));
   }
 
-  copied(from: ISource, source: ISource) {
+  copy(from: ISource, source: ISource, startTime: number) {
+    const endTime = performance.now();
     this.info(
       sprintf(
-        crayon.green("Copied: %s -> %s"),
-        from.path(),
-        source.path(),
+        "%s: %s %s %s %s",
+        crayon.green("Copied"),
+        from.relativePath(),
+        crayon.bold.blue("to"),
+        source.relativePath(),
+        this.#formatMilliseconds(endTime - startTime),
       ),
     );
   }
 
-  compiled(source: ISource) {
+  copied(sources: SourceFileBag, startTime: number) {
+    const endTime = performance.now();
     this.info(
       sprintf(
-        crayon.green("Compiled: %s"),
-        source.path(),
+        "%s: %d files %s",
+        crayon.green("Copied"),
+        sources.size,
+        this.#formatMilliseconds(endTime - startTime),
       ),
     );
   }
 
-  vendored(sources: SourceFileBag) {
+  compiled(source: ISource, startTime: number) {
+    const endTime = performance.now();
+    this.info(
+      sprintf(
+        "%s: %s %s",
+        crayon.green("Compiled"),
+        source.relativePath(),
+        this.#formatMilliseconds(endTime - startTime),
+      ),
+    );
+  }
+
+  vendored(sources: SourceFileBag, startTime: number) {
+    const endTime = performance.now();
     for (const source of sources.values()) {
       this.info(
         sprintf(
-          crayon.green("Vendored: %s"),
-          source.path(),
+          "%s: %s",
+          crayon.green("Vendor"),
+          source.relativePath(),
         ),
       );
     }
+
+    this.info(sprintf(
+      "%s: %s",
+      crayon.green("Vendored"),
+      this.#formatMilliseconds(endTime - startTime),
+    ));
+  }
+
+  #formatMilliseconds(value: number) {
+    return crayon.dim(
+      `(${String(Math.round(value))}ms)`,
+    );
   }
 }

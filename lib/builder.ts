@@ -54,7 +54,11 @@ export class Builder {
     this.manifestExclude = this.#buildPatterns(
       this.context?.manifest?.exclude,
     );
-    this.logger = new MesozoicLogger(context.debug ? "DEBUG" : "INFO");
+
+    const debug = Boolean(Deno.env.get("MESOZOIC_DEBUG")) || context.debug;
+
+    this.logger = new MesozoicLogger(debug ? "DEBUG" : "INFO");
+    this.logger.context(this.context);
   }
 
   async build(sources: SourceFileBag): Promise<BuildResult> {
@@ -152,7 +156,7 @@ export class Builder {
 
   async cleanOutput() {
     try {
-      this.logger.debug(sprintf("Cleaning: %s", this.context.output));
+      this.logger.cleaning(this.context.output);
       await Deno.remove(this.context.output, { recursive: true });
     } catch (error) {
       this.logger.error(error);
@@ -163,6 +167,8 @@ export class Builder {
   async vendorSources(sources: SourceFileBag) {
     const outputPath = join(this.context.output, "vendor");
     const paths: string[] = [];
+
+    const startTime = performance.now();
 
     for (const source of sources.values()) {
       paths.push(source.path());
@@ -194,7 +200,7 @@ export class Builder {
 
     if (status.code === 0) {
       const vendored = await this.gatherSources(outputPath);
-      this.logger.vendored(sources);
+      this.logger.vendored(sources, startTime);
 
       return vendored;
     } else {
@@ -208,11 +214,13 @@ export class Builder {
     destination: string = this.context.output,
   ) {
     const copied: SourceFileBag = new SourceFileBag();
+    const startTime = performance.now();
 
     for (const source of sources.values()) {
       try {
         if (!this.isIgnored(source)) {
           let copiedSource: ISource;
+          const copyStartTime = performance.now();
           if (this.isHashable(source)) {
             copiedSource = await source.copyToHashed(destination);
           } else {
@@ -220,13 +228,14 @@ export class Builder {
           }
 
           copied.add(copiedSource);
-          this.logger.copied(source, copiedSource);
+          this.logger.copy(source, copiedSource, copyStartTime);
         }
       } catch (error) {
         throw error;
       }
     }
 
+    this.logger.copied(copied, startTime);
     this.hasCopied = true;
 
     return copied;
@@ -246,6 +255,7 @@ export class Builder {
         );
       }
 
+      const startTime = performance.now();
       const source = await sourceFile.read();
 
       const compiled = await compile(source, {
@@ -255,7 +265,7 @@ export class Builder {
         sourceMaps: this.context?.compiler?.sourceMaps,
       });
 
-      this.logger.compiled(sourceFile);
+      this.logger.compiled(sourceFile, startTime);
 
       await sourceFile.write(compiled.code);
     }
