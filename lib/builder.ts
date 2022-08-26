@@ -11,7 +11,7 @@ import { SourceFileBag } from "./sourceFileBag.ts";
 /**
  * A Builder with logging
  */
-type BuilderOptions = {
+export type BuilderOptions = {
   name?: string;
   logLevel?: log.LevelName;
 };
