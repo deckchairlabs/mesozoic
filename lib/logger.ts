@@ -1,21 +1,56 @@
+import { sprintf } from "https://deno.land/std@0.153.0/fmt/printf.ts";
 import { crayon, log } from "./deps.ts";
 
-export class MesozoicLogger extends log.Logger {
+function gradient(string: string) {
+  const chars: string[] = string.split("");
+
+  for (const [index, char] of chars.entries()) {
+    chars[index] = crayon.hsl(7 * index, 100, 50)(char);
+  }
+
+  return chars.join("");
+}
+
+function formatLevel(level: log.LevelName) {
+  switch (level) {
+    case "INFO":
+      return crayon.bold.blue(level);
+
+    case "DEBUG":
+      return crayon.bold.magenta(level);
+
+    case "WARNING":
+      return crayon.bold.yellow(level);
+
+    case "ERROR":
+      return crayon.bold.red(level);
+
+    case "CRITICAL":
+      return crayon.bgRed.black.bold(level);
+
+    default:
+      return level;
+  }
+}
+
+export class Logger extends log.Logger {
   constructor(levelName: log.LevelName) {
+    const loggerName = gradient(`[mesozoic]`);
+
     super("mesozoic", levelName, {
       handlers: [
         new log.handlers.ConsoleHandler("DEBUG", {
-          formatter: `${
-            crayon.bold.blue("[{loggerName}]")
-          } - {levelName} {msg}`,
+          formatter(record) {
+            const level = formatLevel(record.levelName as log.LevelName);
+            return sprintf(
+              "%s - %s %s",
+              loggerName,
+              level,
+              record.msg,
+            );
+          },
         }),
       ],
     });
-  }
-
-  #formatMilliseconds(value: number) {
-    return crayon.dim(
-      `(${String(Math.round(value))}ms)`,
-    );
   }
 }
