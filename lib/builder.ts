@@ -63,10 +63,10 @@ export class Builder extends AbstractBuilder {
     }
   }
 
-  async vendorSources(sources: SourceFileBag) {
+  async vendorSources(sources: SourceFileBag, output = "") {
     try {
       this.logger.info(sprintf("Vendoring %d sources", sources.size));
-      const vendored = await super.vendorSources(sources);
+      const vendored = await super.vendorSources(sources, output);
       this.logger.info(sprintf("Vendored %d dependencies", vendored.size));
 
       return vendored;

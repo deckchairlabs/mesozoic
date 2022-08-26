@@ -128,8 +128,8 @@ export abstract class AbstractBuilder {
     }
   }
 
-  async vendorSources(sources: SourceFileBag) {
-    const outputPath = join(this.context.output, "vendor");
+  async vendorSources(sources: SourceFileBag, output = "") {
+    const outputPath = join(this.context.output, "vendor", output);
     const paths: string[] = [];
 
     for (const source of sources.values()) {
@@ -161,11 +161,10 @@ export abstract class AbstractBuilder {
     vendor.close();
 
     if (status.code === 0) {
-      const vendored = await this.gatherSources(outputPath);
-
-      return vendored;
+      return this.gatherSources(outputPath);
     } else {
       const error = new TextDecoder().decode(stderr);
+      console.error(error);
       throw new Error(error);
     }
   }

@@ -42,6 +42,7 @@ Deno.test("it works", async (t) => {
 
   await builder.vendorSources(
     sources.filter((source) => builder.isEntrypoint(source)),
+    "server",
   );
 
   await builder.build(buildSources);
