@@ -5,8 +5,8 @@
   "lint": {
     "files": {
       "exclude": [
-        "./test/fixture/.build/**",
-        "./test/__snapshots__/**"
+        "./test/fixture/.build/",
+        "./test/__snapshots__/"
       ]
     }
   },

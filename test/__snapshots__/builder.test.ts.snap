@@ -4,7 +4,7 @@ snapshot[`it works 1`] = `
 [
   [
     "./src/app.tsx",
-    "/_builder/static/src/app.d9df1e95.tsx",
+    "/_builder/static/src/app.10751f53.tsx",
   ],
   [
     "./server.ts",
