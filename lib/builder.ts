@@ -30,9 +30,8 @@ export class Builder extends AbstractBuilder {
     try {
       this.logger.info(sprintf("Cleaning %s", this.context.output));
       await super.cleanOutput();
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
+    } catch (_error) {
+      // Don't do anything
     }
   }
 
