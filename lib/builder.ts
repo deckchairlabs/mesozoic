@@ -21,10 +21,10 @@ export class Builder extends AbstractBuilder {
 
   constructor(
     context: BuildContext,
-    options: BuilderOptions,
+    options?: BuilderOptions,
   ) {
     super(context);
-    this.logger = new Logger(options.logLevel || "INFO", options.name);
+    this.logger = new Logger(options?.logLevel || "INFO", options?.name);
   }
   async cleanOutput() {
     try {
