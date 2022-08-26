@@ -29,8 +29,8 @@ export class Builder {
   private sources: SourceFileBag;
   private hasCopied = false;
   private isValid = false;
-  private logger: MesozoicLogger;
 
+  public logger: MesozoicLogger;
   public entrypoints: RegExp[];
   public exclude: RegExp[];
   public hash: RegExp[];
