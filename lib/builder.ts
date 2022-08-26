@@ -11,12 +11,20 @@ import { SourceFileBag } from "./sourceFileBag.ts";
 /**
  * A Builder with logging
  */
+type BuilderOptions = {
+  name?: string;
+  logLevel?: log.LevelName;
+};
+
 export class Builder extends AbstractBuilder {
   public logger: Logger;
 
-  constructor(context: BuildContext & { logLevel?: log.LevelName }) {
+  constructor(
+    context: BuildContext,
+    options: BuilderOptions,
+  ) {
     super(context);
-    this.logger = new Logger(context.logLevel || "INFO");
+    this.logger = new Logger(options.logLevel || "INFO", options.name);
   }
   async cleanOutput() {
     try {
