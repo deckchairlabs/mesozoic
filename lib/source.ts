@@ -71,6 +71,14 @@ export abstract class Source implements ISource {
     return new TextDecoder().decode(await this.readBytes());
   }
 
+  async readAsJson<T = unknown>(
+    // deno-lint-ignore no-explicit-any
+    reviver?: (key: string, value: any) => any,
+  ): Promise<T> {
+    const content = await this.read();
+    return JSON.parse(content, reviver);
+  }
+
   /**
    * @returns The content of the file as an array of bytes.
    */
