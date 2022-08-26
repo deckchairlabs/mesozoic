@@ -27,7 +27,6 @@ export type BuildResult = {
 };
 
 export class Builder {
-  private sources: SourceFileBag;
   private hasCopied = false;
   private isValid = false;
 
@@ -42,8 +41,6 @@ export class Builder {
    * @param context
    */
   constructor(public readonly context: BuildContext) {
-    this.sources = new SourceFileBag();
-
     this.exclude = this.#buildPatterns(
       this.context?.exclude,
     );
@@ -140,15 +137,17 @@ export class Builder {
   /**
    * Walk the root for SourceFiles obeying exclusion patterns
    */
-  async gatherSources() {
-    for await (const entry of walk(this.context.root)) {
+  async gatherSources(from: string = this.context.root) {
+    const sources = new SourceFileBag();
+
+    for await (const entry of walk(from)) {
       if (entry.isFile) {
-        const sourceFile = new SourceFile(entry.path, this.context.root);
-        this.sources.add(sourceFile);
+        const sourceFile = new SourceFile(entry.path, from);
+        sources.add(sourceFile);
       }
     }
 
-    return this.sources;
+    return sources;
   }
 
   async cleanOutput() {
@@ -159,27 +158,6 @@ export class Builder {
       this.logger.error(error);
       // whatever
     }
-  }
-
-  add(path: string) {
-    const sourceFile = new SourceFile(path, this.context.root);
-    this.sources.add(sourceFile);
-    this.logger.added(sourceFile);
-
-    return sourceFile;
-  }
-
-  resolveSource(path: string) {
-    const sourceFile = this.sources.get(this.relative(path));
-
-    if (!sourceFile) {
-      throw new Error(
-        sprintf("no source file was found at path: %s", path),
-      );
-    }
-
-    this.logger.resolved(sourceFile);
-    return sourceFile;
   }
 
   async vendorSources(sources: SourceFileBag) {
@@ -215,7 +193,10 @@ export class Builder {
     vendor.close();
 
     if (status.code === 0) {
+      const vendored = await this.gatherSources(outputPath);
       this.logger.vendored(sources);
+
+      return vendored;
     } else {
       const error = new TextDecoder().decode(stderr);
       throw new Error(error);
@@ -307,14 +288,6 @@ export class Builder {
     }
 
     return json;
-  }
-
-  relative(path: string, to: string = this.context.root) {
-    return join(to, path);
-  }
-
-  resolve(path: string, from: string = this.context.root) {
-    return resolve(from, path);
   }
 
   #buildPatterns(patterns?: string[]) {
