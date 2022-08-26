@@ -253,7 +253,7 @@ export abstract class AbstractBuilder {
       const graph = await createGraph(source.url().href, {
         kind: "codeOnly",
         defaultJsxImportSource: "react",
-        load(specifier) {
+        load(_specifier) {
           return Promise.resolve(undefined);
         },
       });

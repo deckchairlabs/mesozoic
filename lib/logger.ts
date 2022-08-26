@@ -34,10 +34,14 @@ function formatLevel(level: log.LevelName) {
 }
 
 export class Logger extends log.Logger {
-  constructor(levelName: log.LevelName) {
-    const loggerName = gradient(`[mesozoic]`);
+  /**
+   * @param levelName
+   * @param name
+   */
+  constructor(levelName: log.LevelName, name: string = "mesozoic") {
+    const loggerName = gradient(`[${name}]`);
 
-    super("mesozoic", levelName, {
+    super(name, levelName, {
       handlers: [
         new log.handlers.ConsoleHandler("DEBUG", {
           formatter(record) {
