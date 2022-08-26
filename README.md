@@ -8,6 +8,10 @@ import { Builder } from "https://deno.land/x/mesozoic@1.0.0-alpha.0/mod.ts";
 const builder = new Builder({
   root: "/path/to/source",
   output: "/path/to/output",
+  entrypoints: [
+    "./client.tsx",
+    "./server.tsx",
+  ],
 });
 
 /**

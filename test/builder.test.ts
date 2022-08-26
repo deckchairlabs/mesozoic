@@ -1,6 +1,7 @@
 import { Builder } from "../lib/builder.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
 import { assertSnapshot } from "./deps.ts";
+import { VirtualSourceFile } from "../lib/virtualSourceFile.ts";
 
 const outputDir = getOutputDir();
 
@@ -37,6 +38,15 @@ async function createBuilder() {
 Deno.test("it works", async (t) => {
   const builder = await createBuilder();
   const sources = await builder.gatherSources();
+
+  const importMap = new VirtualSourceFile(
+    builder.context,
+    "./importMap.json",
+    "{\n}",
+  );
+
+  sources.add(importMap);
+
   const buildSources = await builder.copySources(sources);
 
   await builder.vendorSources(

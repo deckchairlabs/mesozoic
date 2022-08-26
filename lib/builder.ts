@@ -1,7 +1,8 @@
 import { globToRegExp, join, resolve, sprintf, walk } from "./deps.ts";
-import { SourceFile } from "./sourceFile.ts";
+import { ISourceFile } from "./interfaces.ts";
 import { SourceFileBag } from "./sourceFileBag.ts";
 import { MesozoicLogger } from "./logger.ts";
+import { SourceFile } from "./sourceFile.ts";
 
 export type BuildContext = {
   root: string;
@@ -96,7 +97,7 @@ export class Builder {
     this.logger.debug("Build valid");
   }
 
-  isEntrypoint(source: SourceFile, aliased = true): boolean {
+  isEntrypoint(source: ISourceFile, aliased = true): boolean {
     const alias = source.relativeAlias();
     const path = (alias && aliased) ? alias : source.relativePath();
 
@@ -106,28 +107,28 @@ export class Builder {
     );
   }
 
-  isIgnored(source: SourceFile): boolean {
+  isIgnored(source: ISourceFile): boolean {
     return this.logger.test(
       sprintf("isIgnored: %s", source.relativePath()),
       this.exclude.some((pattern) => pattern.test(source.relativePath())),
     );
   }
 
-  isCompilable(source: SourceFile): boolean {
+  isCompilable(source: ISourceFile): boolean {
     return this.logger.test(
       sprintf("isCompilable: %s", source.relativePath()),
       this.compile.some((pattern) => pattern.test(source.relativePath())),
     );
   }
 
-  isHashable(source: SourceFile): boolean {
+  isHashable(source: ISourceFile): boolean {
     return this.logger.test(
       sprintf("isHashable: %s", source.relativePath()),
       this.hash.some((pattern) => pattern.test(source.relativePath())),
     );
   }
 
-  isManifestExcluded(source: SourceFile): boolean {
+  isManifestExcluded(source: ISourceFile): boolean {
     return this.logger.test(
       sprintf("isManifestExcluded: %s", source.relativePath()),
       this.manifestExclude.some((pattern) =>
@@ -230,7 +231,7 @@ export class Builder {
     for (const source of sources.values()) {
       try {
         if (!this.isIgnored(source)) {
-          let copiedSource: SourceFile;
+          let copiedSource: ISourceFile;
           if (this.isHashable(source)) {
             copiedSource = await source.copyToHashed(destination);
           } else {
@@ -283,7 +284,7 @@ export class Builder {
 
   processSources(
     sources: SourceFileBag,
-    processor: (source: SourceFile) => Promise<SourceFile> | SourceFile,
+    processor: (source: ISourceFile) => Promise<ISourceFile> | ISourceFile,
   ) {
     this.#valid();
     return Promise.all(sources.toArray().map((source) => processor(source)));

@@ -1,6 +1,7 @@
 import { dirname, ensureDir, extname, join, sprintf } from "./deps.ts";
+import { ISourceFile } from "./interfaces.ts";
 
-export class SourceFile {
+export class SourceFile implements ISourceFile {
   private aliasPath?: string;
   private locked = true;
 
@@ -36,7 +37,7 @@ export class SourceFile {
     return this.rootPath;
   }
 
-  getExtension() {
+  extension() {
     return extname(this.path());
   }
 
@@ -47,13 +48,18 @@ export class SourceFile {
     return new TextDecoder().decode(await this.readBytes());
   }
 
-  write(content: string) {
+  write(content: string | Uint8Array) {
     if (this.isLocked()) {
       throw new Error(
         sprintf("cannot write file because it is locked: %s", this.path()),
       );
     }
-    return Deno.writeFile(this.path(), new TextEncoder().encode(content));
+
+    const bytes = typeof content === "string"
+      ? new TextEncoder().encode(content)
+      : content;
+
+    return Deno.writeFile(this.path(), bytes);
   }
 
   /**
@@ -92,7 +98,7 @@ export class SourceFile {
 
   async copyToHashed(to: string): Promise<SourceFile> {
     const contentHash = await this.contentHash();
-    const extension = this.getExtension();
+    const extension = this.extension();
 
     const path = this.relativePath().replace(
       extension,
