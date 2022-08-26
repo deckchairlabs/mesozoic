@@ -3,13 +3,7 @@ import { ISource } from "./source.ts";
 /**
  * A SourceFileBag holds ISource
  */
-export class SourceFileBag {
-  items: Map<string, ISource>;
-
-  constructor() {
-    this.items = new Map();
-  }
-
+export class SourceFileBag extends Set<ISource> {
   private static create(items: ISource[]): SourceFileBag {
     const fileBag = new SourceFileBag();
     if (items) {
@@ -40,32 +34,22 @@ export class SourceFileBag {
   }
 
   find(predicate: (file: ISource) => boolean) {
-    return this.toArray().find(predicate);
+    for (const source of this.values()) {
+      if (predicate(source)) {
+        return source;
+      }
+    }
   }
 
   filter(predicate: (file: ISource) => boolean) {
-    return SourceFileBag.create(this.toArray().filter(predicate));
-  }
+    const items: ISource[] = [];
+    for (const source of this.values()) {
+      if (predicate(source)) {
+        items.push(source);
+      }
+    }
 
-  add(value: ISource) {
-    this.items.set(value.path(), value);
-    return this;
-  }
-
-  has(key: string) {
-    return this.items.has(key);
-  }
-
-  get(key: string) {
-    return this.items.get(key);
-  }
-
-  get size() {
-    return this.items.size;
-  }
-
-  values() {
-    return this.items.values();
+    return SourceFileBag.create(items);
   }
 
   toArray() {
