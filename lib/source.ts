@@ -14,7 +14,7 @@ export interface ISource {
   readBytes(): Promise<Uint8Array>;
   write(content: string | Uint8Array): Promise<void>;
   // deno-lint-ignore no-explicit-any
-  writeJson(value: any): Promise<void>;
+  writeJson(value: any, pretty?: boolean): Promise<void>;
   copyTo(to: string, filePath?: string): Promise<ISource>;
   copyToHashed(to: string): Promise<ISource>;
   remove(): Promise<boolean>;
