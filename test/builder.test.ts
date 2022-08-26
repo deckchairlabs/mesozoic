@@ -38,6 +38,7 @@ Deno.test("it works", async (t) => {
   const builder = await createBuilder();
   const sources = await builder.gatherSources();
   const buildSources = await builder.copySources(sources);
+  await builder.build(buildSources);
 
   assertSnapshot(t, builder.toManifest(buildSources, "/_builder/static"));
 });

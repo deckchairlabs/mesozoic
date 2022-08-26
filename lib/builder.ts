@@ -49,9 +49,21 @@ export class Builder {
     );
   }
 
+  async build(sources: SourceFileBag) {
+    this.#valid();
+
+    /**
+     * Gather compilable sources and compile them
+     */
+    const compilable = sources.filter((source) => this.isCompilable(source));
+    const compiled = await this.compileSources(compilable);
+
+    return sources;
+  }
+
   #valid() {
     if (!this.hasCopied) {
-      throw new Error("must copy sources");
+      throw new Error("must copy sources before performing a build.");
     }
   }
 

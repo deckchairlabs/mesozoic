@@ -1,4 +1,4 @@
-import { dirname, ensureDir, extname, join } from "./deps.ts";
+import { dirname, ensureDir, extname, join, sprintf } from "./deps.ts";
 
 export class SourceFile {
   private aliasPath?: string;
@@ -48,6 +48,11 @@ export class SourceFile {
   }
 
   write(content: string) {
+    if (this.isLocked()) {
+      throw new Error(
+        sprintf("cannot write file because it is locked: %s", this.path()),
+      );
+    }
     return Deno.writeFile(this.path(), new TextEncoder().encode(content));
   }
 
@@ -69,7 +74,7 @@ export class SourceFile {
     const destination = join(to, filepath);
 
     if (destination === this.path()) {
-      throw new Error("cannot copy a file to itself");
+      throw new Error(sprintf("cannot copy a file to itself: %s", this.path()));
     }
 
     await ensureDir(dirname(destination));
@@ -112,7 +117,7 @@ export class SourceFile {
 
   async remove() {
     if (this.locked) {
-      throw new Error("cannot remove a locked file");
+      throw new Error(sprintf("cannot remove a locked file: %s", this.path()));
     }
     try {
       await Deno.remove(this.path());
