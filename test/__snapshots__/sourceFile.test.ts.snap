@@ -1,0 +1,10 @@
+export const snapshot = {};
+
+snapshot[`read a file 1`] = `
+"type AppProps = {};
+
+export default function App(props: AppProps) {
+  return <div>Hello World</div>;
+}
+"
+`;

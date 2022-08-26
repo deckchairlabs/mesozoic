@@ -1,5 +1,11 @@
 {
   "tasks": {
+    "test": "deno test --allow-all"
+  },
+  "lint": {
+    "files": {
+      "exclude": ["./test/fixture/.build"]
+    }
   },
   "importMap": "./importMap.json"
 }

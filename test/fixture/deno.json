@@ -1,0 +1,8 @@
+{
+  "tasks": {
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  }
+}
