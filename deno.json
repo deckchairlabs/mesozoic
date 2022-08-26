@@ -4,7 +4,10 @@
   },
   "lint": {
     "files": {
-      "exclude": ["./test/fixture/.build"]
+      "exclude": [
+        "./test/fixture/.build/**",
+        "./test/__snapshots__/**"
+      ]
     }
   },
   "importMap": "./importMap.json"

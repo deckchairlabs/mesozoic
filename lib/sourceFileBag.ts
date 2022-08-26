@@ -20,6 +20,10 @@ export class SourceFileBag {
     return fileBag;
   }
 
+  find(predicate: (file: SourceFile) => boolean) {
+    return this.toArray().find(predicate);
+  }
+
   filter(predicate: (file: SourceFile) => boolean) {
     return SourceFileBag.create(this.toArray().filter(predicate));
   }

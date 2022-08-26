@@ -18,6 +18,11 @@ export type BuildContext = {
   };
 };
 
+export type BuildResult = {
+  sources: SourceFileBag;
+  compiled: SourceFileBag;
+};
+
 export class Builder {
   private sources: SourceFileBag;
   private hasCopied = false;
@@ -49,7 +54,7 @@ export class Builder {
     );
   }
 
-  async build(sources: SourceFileBag) {
+  async build(sources: SourceFileBag): Promise<BuildResult> {
     this.#valid();
 
     /**
@@ -58,7 +63,10 @@ export class Builder {
     const compilable = sources.filter((source) => this.isCompilable(source));
     const compiled = await this.compileSources(compilable);
 
-    return sources;
+    return {
+      sources,
+      compiled,
+    };
   }
 
   #valid() {
@@ -67,10 +75,10 @@ export class Builder {
     }
   }
 
-  isEntrypoint(source: SourceFile) {
+  isEntrypoint(source: SourceFile, aliased = true) {
     return this.entrypoints.some((pattern) => {
       const alias = source.relativeAlias();
-      if (alias) {
+      if (alias && aliased) {
         return pattern.test(alias);
       }
       return pattern.test(source.relativePath());
@@ -134,6 +142,46 @@ export class Builder {
     }
 
     return sourceFile;
+  }
+
+  async vendorSources(sources: SourceFileBag) {
+    const outputPath = join(this.context.output, "vendor");
+    const paths: string[] = [];
+
+    for (const source of sources.values()) {
+      paths.push(source.path());
+    }
+
+    const cmd = [
+      Deno.execPath(),
+      "vendor",
+      "--force",
+      "--output",
+      outputPath,
+      ...paths,
+    ];
+
+    const vendor = Deno.run({
+      cwd: this.context.output,
+      cmd: cmd,
+      stdout: "piped",
+      stderr: "piped",
+    });
+
+    const [status, stdout, stderr] = await Promise.all([
+      vendor.status(),
+      vendor.output(),
+      vendor.stderrOutput(),
+    ]);
+
+    vendor.close();
+
+    if (status.code === 0) {
+      console.log(new TextDecoder().decode(stdout));
+    } else {
+      const error = new TextDecoder().decode(stderr);
+      throw new Error(error);
+    }
   }
 
   async copySources(

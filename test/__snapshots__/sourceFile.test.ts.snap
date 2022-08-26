@@ -1,10 +1,12 @@
 export const snapshot = {};
 
 snapshot[`read a file 1`] = `
-"type AppProps = {};
+'import React from "https://esm.sh/react";
+
+type AppProps = {};
 
 export default function App(props: AppProps) {
   return <div>Hello World</div>;
 }
-"
+'
 `;
