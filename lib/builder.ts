@@ -16,7 +16,16 @@ export class Builder extends AbstractBuilder {
 
   constructor(context: BuildContext & { logLevel?: log.LevelName }) {
     super(context);
-    this.logger = new Logger(context.logLevel || "NOTSET");
+    this.logger = new Logger(context.logLevel || "INFO");
+  }
+  async cleanOutput() {
+    try {
+      this.logger.info(sprintf("Cleaning %s", this.context.output));
+      await super.cleanOutput();
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
   }
 
   async build(sources: SourceFileBag): Promise<BuildResult> {
@@ -36,20 +45,11 @@ export class Builder extends AbstractBuilder {
     from: string = this.context.root,
   ): Promise<SourceFileBag> {
     try {
-      this.logger.info(sprintf("Gathering sources from: %s", from));
+      this.logger.debug(sprintf("Gathering sources from: %s", from));
       const sources = await super.gatherSources(from);
-      this.logger.info("Gathered sources");
+      this.logger.debug("Gathered sources");
 
       return sources;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
-  }
-  async cleanOutput() {
-    try {
-      this.logger.info(sprintf("Cleaning %s", this.context.output));
-      await super.cleanOutput();
     } catch (error) {
       this.logger.error(error);
       throw error;
@@ -87,7 +87,7 @@ export class Builder extends AbstractBuilder {
 
   copySource(source: ISource, destination: string) {
     try {
-      this.logger.info(
+      this.logger.debug(
         sprintf("Copy %s -> %s", source.path(), destination),
       );
       return super.copySource(source, destination);
@@ -99,9 +99,9 @@ export class Builder extends AbstractBuilder {
 
   async compileSources(sources: SourceFileBag) {
     try {
-      this.logger.info(sprintf("Compiling %d sources", sources.size));
+      this.logger.debug(sprintf("Compiling %d sources", sources.size));
       const compiled = await super.compileSources(sources);
-      this.logger.info(sprintf("Compiled %d sources", compiled.size));
+      this.logger.debug(sprintf("Compiled %d sources", compiled.size));
 
       return compiled;
     } catch (error) {
@@ -112,9 +112,9 @@ export class Builder extends AbstractBuilder {
 
   async compileSource(source: ISource) {
     try {
-      this.logger.info(sprintf("Compiling source: %s", source.path()));
+      this.logger.debug(sprintf("Compiling source: %s", source.path()));
       await super.compileSource(source);
-      this.logger.info(sprintf("Compiled source: %s", source.path()));
+      this.logger.debug(sprintf("Compiled source: %s", source.path()));
       return source;
     } catch (error) {
       this.logger.error(error);
@@ -124,11 +124,11 @@ export class Builder extends AbstractBuilder {
 
   async buildModuleGraph(sources: SourceFileBag) {
     try {
-      this.logger.info(
+      this.logger.debug(
         sprintf("Building module graph for %d sources", sources.size),
       );
       const graph = await super.buildModuleGraph(sources);
-      this.logger.info(sprintf("Built module graph"));
+      this.logger.debug(sprintf("Built module graph"));
 
       return graph;
     } catch (error) {
@@ -140,7 +140,7 @@ export class Builder extends AbstractBuilder {
   isEntrypoint(source: ISource, aliased = true): boolean {
     try {
       const value = super.isEntrypoint(source, aliased);
-      this.logger.info(
+      this.logger.debug(
         sprintf(
           "isEntrypoint: %s = %s",
           source.relativePath(),
@@ -157,7 +157,7 @@ export class Builder extends AbstractBuilder {
   isIgnored(source: ISource): boolean {
     try {
       const value = super.isIgnored(source);
-      this.logger.info(
+      this.logger.debug(
         sprintf(
           "isIgnored: %s = %s",
           source.relativePath(),
@@ -174,7 +174,7 @@ export class Builder extends AbstractBuilder {
   isCompilable(source: ISource): boolean {
     try {
       const value = super.isCompilable(source);
-      this.logger.info(
+      this.logger.debug(
         sprintf(
           "isCompilable: %s = %s",
           source.relativePath(),
@@ -191,7 +191,7 @@ export class Builder extends AbstractBuilder {
   isHashable(source: ISource): boolean {
     try {
       const value = super.isHashable(source);
-      this.logger.info(
+      this.logger.debug(
         sprintf(
           "isHashable: %s = %s",
           source.relativePath(),
@@ -208,7 +208,7 @@ export class Builder extends AbstractBuilder {
   isManifestExcluded(source: ISource): boolean {
     try {
       const value = super.isManifestExcluded(source);
-      this.logger.info(
+      this.logger.debug(
         sprintf(
           "isManifestExcluded: %s = %s",
           source.relativePath(),
