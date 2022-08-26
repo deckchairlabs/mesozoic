@@ -7,6 +7,7 @@ import { crayon, log, sprintf } from "./deps.ts";
 import { Logger } from "./logger.ts";
 import { ISource } from "./source.ts";
 import { SourceFileBag } from "./sourceFileBag.ts";
+import { ModuleGraph } from "./types.ts";
 
 /**
  * A Builder with logging
@@ -57,19 +58,6 @@ export class Builder extends AbstractBuilder {
       this.logger.debug("Gathered sources");
 
       return sources;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
-  }
-
-  async vendorSources(sources: SourceFileBag, output = "") {
-    try {
-      this.logger.info(sprintf("Vendoring %d sources", sources.size));
-      const vendored = await super.vendorSources(sources, output);
-      this.logger.info(sprintf("Vendored %d dependencies", vendored.size));
-
-      return vendored;
     } catch (error) {
       this.logger.error(error);
       throw error;
@@ -136,6 +124,19 @@ export class Builder extends AbstractBuilder {
       this.logger.debug(sprintf("Built module graph"));
 
       return graph;
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  async vendorRemoteSources(graph: ModuleGraph) {
+    try {
+      this.logger.info("Vendoring remotes sources");
+      const vendored = await super.vendorRemoteSources(graph);
+      this.logger.info(sprintf("Vendored %d remote sources", vendored.size));
+
+      return vendored;
     } catch (error) {
       this.logger.error(error);
       throw error;

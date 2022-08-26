@@ -1,15 +1,10 @@
-import {
-  createGraph,
-  globToRegExp,
-  join,
-  resolve,
-  sprintf,
-  walk,
-} from "./deps.ts";
+import { globToRegExp, resolve, sprintf, walk } from "./deps.ts";
+import { buildModuleGraph } from "./graph.ts";
 import { ISource } from "./source.ts";
-import { SourceFileBag } from "./sourceFileBag.ts";
 import { SourceFile } from "./sourceFile.ts";
-import { ImportMap } from "./types.ts";
+import { SourceFileBag } from "./sourceFileBag.ts";
+import type { ModuleGraph } from "./types.ts";
+import { vendorRemoteSources } from "./vendor.ts";
 
 export type BuildContext = {
   root: string;
@@ -29,8 +24,10 @@ export type BuildContext = {
 };
 
 export type BuildResult = {
+  graph: ModuleGraph;
   sources: SourceFileBag;
   compiled: SourceFileBag;
+  vendored: SourceFileBag;
 };
 
 export abstract class AbstractBuilder {
@@ -73,20 +70,21 @@ export abstract class AbstractBuilder {
       const compiled = await this.compileSources(compilable);
 
       /**
-       * Get the entrypoints
+       * Create the module graph
        */
-      const entrypoints = await compiled.filter((source) =>
-        this.isEntrypoint(source)
-      );
+      const graph = await this.buildModuleGraph(sources);
+      const vendored = await this.vendorRemoteSources(graph);
 
       /**
-       * Create the module graph for the entrypoints
+       * Copy the vendored remotes
        */
-      await this.buildModuleGraph(entrypoints);
+      await this.copySources(vendored);
 
       return {
+        graph,
         sources,
         compiled,
+        vendored,
       };
     } catch (error) {
       throw error;
@@ -126,88 +124,6 @@ export abstract class AbstractBuilder {
       await Deno.remove(this.context.output, { recursive: true });
     } catch (error) {
       throw error;
-    }
-  }
-
-  async vendorSources(sources: SourceFileBag, output = "") {
-    const relativePath = join("vendor", output);
-    const outputPath = join(this.context.output, relativePath);
-
-    const paths: string[] = [];
-
-    for (const source of sources.values()) {
-      paths.push(source.path());
-    }
-
-    const cmd = [
-      Deno.execPath(),
-      "vendor",
-      "--force",
-      "--output",
-      outputPath,
-      ...paths,
-    ];
-
-    const vendor = Deno.run({
-      cwd: this.context.output,
-      cmd: cmd,
-      stdout: "piped",
-      stderr: "piped",
-    });
-
-    const [status, stderr] = await Promise.all([
-      vendor.status(),
-      vendor.output(),
-      vendor.stderrOutput(),
-    ]);
-
-    vendor.close();
-
-    if (status.code === 0) {
-      const vendored = await this.gatherSources(outputPath);
-
-      /**
-       * Fix output of vendor importMap
-       */
-      const importMapSource = vendored.find((source) =>
-        source.relativePath() === "./import_map.json"
-      );
-
-      if (importMapSource) {
-        const importMap: ImportMap = await importMapSource.readAsJson();
-
-        const newImportMap: ImportMap = {
-          imports: {},
-          scopes: {},
-        };
-
-        if (importMap.imports && newImportMap.imports) {
-          for (const [specifier, value] of Object.entries(importMap.imports)) {
-            newImportMap.imports[specifier] = `./${join(relativePath, value)}`;
-          }
-        }
-
-        if (importMap.scopes && newImportMap.scopes) {
-          for (let [scope, imports] of Object.entries(importMap.scopes)) {
-            scope = `./${join(relativePath, scope)}`;
-            newImportMap.scopes[scope] = {};
-            for (let [specifier, value] of Object.entries(imports)) {
-              specifier = `./${join(relativePath, specifier)}`;
-              newImportMap.scopes[scope][specifier] = `./${
-                join(relativePath, value)
-              }`;
-            }
-          }
-        }
-
-        await importMapSource.writeJson(newImportMap, true);
-      }
-
-      return vendored;
-    } else {
-      const error = new TextDecoder().decode(stderr);
-      console.error(error);
-      throw new Error(error);
     }
   }
 
@@ -289,19 +205,6 @@ export abstract class AbstractBuilder {
     return Promise.all(sources.toArray().map((source) => processor(source)));
   }
 
-  async buildModuleGraph(sources: SourceFileBag) {
-    for (const source of sources.values()) {
-      const graph = await createGraph(source.url().href, {
-        kind: "codeOnly",
-        defaultJsxImportSource: "react",
-        load(_specifier) {
-          return Promise.resolve(undefined);
-        },
-      });
-      graph.free();
-    }
-  }
-
   isEntrypoint(source: ISource, aliased = true): boolean {
     const alias = source.relativeAlias();
     const path = (alias && aliased) ? alias : source.relativePath();
@@ -344,6 +247,15 @@ export abstract class AbstractBuilder {
     }
 
     return json;
+  }
+
+  vendorRemoteSources(graph: ModuleGraph) {
+    return vendorRemoteSources(graph, this.context.output);
+  }
+
+  async buildModuleGraph(sources: SourceFileBag): Promise<ModuleGraph> {
+    const entrypoints = sources.filter((source) => this.isEntrypoint(source));
+    return await buildModuleGraph(sources, entrypoints);
   }
 
   #buildPatterns(patterns?: string[]) {
