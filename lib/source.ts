@@ -1,8 +1,9 @@
-import { extname, join, sprintf } from "./deps.ts";
+import { extname, join, sprintf, toFileUrl } from "./deps.ts";
 
 export interface ISource {
   path(): string;
   relativePath(): string;
+  url(): URL;
   alias(): string | undefined;
   setAlias(alias: string): void;
   relativeAlias(): string | undefined;
@@ -33,6 +34,10 @@ export abstract class Source implements ISource {
 
   path() {
     return this.filePath;
+  }
+
+  url() {
+    return toFileUrl(this.filePath);
   }
 
   /**

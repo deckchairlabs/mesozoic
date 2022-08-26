@@ -1,4 +1,4 @@
-import { Builder } from "../lib/builder.ts";
+import { Builder } from "../mod.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
 import { assertSnapshot } from "./deps.ts";
 
@@ -44,8 +44,7 @@ Deno.test("it works", async (t) => {
     sources.filter((source) => builder.isEntrypoint(source)),
   );
 
-  const result = await builder.build(buildSources);
+  await builder.build(buildSources);
 
   assertSnapshot(t, builder.toManifest(buildSources, "/_builder/static"));
-  console.log(result);
 });
