@@ -13,6 +13,7 @@ import { parseImportMap } from "./importMap.ts";
 import { Logger } from "./logger.ts";
 import { SourceFile } from "./sourceFile.ts";
 import type { ImportMap } from "./types.ts";
+import { isRemoteSpecifier } from "./utils.ts";
 import { vendorRemoteModules } from "./vendor.ts";
 
 export type BuildContext = {
@@ -119,34 +120,39 @@ export class Builder {
        */
       const entrypoints = sources.filter((source) => this.isEntrypoint(source));
 
-      // console.log(entrypoints);
-
       /**
-       * Create the module graph
+       * Get all the local sources
        */
-      this.log.info("Building module graph");
-
-      const graph = await buildModuleGraph(
-        this,
-        entrypoints,
-        sources,
-        parsedImportMap,
+      const localSources = sources.filter((source) =>
+        !isRemoteSpecifier(source.url())
       );
 
-      this.log.success("Module graph built");
-
       /**
-       * Vendor remote modules for each entrypoint
+       * Create the module graph for each entrypoint
        */
       for (const entrypoint of entrypoints.values()) {
         const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
+        this.log.info(sprintf("Building module graph fo entrypoint %s", path));
+
+        const graph = await buildModuleGraph(
+          this,
+          entrypoint,
+          localSources,
+          parsedImportMap,
+        );
+
+        this.log.success("Module graph built");
+
+        /**
+         * Vendor remote modules for each entrypoint
+         */
         this.log.info(sprintf("Vendor remote modules for entrypoint %s", path));
 
         const vendored = await vendorRemoteModules(
           this,
           graph,
-          sources,
           entrypoint,
+          sources,
         );
 
         this.log.success(

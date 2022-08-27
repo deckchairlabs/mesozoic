@@ -1,24 +1,16 @@
 import { Builder } from "./builder.ts";
-import {
-  ensureDir,
-  fromFileUrl,
-  initModuleLexer,
-  join,
-  parseModule,
-  sprintf,
-} from "./deps.ts";
+import { ensureDir, fromFileUrl, join, sprintf } from "./deps.ts";
 import { IFile } from "./file.ts";
 import { FileBag } from "./fileBag.ts";
-import { ImportMap, ModuleGraphJson, ModuleJson } from "./types.ts";
+import { ImportMap, ModuleGraphJson } from "./types.ts";
 import { isRemoteSpecifier } from "./utils.ts";
 import { rootUrlToSafeLocalDirname } from "./fs.ts";
-import { isBareSpecifier } from "./graph.ts";
 
-export function vendorRemoteModules(
+export async function vendorRemoteModules(
   builder: Builder,
   graph: ModuleGraphJson,
-  sources: FileBag,
   entrypoint: IFile,
+  sources: FileBag,
 ) {
   const entrypointConfig = builder.getEntrypoint(
     entrypoint.relativeAlias() ||
@@ -32,11 +24,26 @@ export function vendorRemoteModules(
     vendorPath,
   );
 
+  await ensureDir(outputDir);
+
   const redirectMap = new Map(
     Object.entries(graph.redirects),
   );
 
   const imports = new Map<string, string>();
+
+  const entrypointFilePath = entrypoint.url().href;
+  builder.log.info(sprintf("Resolved entrypoint: %s", entrypointFilePath));
+
+  /**
+   * If the entrypoint has an alias, we add it to the importMaps imports
+   */
+  if (entrypoint.alias()) {
+    imports.set(
+      entrypoint.relativeAlias() || entrypoint.relativePath(),
+      entrypoint.relativePath(),
+    );
+  }
 
   for (const [specifier, redirect] of redirectMap.entries()) {
     if (isRemoteSpecifier(redirect)) {
@@ -67,44 +74,8 @@ export function vendorRemoteModules(
     scopes: {},
   };
 
-  console.log(importMap);
-
-  // for (const module of moduleMap.values()) {
-  //   const dependencies = getModuleDependencyMap(moduleMap, aliases, module);
-  // }
-  // await ensureDir(outputDir);
-
-  // const path = entrypoint.url();
-  // const module = graph.modules.get(path.href);
-
-  // if (module) {
-  //   const [imports] = parseModule(module.source);
-  //   const modules = getAllModules(graph, module);
-  // } else {
-  //   throw new Error(
-  //     sprintf("No module found in module graph for %s", path.href),
-  //   );
-  // }
-
-  // // for (const [specifier, module] of graph.modules.entries()) {
-  // //   if (isRemoteSpecifier(specifier)) {
-  // //     console.log(specifier);
-  // //   }
-  // // }
-}
-
-function getModuleDependencyMap(
-  moduleMap: Map<string, ModuleJson>,
-  aliases: Map<string, string>,
-  dependent: ModuleJson,
-): Map<string, ModuleJson> {
-  const dependencies: [string, ModuleJson][] = [];
-
-  if (dependent.dependencies) {
-    for (const dependency of dependent.dependencies) {
-      const specifier = dependency.specifier;
-    }
-  }
-
-  return new Map(dependencies);
+  await Deno.writeTextFile(
+    join(outputDir, "importMap.json"),
+    JSON.stringify(importMap, null, 2),
+  );
 }
