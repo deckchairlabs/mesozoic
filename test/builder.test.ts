@@ -39,7 +39,7 @@ async function createBuilder() {
       ],
     },
   }, {
-    logLevel: "DEBUG",
+    logLevel: "INFO",
   });
 
   await builder.cleanOutput();

@@ -12,7 +12,7 @@ import { buildModuleGraph } from "./graph.ts";
 import { parseImportMap } from "./importMap.ts";
 import { Logger } from "./logger.ts";
 import { SourceFile } from "./sourceFile.ts";
-import type { ImportMap, ModuleGraph } from "./types.ts";
+import type { ImportMap } from "./types.ts";
 import { vendorRemoteModules } from "./vendor.ts";
 
 export type BuildContext = {
@@ -33,20 +33,27 @@ export type BuildContext = {
 };
 
 export type BuilderEntrypointTarget = "browser" | "deno";
-export type BuilderEntrypoints = Record<string, {
+/**
+ * An object where the keys are a path of an entrypoint
+ * relative to the {@link BuildContext.root}
+ */
+export type BuilderEntrypoints = {
+  [path: string]: BuilderEntrypoint;
+};
+
+export type BuilderEntrypoint = {
   /**
    * The output directory for the vendored dependencies
    * of this entrypoint, relative to the vendor output directory.
    */
   output: string;
   target: BuilderEntrypointTarget;
-}>;
+};
 
 export type BuildResult = {
-  graph: ModuleGraph;
+  // graph: ModuleGraph;
   sources: FileBag;
   compiled: FileBag;
-  // vendored: FileBag;
 };
 
 export type BuilderOptions = {
@@ -57,6 +64,7 @@ export type BuilderOptions = {
 export class Builder {
   private hasCopied = false;
   private isValid = false;
+  private entrypointMap: Map<string, BuilderEntrypoint>;
 
   public log: Logger;
   public exclude: RegExp[];
@@ -86,6 +94,10 @@ export class Builder {
     this.manifestExclude = this.#buildPatterns(
       this.context?.manifest?.exclude,
     );
+
+    this.entrypointMap = new Map(
+      Object.entries(this.context.entrypoints || {}),
+    );
   }
 
   async build(sources: FileBag, importMap?: ImportMap): Promise<BuildResult> {
@@ -107,25 +119,39 @@ export class Builder {
        */
       const entrypoints = sources.filter((source) => this.isEntrypoint(source));
 
+      // console.log(entrypoints);
+
       /**
        * Create the module graph
        */
       this.log.info("Building module graph");
+
       const graph = await buildModuleGraph(
         this,
         entrypoints,
         sources,
         parsedImportMap,
       );
+
       this.log.success("Module graph built");
 
       /**
        * Vendor remote modules for each entrypoint
        */
       for (const entrypoint of entrypoints.values()) {
-        this.log.info("Vendoring remote modules");
-        const vendored = await vendorRemoteModules(this, graph, sources);
-        this.log.success("Vendoring complete");
+        const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
+        this.log.info(sprintf("Vendor remote modules for entrypoint %s", path));
+
+        const vendored = await vendorRemoteModules(
+          this,
+          graph,
+          sources,
+          entrypoint,
+        );
+
+        this.log.success(
+          sprintf("Vendored modules for entrypoint %s", path),
+        );
       }
 
       /**
@@ -134,7 +160,7 @@ export class Builder {
       // await this.copySources(vendored);
 
       return {
-        graph,
+        // graph,
         sources,
         compiled,
         // vendored,
@@ -142,6 +168,10 @@ export class Builder {
     } catch (error) {
       throw error;
     }
+  }
+
+  getEntrypoint(path: string) {
+    return this.entrypointMap.get(path);
   }
 
   #valid() {

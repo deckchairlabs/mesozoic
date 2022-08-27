@@ -1,5 +1,5 @@
 import { assertEquals } from "./deps.ts";
-import { rootUrlToSafeLocalDirname } from "../lib/utils.ts";
+import { rootUrlToSafeLocalDirname } from "../lib/fs.ts";
 
 Deno.test("rootUrlToSafeLocalDirname", () => {
   const url = new URL(

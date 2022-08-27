@@ -17,9 +17,9 @@ export function parseImportMap(
   return parse(importMap, baseUrl);
 }
 
-export function resolveSpecifier(
-  specifier: string,
+export function resolveSpecifierFromImportMap(
   importMap: ParsedImportMap,
+  specifier: string,
   scriptUrl: URL,
 ) {
   return resolve(specifier, importMap, scriptUrl);

@@ -5,6 +5,7 @@ export interface IFile {
   relativePath(): string;
   url(): URL;
   alias(): string | undefined;
+  aliasUrl(): URL | undefined;
   setAlias(alias: string): void;
   relativeAlias(): string | undefined;
   root(): string;
@@ -52,6 +53,10 @@ export abstract class File implements IFile {
 
   alias() {
     return this.aliasPath;
+  }
+
+  aliasUrl() {
+    return this.aliasPath ? toFileUrl(this.aliasPath) : undefined;
   }
 
   setAlias(alias: string): void {
