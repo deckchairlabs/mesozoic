@@ -3,7 +3,12 @@ import type { ImportMap } from "./importMap.ts";
 
 export type { ImportMap, ModuleJson };
 
+type Module = {
+  dependencies: Set<string>;
+  source: string;
+};
+
 export type ModuleGraph = {
   roots: Set<string>;
-  modules: Map<string, Set<string>>;
+  modules: Map<string, Module>;
 };

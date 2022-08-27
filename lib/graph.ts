@@ -15,6 +15,7 @@ import { isRemoteSpecifier } from "./utils.ts";
 
 export async function buildModuleGraph(
   builder: Builder,
+  entrypoints: FileBag,
   sources: FileBag,
   importMap?: ParsedImportMap,
 ): Promise<ModuleGraph> {
@@ -24,7 +25,6 @@ export async function buildModuleGraph(
   };
 
   await init;
-  const entrypoints = sources.filter((source) => builder.isEntrypoint(source));
 
   const facadeCache = new Map<string, LoadResponse>();
   const resolveCache = new Map<string, string>();
@@ -146,12 +146,16 @@ export async function buildModuleGraph(
       if (module.dependencies) {
         for (const dependency of Object.values(module.dependencies)) {
           if (dependency.code && dependency.code.specifier) {
-            dependencies.add(dependency.code.specifier);
+            const specifier = dependency.code.specifier;
+            dependencies.add(specifier);
           }
         }
       }
 
-      moduleGraph.modules.set(module.specifier, dependencies);
+      moduleGraph.modules.set(module.specifier, {
+        dependencies,
+        source: module.source,
+      });
     }
 
     sourceGraph.free();

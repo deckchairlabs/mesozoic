@@ -1,44 +1,24 @@
-import { dirname, ensureDir, join } from "./deps.ts";
+import { Builder } from "./builder.ts";
 import { FileBag } from "./fileBag.ts";
-import { ModuleGraph, ModuleJson } from "./types.ts";
+import { ModuleGraph } from "./types.ts";
+import { ensureDir, join } from "./deps.ts";
 import { isRemoteSpecifier } from "./utils.ts";
-import { Mappings } from "./vendor/mappings.ts";
 
-export async function vendorRemoteSources(graph: ModuleGraph, output: string) {
-  const sources = new FileBag();
-  const outputDir = join(output, "vendor");
+export async function vendorRemoteModules(
+  builder: Builder,
+  graph: ModuleGraph,
+  sources: FileBag,
+) {
+  const outputDir = join(builder.context.output, "vendor");
 
   await ensureDir(outputDir);
+  const remoteModules = [];
 
-  const remoteModules = gatherRemoteModules(graph);
-
-  const mappings = Mappings.fromRemoteModules(remoteModules, outputDir);
-
-  for (const module of remoteModules) {
-    const localPath = mappings.localPath(module.specifier);
-    if (localPath) {
-      await ensureDir(dirname(localPath));
+  for (const [specifier, module] of graph.modules.entries()) {
+    if (isRemoteSpecifier(specifier)) {
+      console.log(specifier);
     }
   }
 
   return sources;
-}
-
-export function gatherRemoteModules(graph: ModuleGraph) {
-  const remoteSpecifiers = new Set<ModuleJson>();
-  for (const [specifier, module] of graph.modules.entries()) {
-    if (isRemoteSpecifier(specifier)) {
-      // remoteSpecifiers.add(module);
-    }
-
-    // if (module.dependencies) {
-    //   for (const dependency of module.dependencies) {
-    //     if (isRemoteSpecifier(dependency.specifier)) {
-    //       remoteSpecifiers.add(dependency);
-    //     }
-    //   }
-    // }
-  }
-
-  return remoteSpecifiers;
 }

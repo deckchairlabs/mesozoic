@@ -9,7 +9,16 @@ async function createBuilder() {
   const builder = new Builder({
     root: getFixtureDir(),
     output: outputDir,
-    entrypoints: ["./client.ts", "./server.ts"],
+    entrypoints: {
+      "./client.ts": {
+        output: "browser",
+        target: "browser",
+      },
+      "./server.ts": {
+        output: "server",
+        target: "deno",
+      },
+    },
     exclude: [
       "./README.md",
       "./.private/**/*",

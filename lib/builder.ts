@@ -9,17 +9,17 @@ import {
 import { IFile } from "./file.ts";
 import { FileBag } from "./fileBag.ts";
 import { buildModuleGraph } from "./graph.ts";
-import { ParsedImportMap, parseImportMap } from "./importMap.ts";
+import { parseImportMap } from "./importMap.ts";
 import { Logger } from "./logger.ts";
 import { SourceFile } from "./sourceFile.ts";
 import type { ImportMap, ModuleGraph } from "./types.ts";
-import { vendorRemoteSources } from "./vendor.ts";
+import { vendorRemoteModules } from "./vendor.ts";
 
 export type BuildContext = {
   root: string;
   output: string;
   exclude?: string[];
-  entrypoints?: string[];
+  entrypoints?: BuilderEntrypoints;
   hashable?: string[];
   compilable?: string[];
   compiler?: {
@@ -31,6 +31,16 @@ export type BuildContext = {
   };
   debug?: boolean;
 };
+
+export type BuilderEntrypointTarget = "browser" | "deno";
+export type BuilderEntrypoints = Record<string, {
+  /**
+   * The output directory for the vendored dependencies
+   * of this entrypoint, relative to the vendor output directory.
+   */
+  output: string;
+  target: BuilderEntrypointTarget;
+}>;
 
 export type BuildResult = {
   graph: ModuleGraph;
@@ -49,7 +59,6 @@ export class Builder {
   private isValid = false;
 
   public log: Logger;
-  public entrypoints: RegExp[];
   public exclude: RegExp[];
   public hash: RegExp[];
   public compile: RegExp[];
@@ -68,7 +77,6 @@ export class Builder {
     this.exclude = this.#buildPatterns(
       this.context?.exclude,
     );
-    this.entrypoints = this.#buildPatterns(this.context?.entrypoints);
     this.hash = this.#buildPatterns(
       this.context?.hashable,
     );
@@ -95,10 +103,30 @@ export class Builder {
       const compiled = await this.compileSources(compilable);
 
       /**
+       * Get the entrypoint source files
+       */
+      const entrypoints = sources.filter((source) => this.isEntrypoint(source));
+
+      /**
        * Create the module graph
        */
-      const graph = await this.buildModuleGraph(sources, parsedImportMap);
-      // const vendored = await this.vendorRemoteSources(graph);
+      this.log.info("Building module graph");
+      const graph = await buildModuleGraph(
+        this,
+        entrypoints,
+        sources,
+        parsedImportMap,
+      );
+      this.log.success("Module graph built");
+
+      /**
+       * Vendor remote modules for each entrypoint
+       */
+      for (const entrypoint of entrypoints.values()) {
+        this.log.info("Vendoring remote modules");
+        const vendored = await vendorRemoteModules(this, graph, sources);
+        this.log.success("Vendoring complete");
+      }
 
       /**
        * Copy the vendored remotes
@@ -234,7 +262,9 @@ export class Builder {
     const alias = source.relativeAlias();
     const path = (alias && aliased) ? alias : source.relativePath();
 
-    return this.entrypoints.some((pattern) => pattern.test(path));
+    const entrypoints = Object.keys(this.context.entrypoints || {});
+
+    return entrypoints.some((entrypoint) => entrypoint === path);
   }
 
   isIgnored(source: IFile): boolean {
@@ -272,18 +302,6 @@ export class Builder {
     }
 
     return json;
-  }
-
-  vendorRemoteSources(graph: ModuleGraph) {
-    return vendorRemoteSources(graph, this.context.output);
-  }
-
-  buildModuleGraph(
-    sources: FileBag,
-    importMap?: ParsedImportMap,
-  ): Promise<ModuleGraph> {
-    this.log.info("Building module graph");
-    return buildModuleGraph(this, sources, importMap);
   }
 
   #buildPatterns(patterns?: string[]) {
