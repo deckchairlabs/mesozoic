@@ -1,4 +1,4 @@
-import { join } from "./deps.ts";
+import { dirname, ensureDir, join } from "./deps.ts";
 import { File, IFile } from "./file.ts";
 import { SourceFile } from "./sourceFile.ts";
 
@@ -24,7 +24,11 @@ export class VirtualFile extends File implements IFile {
 
   async copyTo(to: string): Promise<IFile> {
     const path = join(to, this.relativePath());
-    await Deno.writeFile(path, await this.readBytes());
+    await ensureDir(dirname(path));
+
+    await Deno.writeFile(path, await this.readBytes(), {
+      create: true,
+    });
 
     const source = new SourceFile(path, to);
     source.unlock();

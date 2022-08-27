@@ -2,15 +2,17 @@ import { Builder } from "./builder.ts";
 import { ensureDir, fromFileUrl, join, sprintf } from "./deps.ts";
 import { IFile } from "./file.ts";
 import { FileBag } from "./fileBag.ts";
-import { ImportMap, ModuleGraphJson } from "./types.ts";
+import { ImportMap, ModuleGraph } from "./types.ts";
 import { isRemoteSpecifier } from "./utils.ts";
 import { rootUrlToSafeLocalDirname } from "./fs.ts";
+import { VirtualFile } from "./virtualFile.ts";
 
 export async function vendorRemoteModules(
   builder: Builder,
-  graph: ModuleGraphJson,
+  graph: ModuleGraph,
+  redirects: Record<string, string>,
   entrypoint: IFile,
-  sources: FileBag,
+  localSources: FileBag,
 ) {
   const entrypointConfig = builder.getEntrypoint(
     entrypoint.relativeAlias() ||
@@ -24,12 +26,10 @@ export async function vendorRemoteModules(
     vendorPath,
   );
 
+  const vendored = new FileBag();
   await ensureDir(outputDir);
 
-  const redirectMap = new Map(
-    Object.entries(graph.redirects),
-  );
-
+  const redirectMap = new Map(Object.entries(redirects));
   const imports = new Map<string, string>();
 
   const entrypointFilePath = entrypoint.url().href;
@@ -46,23 +46,42 @@ export async function vendorRemoteModules(
   }
 
   for (const [specifier, redirect] of redirectMap.entries()) {
-    if (isRemoteSpecifier(redirect)) {
-      const outputPath = join(
-        vendorPath,
-        rootUrlToSafeLocalDirname(new URL(redirect)),
-      );
+    try {
+      if (isRemoteSpecifier(redirect)) {
+        const path = rootUrlToSafeLocalDirname(new URL(redirect));
 
-      imports.set(specifier, `./${outputPath}`);
-    } else {
-      const localSource = sources.find((source) =>
-        source.path() === fromFileUrl(redirect)
-      );
-      if (localSource) {
-        const from = localSource.relativeAlias() || localSource.relativePath();
-        const to = localSource.relativePath();
+        const outputPath = join(
+          vendorPath,
+          path,
+        );
 
-        imports.set(from, to);
+        const module = graph.get(redirect);
+
+        if (module) {
+          imports.set(specifier, `./${outputPath}`);
+          vendored.add(
+            new VirtualFile(
+              join(outputDir, path),
+              outputDir,
+              module.source,
+            ),
+          );
+        }
+      } else {
+        const localSource = localSources.find((source) =>
+          source.path() === fromFileUrl(redirect)
+        );
+        if (localSource) {
+          const from = localSource.relativeAlias() ||
+            localSource.relativePath();
+          const to = localSource.relativePath();
+
+          imports.set(from, to);
+        }
       }
+    } catch (error) {
+      console.error(error);
+      console.log({ specifier, redirect });
     }
   }
 
@@ -74,8 +93,17 @@ export async function vendorRemoteModules(
     scopes: {},
   };
 
-  await Deno.writeTextFile(
-    join(outputDir, "importMap.json"),
-    JSON.stringify(importMap, null, 2),
+  vendored.add(
+    new VirtualFile(
+      join(outputDir, "importMap.json"),
+      outputDir,
+      JSON.stringify(importMap, null, 2),
+    ),
   );
+
+  return {
+    outputDir,
+    vendored,
+    importMap,
+  };
 }

@@ -23,6 +23,7 @@ export {
 export { sprintf } from "https://deno.land/std@0.153.0/fmt/printf.ts";
 
 export {
+  basename,
   dirname,
   extname,
   fromFileUrl,

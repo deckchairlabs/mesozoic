@@ -52,9 +52,9 @@ export type BuilderEntrypoint = {
 };
 
 export type BuildResult = {
-  // graph: ModuleGraph;
   sources: FileBag;
   compiled: FileBag;
+  vendored: FileBag;
 };
 
 export type BuilderOptions = {
@@ -130,11 +130,13 @@ export class Builder {
       /**
        * Create the module graph for each entrypoint
        */
+      let vendoredSources = new FileBag();
+
       for (const entrypoint of entrypoints.values()) {
         const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
         this.log.info(sprintf("Building module graph fo entrypoint %s", path));
 
-        const graph = await buildModuleGraph(
+        const [graph, redirects] = await buildModuleGraph(
           this,
           entrypoint,
           localSources,
@@ -148,28 +150,26 @@ export class Builder {
          */
         this.log.info(sprintf("Vendor remote modules for entrypoint %s", path));
 
-        const vendored = await vendorRemoteModules(
+        const { vendored, outputDir } = await vendorRemoteModules(
           this,
           graph,
+          redirects,
           entrypoint,
-          sources,
+          localSources,
         );
+
+        const copied = await this.copySources(vendored, outputDir);
+        vendoredSources = vendoredSources.merge(copied);
 
         this.log.success(
           sprintf("Vendored modules for entrypoint %s", path),
         );
       }
 
-      /**
-       * Copy the vendored remotes
-       */
-      // await this.copySources(vendored);
-
       return {
-        // graph,
         sources,
         compiled,
-        // vendored,
+        vendored: vendoredSources,
       };
     } catch (error) {
       throw error;

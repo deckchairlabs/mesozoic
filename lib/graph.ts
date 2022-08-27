@@ -1,7 +1,3 @@
-import type {
-  LoadResponse,
-  ModuleGraphJson,
-} from "https://deno.land/x/deno_graph@0.32.0/lib/types.d.ts";
 import { Builder } from "./builder.ts";
 import {
   crayon,
@@ -13,6 +9,7 @@ import {
   sprintf,
   toFileUrl,
 } from "./deps.ts";
+import type { LoadResponse } from "./types.ts";
 import { IFile } from "./file.ts";
 import { FileBag } from "./fileBag.ts";
 import { ParsedImportMap, resolveSpecifierFromImportMap } from "./importMap.ts";
@@ -24,15 +21,9 @@ export async function buildModuleGraph(
   localSources: FileBag,
   importMap?: ParsedImportMap,
 ) {
-  let moduleGraph: ModuleGraphJson = {
-    roots: [],
-    modules: [],
-    redirects: {},
-    imports: [],
-  };
+  let redirects: Record<string, string> = {};
 
   await initModuleLexer;
-
   const facadeCache = new Map<string, LoadResponse>();
 
   let didError = false;
@@ -121,7 +112,7 @@ export async function buildModuleGraph(
         }
 
         if (resolvedSpecifier !== specifier) {
-          moduleGraph.redirects[specifier] = resolvedSpecifier;
+          redirects[specifier] = resolvedSpecifier;
         }
 
         return resolvedSpecifier;
@@ -130,14 +121,18 @@ export async function buildModuleGraph(
   );
 
   if (didError) {
+    graph.free();
     Deno.exit(1);
   }
 
-  moduleGraph = deepMerge<any>(moduleGraph, graph.toJSON());
+  const graphJson = graph.toJSON();
 
-  graph.free();
+  /**
+   * Merge and resolve redirects
+   */
+  redirects = resolveRedirects(deepMerge(graphJson.redirects, redirects));
 
-  return resolveRedirects(moduleGraph);
+  return [graph, redirects] as const;
 }
 
 export function resolveSourceSpecifier(sources: FileBag, specifier: string) {
@@ -153,23 +148,21 @@ export function resolveSourceSpecifier(sources: FileBag, specifier: string) {
   return specifier;
 }
 
-export function resolveRedirects(graph: ModuleGraphJson) {
-  const redirects = new Map(Object.entries(graph.redirects));
+export function resolveRedirects(redirects: Record<string, string>) {
+  const resolved = new Map(Object.entries(redirects));
 
-  for (const [specifier, redirect] of Object.entries(graph.redirects)) {
-    redirects.set(specifier, redirects.get(redirect) || redirect);
+  for (const [specifier, redirect] of Object.entries(redirects)) {
+    resolved.set(specifier, resolved.get(redirect) || redirect);
   }
 
-  for (const [specifier, redirect] of Object.entries(graph.redirects)) {
+  for (const [specifier, redirect] of Object.entries(redirects)) {
     if (isBareSpecifier(specifier)) {
-      redirects.delete(specifier);
-      redirects.set(specifier, redirects.get(redirect) || redirect);
+      resolved.delete(specifier);
+      resolved.set(specifier, resolved.get(redirect) || redirect);
     }
   }
 
-  graph.redirects = Object.fromEntries(redirects.entries());
-
-  return graph;
+  return Object.fromEntries(resolved.entries());
 }
 
 export function isBareSpecifier(specifier: string) {
