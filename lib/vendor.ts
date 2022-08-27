@@ -1,7 +1,3 @@
-import {
-  cache,
-  directory as cacheDirectory,
-} from "https://deno.land/x/cache@0.2.13/mod.ts";
 import { dirname, ensureDir, join } from "./deps.ts";
 import { SourceFileBag } from "./sourceFileBag.ts";
 import { ModuleGraph, ModuleJson } from "./types.ts";
@@ -15,7 +11,6 @@ export async function vendorRemoteSources(graph: ModuleGraph, output: string) {
   await ensureDir(outputDir);
 
   const remoteModules = gatherRemoteModules(graph);
-  const denoCacheDir = cacheDirectory();
 
   const mappings = Mappings.fromRemoteModules(remoteModules, outputDir);
 
@@ -25,27 +20,6 @@ export async function vendorRemoteSources(graph: ModuleGraph, output: string) {
       await ensureDir(dirname(localPath));
     }
   }
-
-  // for (const remoteSpecifier of remoteSpecifiers) {
-  //   const cached = await cache(remoteSpecifier);
-
-  //   const content = await fetch(toFileUrl(cached.path)).then((response) =>
-  //     response.arrayBuffer()
-  //   );
-
-  //   const path = join(outputDir, rootUrlToSafeLocalDirname(cached.url));
-  //   console.log(path);
-
-  //   // const source = new VirtualSourceFile(
-  //   //   path,
-  //   //   denoCacheDir,
-  //   //   new Uint8Array(content),
-  //   // );
-
-  //   // sources.add(source);
-  // }
-
-  // // const mappings = fromRemoteModules(graph, remoteModules);
 
   return sources;
 }

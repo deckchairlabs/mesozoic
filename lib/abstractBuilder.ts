@@ -27,7 +27,7 @@ export type BuildResult = {
   graph: ModuleGraph;
   sources: SourceFileBag;
   compiled: SourceFileBag;
-  vendored: SourceFileBag;
+  // vendored: SourceFileBag;
 };
 
 export abstract class AbstractBuilder {
@@ -73,18 +73,19 @@ export abstract class AbstractBuilder {
        * Create the module graph
        */
       const graph = await this.buildModuleGraph(sources);
-      const vendored = await this.vendorRemoteSources(graph);
+      console.log(graph);
+      // const vendored = await this.vendorRemoteSources(graph);
 
       /**
        * Copy the vendored remotes
        */
-      await this.copySources(vendored);
+      // await this.copySources(vendored);
 
       return {
         graph,
         sources,
         compiled,
-        vendored,
+        // vendored,
       };
     } catch (error) {
       throw error;
