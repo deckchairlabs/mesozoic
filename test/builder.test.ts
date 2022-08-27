@@ -60,7 +60,9 @@ Deno.test("it works", async (t) => {
     ? await importMapSource.readAsJson<ImportMap>()
     : undefined;
 
-  await builder.build(buildSources, importMap);
+  const result = await builder.build(buildSources, importMap);
 
+  assertSnapshot(t, builder.context);
   assertSnapshot(t, builder.toManifest(buildSources, "/_builder/static"));
+  assertSnapshot(t, result);
 });
