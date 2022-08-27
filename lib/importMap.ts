@@ -20,6 +20,7 @@ export function parseImportMap(
 export function resolveSpecifier(
   specifier: string,
   importMap: ParsedImportMap,
+  scriptUrl: URL,
 ) {
-  return resolve(specifier, importMap, new URL(import.meta.url));
+  return resolve(specifier, importMap, scriptUrl);
 }

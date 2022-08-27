@@ -1,7 +1,13 @@
 import type { LoadResponse } from "https://deno.land/x/deno_graph@0.32.0/lib/types.d.ts";
 import { init, parse } from "https://esm.sh/es-module-lexer@1.0.3";
 import { Builder } from "./builder.ts";
-import { createGraph, graphDefaultLoad, sprintf, toFileUrl } from "./deps.ts";
+import {
+  crayon,
+  createGraph,
+  graphDefaultLoad,
+  sprintf,
+  toFileUrl,
+} from "./deps.ts";
 import { FileBag } from "./fileBag.ts";
 import { ParsedImportMap, resolveSpecifier } from "./importMap.ts";
 import { ModuleGraph } from "./types.ts";
@@ -19,6 +25,10 @@ export async function buildModuleGraph(
 
   await init;
   const entrypoints = sources.filter((source) => builder.isEntrypoint(source));
+
+  const facadeCache = new Map<string, LoadResponse>();
+  const resolveCache = new Map<string, string>();
+
   let didError = false;
 
   for (const entrypoint of entrypoints.values()) {
@@ -26,15 +36,21 @@ export async function buildModuleGraph(
       kind: "codeOnly",
       defaultJsxImportSource: "react",
       async load(specifier) {
-        builder.log.debug(sprintf("%s %s", "Load", specifier));
+        builder.log.debug(sprintf("Load %s", specifier));
         const response = await graphDefaultLoad(specifier);
 
         if (response) {
+          if (facadeCache.has(response.specifier)) {
+            builder.log.debug(crayon.green("Facade cache hit"));
+            return facadeCache.get(response.specifier)!;
+          }
+
           const resolvedFacade = await resolveFacadeModule(response);
           if (resolvedFacade) {
             builder.log.debug(
               sprintf("Facade resolved %s", resolvedFacade.specifier),
             );
+            facadeCache.set(response.specifier, resolvedFacade);
             return resolvedFacade;
           }
         }
@@ -43,8 +59,20 @@ export async function buildModuleGraph(
       },
       resolve(specifier, referrer) {
         builder.log.debug(
-          sprintf("%s %s from %s", "Resolve", specifier, referrer),
+          sprintf(
+            "%s %s from %s",
+            crayon.lightBlue("Resolve"),
+            specifier,
+            referrer,
+          ),
         );
+
+        const cacheKey = `${referrer}:${specifier}`;
+
+        if (resolveCache.has(cacheKey)) {
+          builder.log.debug(crayon.green("Resolve cache hit"));
+          return resolveCache.get(cacheKey)!;
+        }
 
         let resolvedSpecifier: string = specifier;
 
@@ -66,7 +94,12 @@ export async function buildModuleGraph(
         } else {
           // Bare import specifier, attempt to resolve from importMap if provided
           if (importMap) {
-            const resolved = resolveSpecifier(specifier, importMap);
+            const resolved = resolveSpecifier(
+              specifier,
+              importMap,
+              new URL(referrer),
+            );
+
             if (resolved.matched) {
               resolvedSpecifier = resolved.resolvedImport.href;
             } else {
@@ -85,8 +118,14 @@ export async function buildModuleGraph(
 
         if (!didError) {
           builder.log.debug(
-            sprintf("Resolved %s to %s", specifier, resolvedSpecifier),
+            sprintf(
+              "%s %s to %s",
+              crayon.green("Resolved"),
+              specifier,
+              resolvedSpecifier,
+            ),
           );
+          resolveCache.set(cacheKey, resolvedSpecifier);
         }
 
         return resolvedSpecifier;
