@@ -2,53 +2,54 @@ import { Builder } from "./builder.ts";
 import {
   crayon,
   createGraph,
-  deepMerge,
   graphDefaultLoad,
   initModuleLexer,
   parseModule,
   sprintf,
   toFileUrl,
 } from "./deps.ts";
-import type { LoadResponse } from "./types.ts";
+import type { LoadResponse, ResolveResult } from "./types.ts";
 import { IFile } from "./file.ts";
 import { FileBag } from "./fileBag.ts";
-import { ParsedImportMap, resolveSpecifierFromImportMap } from "./importMap.ts";
 import { isRemoteSpecifier } from "./utils.ts";
 
 export async function buildModuleGraph(
   builder: Builder,
-  entrypoint: IFile,
   localSources: FileBag,
-  importMap?: ParsedImportMap,
+  entrypoint: IFile,
 ) {
-  let redirects: Record<string, string> = {};
-
   await initModuleLexer;
-  const facadeCache = new Map<string, LoadResponse>();
 
-  let didError = false;
+  const bareSpecifiers = new Map<string, string>();
 
-  const graph = await createGraph(
+  return await createGraph(
     entrypoint.url().href,
     {
       kind: "codeOnly",
       defaultJsxImportSource: "react",
       async load(specifier) {
-        builder.log.debug(sprintf("%s %s", crayon.red("Load"), specifier));
-        const response = await graphDefaultLoad(specifier);
+        builder.log.info(sprintf("%s %s", crayon.red("Load"), specifier));
+        let response = await graphDefaultLoad(specifier);
+
+        if (bareSpecifiers.has(specifier)) {
+          const resolved = builder.resolveImportSpecifier(
+            bareSpecifiers.get(specifier)!,
+          );
+          if (resolved.matched) {
+            response = await graphDefaultLoad(resolved.resolvedImport.href);
+          } else {
+            builder.log.error(
+              sprintf("Could not resolve %s in the importMap", specifier),
+            );
+          }
+        }
 
         if (response) {
-          if (facadeCache.has(response.specifier)) {
-            builder.log.debug(crayon.green("Facade cache hit"));
-            return facadeCache.get(response.specifier)!;
-          }
-
           const resolvedFacade = await resolveFacadeModule(response);
           if (resolvedFacade) {
-            builder.log.debug(
+            builder.log.info(
               sprintf("Facade resolved %s", resolvedFacade.specifier),
             );
-            facadeCache.set(response.specifier, resolvedFacade);
             return resolvedFacade;
           }
         }
@@ -65,7 +66,7 @@ export async function buildModuleGraph(
           ),
         );
 
-        let resolvedSpecifier: string = specifier;
+        let resolvedSpecifier: string | ResolveResult = specifier;
 
         if (specifier.startsWith("./")) {
           resolvedSpecifier = resolveSourceSpecifier(localSources, specifier);
@@ -76,63 +77,44 @@ export async function buildModuleGraph(
           const url = prepareRemoteUrl(new URL(specifier, referrer));
           resolvedSpecifier = url.href;
         } else {
-          // Bare import specifier, attempt to resolve from importMap if provided
-          if (importMap) {
-            const resolved = resolveSpecifierFromImportMap(
-              importMap,
-              specifier,
-              new URL(referrer),
-            );
-
-            if (resolved.matched) {
-              resolvedSpecifier = resolved.resolvedImport.href;
-            } else {
-              builder.log.warning(
-                sprintf("Could not resolve %s in the importMap", specifier),
-              );
-            }
-          } else {
-            builder.log.error(sprintf(
-              'Cannot resolve a bare import specifier "%s" without an importMap',
-              specifier,
-            ));
-            didError = true;
+          // Bare import specifier
+          const resolved = builder.resolveImportSpecifier(
+            specifier,
+            new URL(referrer),
+          );
+          if (resolved && resolved.matched) {
+            resolvedSpecifier = resolved.resolvedImport.href;
+            bareSpecifiers.set(resolvedSpecifier, specifier);
           }
         }
 
-        if (!didError) {
-          builder.log.debug(
-            sprintf(
-              "%s %s to %s",
-              crayon.green("Resolved"),
-              specifier,
-              resolvedSpecifier,
-            ),
-          );
-        }
-
-        if (resolvedSpecifier !== specifier) {
-          redirects[specifier] = resolvedSpecifier;
-        }
+        builder.log.info(
+          sprintf(
+            "%s %s to %s",
+            crayon.green("Resolved"),
+            specifier,
+            resolvedSpecifier,
+          ),
+        );
 
         return resolvedSpecifier;
       },
     },
   );
 
-  if (didError) {
-    graph.free();
-    Deno.exit(1);
-  }
+  // if (didError) {
+  //   graph.free();
+  //   Deno.exit(1);
+  // }
 
-  const graphJson = graph.toJSON();
+  // const graphJson = graph.toJSON();
 
-  /**
-   * Merge and resolve redirects
-   */
-  redirects = resolveRedirects(deepMerge(graphJson.redirects, redirects));
+  // /**
+  //  * Merge and resolve redirects
+  //  */
+  // redirects = resolveRedirects(deepMerge(graphJson.redirects, redirects));
 
-  return [graph, redirects] as const;
+  // return [graph, redirects] as const;
 }
 
 export function resolveSourceSpecifier(sources: FileBag, specifier: string) {
@@ -148,25 +130,11 @@ export function resolveSourceSpecifier(sources: FileBag, specifier: string) {
   return specifier;
 }
 
-export function resolveRedirects(redirects: Record<string, string>) {
-  const resolved = new Map(Object.entries(redirects));
-
-  for (const [specifier, redirect] of Object.entries(redirects)) {
-    resolved.set(specifier, resolved.get(redirect) || redirect);
-  }
-
-  for (const [specifier, redirect] of Object.entries(redirects)) {
-    if (isBareSpecifier(specifier)) {
-      resolved.delete(specifier);
-      resolved.set(specifier, resolved.get(redirect) || redirect);
-    }
-  }
-
-  return Object.fromEntries(resolved.entries());
-}
-
 export function isBareSpecifier(specifier: string) {
-  return !isRemoteSpecifier(specifier) && !specifier.startsWith("./") &&
+  return !isRemoteSpecifier(specifier) &&
+    !specifier.startsWith("file://") &&
+    !specifier.startsWith("/") &&
+    !specifier.startsWith("./") &&
     !specifier.startsWith("../");
 }
 

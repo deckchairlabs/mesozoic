@@ -2,35 +2,7 @@ export const snapshot = {};
 
 snapshot[`it works 1`] = `
 {
-  compilable: [
-    "./**/*.+(ts|tsx|js|jsx)",
-  ],
-  entrypoints: {
-    "./client.ts": {
-      output: "browser",
-      target: "browser",
-    },
-    "./server.ts": {
-      output: "server",
-      target: "deno",
-    },
-  },
-  exclude: [
-    "./README.md",
-    "./.private/**/*",
-    "./.git/**/*",
-  ],
-  hashable: [
-    "./+(src|public)/**/*.+(ts|tsx|js|jsx|css)",
-    "./client.+(ts|tsx|js|jsx)",
-  ],
-  manifest: {
-    exclude: [
-      "./importMap.json",
-      "./deno.json",
-      "./public/robots.txt",
-    ],
-  },
+  logLevel: "INFO",
   output: "/workspaces/builder/test/fixture/.build",
   root: "/workspaces/builder/test/fixture",
 }
@@ -124,96 +96,6 @@ snapshot[`it works 3`] = `
       },
   },
   vendored: Set {
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/browser/esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/browser",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/browser/esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/browser",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/browser/esm.sh/stable/react@18.2.0/deno/react.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/browser",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/browser/esm.sh/stable/react@18.2.0/deno/react.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/browser",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/browser/esm.sh/stable/react@18.2.0/deno/react.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/browser",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/browser/importMap.json",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/browser",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/server/esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/server",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/server/esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/server",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/server",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/server",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/server",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/server/esm.sh/stable/react@18.2.0/es2020/react.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/server",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/server/esm.sh/v92/react-dom@18.2.0/es2020/server.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/server",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/server/esm.sh/v92/react-dom@18.2.0/es2020/server.js",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/server",
-      },
-    SourceFile {
-        aliasPath: undefined,
-        filePath: "/workspaces/builder/test/fixture/.build/vendor/server/importMap.json",
-        locked: false,
-        rootPath: "/workspaces/builder/test/fixture/.build/vendor/server",
-      },
   },
 }
 `;

@@ -1,5 +1,6 @@
 import {
   globToRegExp,
+  join,
   log,
   resolve,
   sprintf,
@@ -9,9 +10,14 @@ import {
 import { IFile } from "./file.ts";
 import { FileBag } from "./fileBag.ts";
 import { buildModuleGraph } from "./graph.ts";
-import { parseImportMap } from "./importMap.ts";
+import {
+  ParsedImportMap,
+  parseImportMap,
+  resolveSpecifierFromImportMap,
+} from "./importMap.ts";
 import { Logger } from "./logger.ts";
 import { SourceFile } from "./sourceFile.ts";
+import { EntrypointFile } from "./entrypointFile.ts";
 import type { ImportMap } from "./types.ts";
 import { isRemoteSpecifier } from "./utils.ts";
 import { vendorRemoteModules } from "./vendor.ts";
@@ -19,18 +25,13 @@ import { vendorRemoteModules } from "./vendor.ts";
 export type BuildContext = {
   root: string;
   output: string;
-  exclude?: string[];
-  entrypoints?: BuilderEntrypoints;
-  hashable?: string[];
-  compilable?: string[];
+  importMap: string;
   compiler?: {
     minify?: boolean;
     sourceMaps?: boolean;
   };
-  manifest?: {
-    exclude?: string[];
-  };
-  debug?: boolean;
+  name?: string;
+  logLevel?: log.LevelName;
 };
 
 export type BuilderEntrypointTarget = "browser" | "deno";
@@ -54,71 +55,102 @@ export type BuilderEntrypoint = {
 export type BuildResult = {
   sources: FileBag;
   compiled: FileBag;
+  entrypoints: EntrypointFile[];
   vendored: FileBag;
-};
-
-export type BuilderOptions = {
-  name?: string;
-  logLevel?: log.LevelName;
 };
 
 export class Builder {
   private hasCopied = false;
   private isValid = false;
-  private entrypointMap: Map<string, BuilderEntrypoint>;
+  private importMap: ParsedImportMap = {
+    imports: {},
+    scopes: {},
+  };
 
   public log: Logger;
-  public exclude: RegExp[];
-  public hash: RegExp[];
-  public compile: RegExp[];
-  public manifestExclude: RegExp[];
+  public entrypoints: Map<string, BuilderEntrypoint> = new Map();
 
-  /**
-   * @param context
-   * @param options
-   */
-  constructor(
-    public readonly context: BuildContext,
-    public readonly options?: BuilderOptions,
-  ) {
-    this.log = new Logger(options?.logLevel || "INFO", options?.name);
+  public excluded: RegExp[] = [];
+  public hashed: RegExp[] = [];
+  public compiled: RegExp[] = [];
 
-    this.exclude = this.#buildPatterns(
-      this.context?.exclude,
-    );
-    this.hash = this.#buildPatterns(
-      this.context?.hashable,
-    );
-    this.compile = this.#buildPatterns(
-      this.context?.compilable,
-    );
-    this.manifestExclude = this.#buildPatterns(
-      this.context?.manifest?.exclude,
+  constructor(public readonly context: BuildContext) {
+    this.log = new Logger(context?.logLevel || "INFO", context?.name);
+
+    if (this.context.root.startsWith(".")) {
+      throw new Error("root must be an absolute path");
+    }
+    if (this.context.output.startsWith(".")) {
+      throw new Error("output must be an absolute path");
+    }
+
+    const importMap: ImportMap = JSON.parse(
+      Deno.readTextFileSync(
+        join(this.context.root, this.context.importMap),
+      ),
     );
 
-    this.entrypointMap = new Map(
-      Object.entries(this.context.entrypoints || {}),
-    );
+    this.importMap = this.#parseImportMap(importMap);
   }
 
-  async build(sources: FileBag, importMap?: ImportMap): Promise<BuildResult> {
+  setEntrypoints(entrypoints: BuilderEntrypoints) {
+    this.entrypoints = new Map(Object.entries(entrypoints));
+  }
+
+  getEntrypoint(path: string) {
+    return this.entrypoints.get(path);
+  }
+
+  isEntrypoint(source: IFile): boolean {
+    const alias = source.relativeAlias();
+    const path = alias ?? source.relativePath();
+
+    return this.entrypoints.has(path);
+  }
+
+  setCompiled(paths: string[]) {
+    this.compiled = this.#buildPatterns(paths);
+  }
+
+  isCompilable(source: IFile): boolean {
+    return this.compiled.some((pattern) => pattern.test(source.relativePath()));
+  }
+
+  setHashed(paths: string[]) {
+    this.hashed = this.#buildPatterns(paths);
+  }
+
+  isHashable(source: IFile): boolean {
+    return this.hashed.some((pattern) => pattern.test(source.relativePath()));
+  }
+
+  setExcluded(paths: string[]) {
+    this.excluded = this.#buildPatterns([
+      ...paths,
+      this.context.output,
+    ]);
+  }
+
+  isExcluded(source: IFile): boolean {
+    return this.excluded.some((pattern) => pattern.test(source.relativePath()));
+  }
+
+  async build(sources: FileBag): Promise<BuildResult> {
     this.#valid();
 
     /**
      * Gather compilable sources and compile them
      */
     try {
-      const parsedImportMap = parseImportMap(
-        importMap,
-        toFileUrl(this.context.output),
-      );
       const compilable = sources.filter((source) => this.isCompilable(source));
       const compiled = await this.compileSources(compilable);
 
       /**
        * Get the entrypoint source files
        */
-      const entrypoints = sources.filter((source) => this.isEntrypoint(source));
+      const entrypoints = Array.from(
+        sources.filter((source) => this.isEntrypoint(source)),
+      ).map((source) => new EntrypointFile(source.path(), source.root()));
 
       /**
        * Get all the local sources
@@ -136,48 +168,45 @@ export class Builder {
         const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
         this.log.info(sprintf("Building module graph fo entrypoint %s", path));
 
-        const [graph, redirects] = await buildModuleGraph(
+        const graph = await buildModuleGraph(
           this,
-          entrypoint,
           localSources,
-          parsedImportMap,
+          entrypoint,
         );
+
+        entrypoint.setModuleGraph(graph);
 
         this.log.success("Module graph built");
 
         /**
          * Vendor remote modules for each entrypoint
          */
-        this.log.info(sprintf("Vendor remote modules for entrypoint %s", path));
+        // this.log.info(sprintf("Vendor remote modules for entrypoint %s", path));
 
-        const { vendored, outputDir } = await vendorRemoteModules(
-          this,
-          graph,
-          redirects,
-          entrypoint,
-          localSources,
-        );
+        // const { vendored, outputDir } = await vendorRemoteModules(
+        //   this,
+        //   graph,
+        //   entrypoint,
+        //   localSources,
+        // );
 
-        const copied = await this.copySources(vendored, outputDir);
-        vendoredSources = vendoredSources.merge(copied);
+        // const copied = await this.copySources(vendored, outputDir);
+        // vendoredSources = vendoredSources.merge(copied);
 
-        this.log.success(
-          sprintf("Vendored modules for entrypoint %s", path),
-        );
+        // this.log.success(
+        //   sprintf("Vendored modules for entrypoint %s", path),
+        // );
       }
 
       return {
         sources,
         compiled,
+        entrypoints,
         vendored: vendoredSources,
       };
     } catch (error) {
       throw error;
     }
-  }
-
-  getEntrypoint(path: string) {
-    return this.entrypointMap.get(path);
   }
 
   #valid() {
@@ -211,8 +240,8 @@ export class Builder {
   async cleanOutput() {
     try {
       await Deno.remove(this.context.output, { recursive: true });
-    } catch (error) {
-      throw error;
+    } catch (_error) {
+      // whatever
     }
   }
 
@@ -239,7 +268,7 @@ export class Builder {
   }
 
   async copySource(source: IFile, destination: string) {
-    if (!this.isIgnored(source)) {
+    if (!this.isExcluded(source)) {
       let copied: IFile;
       if (this.isHashable(source)) {
         copied = await source.copyToHashed(destination);
@@ -294,42 +323,19 @@ export class Builder {
     return Promise.all(sources.toArray().map((source) => processor(source)));
   }
 
-  isEntrypoint(source: IFile, aliased = true): boolean {
-    const alias = source.relativeAlias();
-    const path = (alias && aliased) ? alias : source.relativePath();
-
-    const entrypoints = Object.keys(this.context.entrypoints || {});
-
-    return entrypoints.some((entrypoint) => entrypoint === path);
-  }
-
-  isIgnored(source: IFile): boolean {
-    return this.exclude.some((pattern) => pattern.test(source.relativePath()));
-  }
-
-  isCompilable(source: IFile): boolean {
-    return this.compile.some((pattern) => pattern.test(source.relativePath()));
-  }
-
-  isHashable(source: IFile): boolean {
-    return this.hash.some((pattern) => pattern.test(source.relativePath()));
-  }
-
-  isManifestExcluded(source: IFile): boolean {
-    return this.manifestExclude.some((pattern) =>
-      pattern.test(source.relativePath())
-    );
-  }
-
-  /**
-   * @param prefix
-   * @returns
-   */
-  toManifest(sources: FileBag, prefix?: string) {
+  toManifest(
+    sources: FileBag,
+    { exclude = [], prefix }: { exclude?: string[]; prefix?: string },
+  ) {
     const json = [];
 
+    const excluded = this.#buildPatterns(exclude);
+
     for (const source of sources.values()) {
-      if (!this.isManifestExcluded(source)) {
+      const isExcluded = excluded.some((pattern) =>
+        pattern.test(source.relativePath())
+      );
+      if (!isExcluded) {
         json.push([
           source.relativeAlias() ?? source.relativePath(),
           prefix ? resolve(prefix, source.relativePath()) : source.path(),
@@ -338,6 +344,20 @@ export class Builder {
     }
 
     return json;
+  }
+
+  resolveImportSpecifier(
+    specifier: string,
+    referrer: URL = new URL(import.meta.url),
+  ) {
+    return resolveSpecifierFromImportMap(specifier, this.importMap, referrer);
+  }
+
+  #parseImportMap(importMap: ImportMap) {
+    return parseImportMap(
+      importMap,
+      toFileUrl(this.context.output),
+    );
   }
 
   #buildPatterns(patterns?: string[]) {

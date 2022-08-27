@@ -10,7 +10,6 @@ import { VirtualFile } from "./virtualFile.ts";
 export async function vendorRemoteModules(
   builder: Builder,
   graph: ModuleGraph,
-  redirects: Record<string, string>,
   entrypoint: IFile,
   localSources: FileBag,
 ) {
@@ -19,6 +18,7 @@ export async function vendorRemoteModules(
       entrypoint.relativePath(),
   );
 
+  const redirects: Record<string, string> = {};
   const vendorPath = join("vendor", entrypointConfig?.output || "");
 
   const outputDir = join(

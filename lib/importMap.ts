@@ -8,18 +8,15 @@ import {
 export type { ImportMap, ParsedImportMap };
 
 export function parseImportMap(
-  importMap?: ImportMap,
+  importMap: ImportMap,
   baseUrl: URL = new URL(import.meta.url),
 ) {
-  if (!importMap) {
-    return;
-  }
   return parse(importMap, baseUrl);
 }
 
 export function resolveSpecifierFromImportMap(
-  importMap: ParsedImportMap,
   specifier: string,
+  importMap: ParsedImportMap,
   scriptUrl: URL,
 ) {
   return resolve(specifier, importMap, scriptUrl);

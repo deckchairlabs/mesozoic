@@ -1,3 +1,4 @@
+import { sprintf } from "./deps.ts";
 import { IFile } from "./file.ts";
 
 /**
@@ -12,6 +13,17 @@ export class FileBag extends Set<IFile> {
       }
     }
     return fileBag;
+  }
+
+  get(path: string): Promise<IFile> {
+    const source = this.find((source) => source.relativePath() === path);
+    if (source) {
+      return Promise.resolve(source);
+    } else {
+      return Promise.reject(
+        new Error(sprintf("source does not exist at %s", path)),
+      );
+    }
   }
 
   /**
