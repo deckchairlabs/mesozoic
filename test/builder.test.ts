@@ -1,6 +1,7 @@
 import { Builder } from "../mod.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
 import { assertSnapshot } from "./deps.ts";
+import { ImportMap } from "../lib/types.ts";
 
 const outputDir = getOutputDir();
 
@@ -28,6 +29,8 @@ async function createBuilder() {
         "./public/robots.txt",
       ],
     },
+  }, {
+    logLevel: "DEBUG",
   });
 
   await builder.cleanOutput();
@@ -39,7 +42,16 @@ Deno.test("it works", async (t) => {
   const builder = await createBuilder();
   const sources = await builder.gatherSources();
   const buildSources = await builder.copySources(sources);
-  await builder.build(buildSources);
+
+  const importMapSource = buildSources.find((source) =>
+    source.relativePath() === "./importMap.json"
+  );
+
+  const importMap = importMapSource
+    ? await importMapSource.readAsJson<ImportMap>()
+    : undefined;
+
+  await builder.build(buildSources, importMap);
 
   assertSnapshot(t, builder.toManifest(buildSources, "/_builder/static"));
 });

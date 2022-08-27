@@ -1,11 +1,11 @@
-import { ISource } from "./source.ts";
+import { IFile } from "./file.ts";
 
 /**
- * A SourceFileBag holds ISource
+ * A FileBag holds and manages implementations of IFile
  */
-export class SourceFileBag extends Set<ISource> {
-  private static create(items: ISource[]): SourceFileBag {
-    const fileBag = new SourceFileBag();
+export class FileBag extends Set<IFile> {
+  private static create(items: IFile[]): FileBag {
+    const fileBag = new FileBag();
     if (items) {
       for (const item of items) {
         fileBag.add(item);
@@ -15,12 +15,12 @@ export class SourceFileBag extends Set<ISource> {
   }
 
   /**
-   * Merge this SourceFileBag with another
+   * Merge this FileBag with another
    * @param other
-   * @returns A new SourceFileBag with the merged result
+   * @returns A new FileBag with the merged result
    */
-  merge(other: SourceFileBag) {
-    const sources = new SourceFileBag();
+  merge(other: FileBag) {
+    const sources = new FileBag();
 
     for (const source of this.values()) {
       sources.add(source);
@@ -33,7 +33,7 @@ export class SourceFileBag extends Set<ISource> {
     return sources;
   }
 
-  find(predicate: (file: ISource) => boolean) {
+  find(predicate: (file: IFile) => boolean) {
     for (const source of this.values()) {
       if (predicate(source)) {
         return source;
@@ -41,15 +41,15 @@ export class SourceFileBag extends Set<ISource> {
     }
   }
 
-  filter(predicate: (file: ISource) => boolean) {
-    const items: ISource[] = [];
+  filter(predicate: (file: IFile) => boolean) {
+    const items: IFile[] = [];
     for (const source of this.values()) {
       if (predicate(source)) {
         items.push(source);
       }
     }
 
-    return SourceFileBag.create(items);
+    return FileBag.create(items);
   }
 
   toArray() {

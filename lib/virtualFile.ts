@@ -1,8 +1,8 @@
 import { join } from "./deps.ts";
-import { ISource, Source } from "./source.ts";
+import { File, IFile } from "./file.ts";
 import { SourceFile } from "./sourceFile.ts";
 
-export class VirtualSourceFile extends Source implements ISource {
+export class VirtualFile extends File implements IFile {
   private content: string | Uint8Array;
 
   constructor(
@@ -22,7 +22,7 @@ export class VirtualSourceFile extends Source implements ISource {
     );
   }
 
-  async copyTo(to: string): Promise<ISource> {
+  async copyTo(to: string): Promise<IFile> {
     const path = join(to, this.relativePath());
     await Deno.writeFile(path, await this.readBytes());
 
@@ -32,7 +32,7 @@ export class VirtualSourceFile extends Source implements ISource {
     return source;
   }
 
-  copyToHashed(to: string): Promise<ISource> {
+  copyToHashed(to: string): Promise<IFile> {
     throw new Error("Method not implemented.");
   }
 

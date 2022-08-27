@@ -1,234 +1,302 @@
 import {
-  AbstractBuilder,
-  BuildContext,
-  BuildResult,
-} from "./abstractBuilder.ts";
-import { crayon, log, sprintf } from "./deps.ts";
+  globToRegExp,
+  log,
+  resolve,
+  sprintf,
+  toFileUrl,
+  walk,
+} from "./deps.ts";
+import { IFile } from "./file.ts";
+import { FileBag } from "./fileBag.ts";
+import { buildModuleGraph } from "./graph.ts";
+import { ParsedImportMap, parseImportMap } from "./importMap.ts";
 import { Logger } from "./logger.ts";
-import { ISource } from "./source.ts";
-import { SourceFileBag } from "./sourceFileBag.ts";
-import { ModuleGraph } from "./types.ts";
+import { SourceFile } from "./sourceFile.ts";
+import type { ImportMap, ModuleGraph } from "./types.ts";
+import { vendorRemoteSources } from "./vendor.ts";
 
-/**
- * A Builder with logging
- */
+export type BuildContext = {
+  root: string;
+  output: string;
+  exclude?: string[];
+  entrypoints?: string[];
+  hashable?: string[];
+  compilable?: string[];
+  compiler?: {
+    minify?: boolean;
+    sourceMaps?: boolean;
+  };
+  manifest?: {
+    exclude?: string[];
+  };
+  debug?: boolean;
+};
+
+export type BuildResult = {
+  graph: ModuleGraph;
+  sources: FileBag;
+  compiled: FileBag;
+  // vendored: FileBag;
+};
+
 export type BuilderOptions = {
   name?: string;
   logLevel?: log.LevelName;
 };
 
-export class Builder extends AbstractBuilder {
-  public logger: Logger;
+export class Builder {
+  private hasCopied = false;
+  private isValid = false;
 
+  public log: Logger;
+  public entrypoints: RegExp[];
+  public exclude: RegExp[];
+  public hash: RegExp[];
+  public compile: RegExp[];
+  public manifestExclude: RegExp[];
+
+  /**
+   * @param context
+   * @param options
+   */
   constructor(
-    context: BuildContext,
-    options?: BuilderOptions,
+    public readonly context: BuildContext,
+    public readonly options?: BuilderOptions,
   ) {
-    super(context);
-    this.logger = new Logger(options?.logLevel || "INFO", options?.name);
-  }
-  async cleanOutput() {
-    try {
-      this.logger.info(sprintf("Cleaning %s", this.context.output));
-      await super.cleanOutput();
-    } catch (_error) {
-      // Don't do anything
-    }
+    this.log = new Logger(options?.logLevel || "INFO", options?.name);
+
+    this.exclude = this.#buildPatterns(
+      this.context?.exclude,
+    );
+    this.entrypoints = this.#buildPatterns(this.context?.entrypoints);
+    this.hash = this.#buildPatterns(
+      this.context?.hashable,
+    );
+    this.compile = this.#buildPatterns(
+      this.context?.compilable,
+    );
+    this.manifestExclude = this.#buildPatterns(
+      this.context?.manifest?.exclude,
+    );
   }
 
-  async build(sources: SourceFileBag): Promise<BuildResult> {
-    this.logger.info("Building");
-    try {
-      const result = await super.build(sources);
-      this.logger.info("Build complete");
+  async build(sources: FileBag, importMap?: ImportMap): Promise<BuildResult> {
+    this.#valid();
 
-      return result;
+    /**
+     * Gather compilable sources and compile them
+     */
+    try {
+      const parsedImportMap = parseImportMap(
+        importMap,
+        toFileUrl(this.context.output),
+      );
+      const compilable = sources.filter((source) => this.isCompilable(source));
+      const compiled = await this.compileSources(compilable);
+
+      /**
+       * Create the module graph
+       */
+      const graph = await this.buildModuleGraph(sources, parsedImportMap);
+      // const vendored = await this.vendorRemoteSources(graph);
+
+      /**
+       * Copy the vendored remotes
+       */
+      // await this.copySources(vendored);
+
+      return {
+        graph,
+        sources,
+        compiled,
+        // vendored,
+      };
     } catch (error) {
-      this.logger.error(error);
       throw error;
     }
   }
 
-  async gatherSources(
-    from: string = this.context.root,
-  ): Promise<SourceFileBag> {
-    try {
-      this.logger.debug(sprintf("Gathering sources from: %s", from));
-      const sources = await super.gatherSources(from);
-      this.logger.debug("Gathered sources");
+  #valid() {
+    if (this.isValid) {
+      return;
+    }
 
-      return sources;
+    if (!this.hasCopied) {
+      throw new Error("must copy sources before performing a build.");
+    }
+
+    this.isValid = true;
+  }
+
+  /**
+   * Walk the root for SourceFiles obeying exclusion patterns
+   */
+  async gatherSources(from: string = this.context.root) {
+    const sources = new FileBag();
+
+    for await (const entry of walk(from)) {
+      if (entry.isFile) {
+        const sourceFile = new SourceFile(entry.path, from);
+        sources.add(sourceFile);
+      }
+    }
+
+    return sources;
+  }
+
+  async cleanOutput() {
+    try {
+      await Deno.remove(this.context.output, { recursive: true });
     } catch (error) {
-      this.logger.error(error);
       throw error;
     }
   }
 
   async copySources(
-    sources: SourceFileBag,
+    sources: FileBag,
     destination: string = this.context.output,
   ) {
-    try {
-      const copied = await super.copySources(sources, destination);
-      this.logger.info(sprintf("Copied %d sources", copied.size));
+    const result: FileBag = new FileBag();
+
+    for (const source of sources.values()) {
+      try {
+        const copied = await this.copySource(source, destination);
+        if (copied) {
+          result.add(copied);
+        }
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    this.hasCopied = true;
+
+    return result;
+  }
+
+  async copySource(source: IFile, destination: string) {
+    if (!this.isIgnored(source)) {
+      let copied: IFile;
+      if (this.isHashable(source)) {
+        copied = await source.copyToHashed(destination);
+      } else {
+        copied = await source.copyTo(destination);
+      }
 
       return copied;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
     }
   }
 
-  copySource(source: ISource, destination: string) {
-    try {
-      this.logger.debug(
-        sprintf("Copy %s -> %s", source.path(), destination),
-      );
-      return super.copySource(source, destination);
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
+  async compileSources(sources: FileBag) {
+    this.#valid();
+
+    for (const source of sources.values()) {
+      await this.compileSource(source);
     }
+
+    return sources;
   }
 
-  async compileSources(sources: SourceFileBag) {
-    try {
-      const compiled = await super.compileSources(sources);
-      this.logger.debug(sprintf("Compiled %d sources", compiled.size));
+  async compileSource(source: IFile): Promise<IFile> {
+    const { compile } = await import("./compiler.ts");
 
-      return compiled;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
-  }
-
-  async compileSource(source: ISource) {
-    try {
-      this.logger.debug(sprintf("Compiling source: %s", source.path()));
-      await super.compileSource(source);
-      this.logger.debug(sprintf("Compiled source: %s", source.path()));
-      return source;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
-  }
-
-  async buildModuleGraph(sources: SourceFileBag) {
-    try {
-      this.logger.debug(
-        sprintf("Building module graph for %d sources", sources.size),
-      );
-      const graph = await super.buildModuleGraph(sources);
-      this.logger.debug(sprintf("Built module graph"));
-
-      return graph;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
-  }
-
-  async vendorRemoteSources(graph: ModuleGraph) {
-    try {
-      this.logger.info("Vendoring remotes sources");
-      const vendored = await super.vendorRemoteSources(graph);
-      this.logger.info(sprintf("Vendored %d remote sources", vendored.size));
-
-      return vendored;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
-  }
-
-  isEntrypoint(source: ISource, aliased = true): boolean {
-    try {
-      const value = super.isEntrypoint(source, aliased);
-      this.logger.debug(
+    if (!this.isCompilable(source)) {
+      throw new Error(
         sprintf(
-          "isEntrypoint: %s = %s",
+          "source is not compilable: %s",
           source.relativePath(),
-          this.#formatBoolean(value),
         ),
       );
-      return value;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
     }
+
+    const content = await source.read();
+    const compiled = await compile(content, {
+      filename: source.path(),
+      development: false,
+      minify: this.context?.compiler?.minify,
+      sourceMaps: this.context?.compiler?.sourceMaps,
+    });
+
+    await source.write(compiled.code);
+
+    return source;
   }
 
-  isIgnored(source: ISource): boolean {
-    try {
-      const value = super.isIgnored(source);
-      this.logger.debug(
-        sprintf(
-          "isIgnored: %s = %s",
-          source.relativePath(),
-          this.#formatBoolean(value),
-        ),
-      );
-      return value;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
+  processSources(
+    sources: FileBag,
+    processor: (source: IFile) => Promise<IFile> | IFile,
+  ) {
+    this.#valid();
+    return Promise.all(sources.toArray().map((source) => processor(source)));
   }
 
-  isCompilable(source: ISource): boolean {
-    try {
-      const value = super.isCompilable(source);
-      this.logger.debug(
-        sprintf(
-          "isCompilable: %s = %s",
-          source.relativePath(),
-          this.#formatBoolean(value),
-        ),
-      );
-      return value;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
+  isEntrypoint(source: IFile, aliased = true): boolean {
+    const alias = source.relativeAlias();
+    const path = (alias && aliased) ? alias : source.relativePath();
+
+    return this.entrypoints.some((pattern) => pattern.test(path));
   }
 
-  isHashable(source: ISource): boolean {
-    try {
-      const value = super.isHashable(source);
-      this.logger.debug(
-        sprintf(
-          "isHashable: %s = %s",
-          source.relativePath(),
-          this.#formatBoolean(value),
-        ),
-      );
-      return value;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
+  isIgnored(source: IFile): boolean {
+    return this.exclude.some((pattern) => pattern.test(source.relativePath()));
   }
 
-  isManifestExcluded(source: ISource): boolean {
-    try {
-      const value = super.isManifestExcluded(source);
-      this.logger.debug(
-        sprintf(
-          "isManifestExcluded: %s = %s",
-          source.relativePath(),
-          this.#formatBoolean(value),
-        ),
-      );
-      return value;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
+  isCompilable(source: IFile): boolean {
+    return this.compile.some((pattern) => pattern.test(source.relativePath()));
   }
 
-  #formatBoolean(value: boolean) {
-    return value ? crayon.green("true") : crayon.red("false");
+  isHashable(source: IFile): boolean {
+    return this.hash.some((pattern) => pattern.test(source.relativePath()));
+  }
+
+  isManifestExcluded(source: IFile): boolean {
+    return this.manifestExclude.some((pattern) =>
+      pattern.test(source.relativePath())
+    );
+  }
+
+  /**
+   * @param prefix
+   * @returns
+   */
+  toManifest(sources: FileBag, prefix?: string) {
+    const json = [];
+
+    for (const source of sources.values()) {
+      if (!this.isManifestExcluded(source)) {
+        json.push([
+          source.relativeAlias() ?? source.relativePath(),
+          prefix ? resolve(prefix, source.relativePath()) : source.path(),
+        ]);
+      }
+    }
+
+    return json;
+  }
+
+  vendorRemoteSources(graph: ModuleGraph) {
+    return vendorRemoteSources(graph, this.context.output);
+  }
+
+  buildModuleGraph(
+    sources: FileBag,
+    importMap?: ParsedImportMap,
+  ): Promise<ModuleGraph> {
+    this.log.info("Building module graph");
+    return buildModuleGraph(this, sources, importMap);
+  }
+
+  #buildPatterns(patterns?: string[]) {
+    if (!patterns) {
+      return [];
+    }
+
+    return patterns.map((pattern) => {
+      return globToRegExp(pattern, {
+        extended: true,
+        globstar: true,
+        caseInsensitive: false,
+      });
+    });
   }
 }

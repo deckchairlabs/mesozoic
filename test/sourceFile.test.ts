@@ -22,7 +22,7 @@ Deno.test("constructor", async () => {
     getFixturePath(sourceFile.relativePath()),
   );
   assertEquals(sourceFile.relativePath(), path);
-  assertEquals(await sourceFile.contentHash(), "10751f53");
+  assertEquals(await sourceFile.contentHash(), "fa38b1c2");
 });
 
 Deno.test("copyTo", async () => {

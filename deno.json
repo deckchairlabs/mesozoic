@@ -10,5 +10,5 @@
       ]
     }
   },
-  "importMap": "./importMap.json"
+  "importMap": "./test/fixture/importMap.json"
 }

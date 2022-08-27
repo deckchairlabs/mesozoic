@@ -57,4 +57,8 @@ export class Logger extends log.Logger {
       ],
     });
   }
+
+  #formatBoolean(value: boolean) {
+    return value ? crayon.green("true") : crayon.red("false");
+  }
 }

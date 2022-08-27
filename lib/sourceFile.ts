@@ -1,7 +1,7 @@
 import { dirname, ensureDir, join, sprintf } from "./deps.ts";
-import { ISource, Source } from "./source.ts";
+import { File, IFile } from "./file.ts";
 
-export class SourceFile extends Source implements ISource {
+export class SourceFile extends File implements IFile {
   /**
    * @param filePath The absolute filepath to the file.
    * @param rootPath The absolute filepath to the root of this file.

@@ -1,6 +1,6 @@
 import { extname, join, sprintf, toFileUrl } from "./deps.ts";
 
-export interface ISource {
+export interface IFile {
   path(): string;
   relativePath(): string;
   url(): URL;
@@ -15,12 +15,12 @@ export interface ISource {
   write(content: string | Uint8Array): Promise<void>;
   // deno-lint-ignore no-explicit-any
   writeJson(value: any, pretty?: boolean): Promise<void>;
-  copyTo(to: string, filePath?: string): Promise<ISource>;
-  copyToHashed(to: string): Promise<ISource>;
+  copyTo(to: string, filePath?: string): Promise<IFile>;
+  copyToHashed(to: string): Promise<IFile>;
   remove(): Promise<boolean>;
 }
 
-export abstract class Source implements ISource {
+export abstract class File implements IFile {
   private aliasPath?: string;
   private locked = true;
 
@@ -109,7 +109,7 @@ export abstract class Source implements ISource {
     return this.write(json);
   }
 
-  copyTo(_to: string, _filePath?: string | undefined): Promise<ISource> {
+  copyTo(_to: string, _filePath?: string | undefined): Promise<IFile> {
     throw new Error("Method not implemented.");
   }
 
@@ -125,7 +125,7 @@ export abstract class Source implements ISource {
     }
   }
 
-  async copyToHashed(to: string): Promise<ISource> {
+  async copyToHashed(to: string): Promise<IFile> {
     const contentHash = await this.contentHash();
     const extension = this.extension();
 
