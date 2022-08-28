@@ -133,16 +133,22 @@ function importMapFromEntrypoint(
       } // Otherwise check if there is already an import of this resolved specifier
       else if (imports.has(bareSpecifier)) {
         imports.set(specifier, imports.get(bareSpecifier)!);
-      } else if (entrypoint.moduleGraph.get(resolvedSpecifier)) {
+      } else {
         try {
           const module = entrypoint.moduleGraph.get(resolvedSpecifier)!;
-          imports.set(
-            bareSpecifier,
-            rootUrlToSafeLocalDirname(
-              new URL(module.specifier),
-              vendorUrlPrefix,
-            ),
-          );
+          if (module) {
+            imports.set(
+              bareSpecifier,
+              rootUrlToSafeLocalDirname(
+                new URL(module.specifier),
+                vendorUrlPrefix,
+              ),
+            );
+          } else {
+            console.error(
+              `Failed to resolve bare specifier ${resolvedSpecifier}`,
+            );
+          }
         } catch (error) {
           builder.log.error(error);
           throw new Error(
@@ -150,14 +156,6 @@ function importMapFromEntrypoint(
               "Failed to resolve from module graph %s",
               resolvedSpecifier,
             ),
-          );
-        }
-      } else {
-        if (resolvedSpecifier.includes(".d.ts")) {
-          // Ignore type imports, stupid
-        } else {
-          console.error(
-            `Failed to resolve bare specifier ${resolvedSpecifier}`,
           );
         }
       }
