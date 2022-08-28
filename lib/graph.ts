@@ -153,8 +153,7 @@ export function isBareSpecifier(specifier: string) {
 export async function resolveFacadeModule(response: LoadResponse) {
   if (response.kind === "module") {
     const [imports, exports, facade] = await parseModule(response.content);
-
-    if (facade && exports.length === 1) {
+    if (facade && (exports.length === 1 || imports.length === 1)) {
       /**
        * We only do facade detection on remote modules
        */

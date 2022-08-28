@@ -122,9 +122,9 @@ function importMapFromEntrypoint(
       let specifier = resolvedSpecifier;
 
       try {
-        specifier = removeSearchParams(new URL(resolvedSpecifier)).href;
+        specifier = new URL(resolvedSpecifier).href;
       } catch (_error) {
-        // whatever
+        specifier = resolvedSpecifier;
       }
 
       // If there was a redirect, use that
@@ -135,7 +135,7 @@ function importMapFromEntrypoint(
         imports.set(specifier, imports.get(bareSpecifier)!);
       } else {
         try {
-          const module = entrypoint.moduleGraph.get(resolvedSpecifier)!;
+          const module = entrypoint.moduleGraph.get(resolvedSpecifier);
           if (module) {
             imports.set(
               bareSpecifier,
@@ -145,17 +145,17 @@ function importMapFromEntrypoint(
               ),
             );
           } else {
-            console.error(
+            builder.log.error(
               `Failed to resolve bare specifier ${resolvedSpecifier}`,
             );
           }
         } catch (error) {
-          builder.log.error(error);
           throw new Error(
             sprintf(
               "Failed to resolve from module graph %s",
               resolvedSpecifier,
             ),
+            { cause: error },
           );
         }
       }
