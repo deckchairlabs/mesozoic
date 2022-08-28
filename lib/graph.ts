@@ -153,13 +153,21 @@ export function isBareSpecifier(specifier: string) {
 export async function resolveFacadeModule(response: LoadResponse) {
   if (response.kind === "module") {
     const [imports, exports, facade] = await parseModule(response.content);
+
     if (facade && exports.length === 1) {
-      const uniqueImports = Array.from(
-        new Set(imports.map((element) => element.n)).values(),
+      /**
+       * We only do facade detection on remote modules
+       */
+      const uniqueSpecifiers = Array.from(
+        new Set(
+          imports.map((element) => element.n).filter((specifier) =>
+            specifier?.startsWith("http")
+          ),
+        ).values(),
       );
 
-      if (uniqueImports[0]) {
-        const specifier = prepareRemoteUrl(new URL(uniqueImports[0]));
+      if (uniqueSpecifiers[0]) {
+        const specifier = prepareRemoteUrl(new URL(uniqueSpecifiers[0]));
         return await graphDefaultLoad(specifier.href);
       }
     }
