@@ -3,7 +3,7 @@
 A work in progress generic build system for Deno web/server apps.
 
 ```ts
-import { Builder } from "https://deno.land/x/mesozoic@v1.0.0-alpha.19/mod.ts";
+import { Builder } from "https://deno.land/x/mesozoic@v1.0.0-alpha.20/mod.ts";
 
 const builder = new Builder({
   root: "/absolute/path/to/source",
