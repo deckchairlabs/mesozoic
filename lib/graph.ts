@@ -3,17 +3,19 @@ import {
   cache,
   crayon,
   createGraph,
-  fromFileUrl,
   graphDefaultLoad,
   initModuleLexer,
   parseModule,
   sprintf,
   toFileUrl,
 } from "./deps.ts";
-import type { LoadResponse, ResolveResult } from "./types.ts";
+import type { LoadResponse } from "./types.ts";
 import { FileBag } from "./fileBag.ts";
 import { isRemoteSpecifier } from "./utils.ts";
 import { Entrypoint } from "./entrypointFile.ts";
+
+import { createLoader } from "./graph/load.ts";
+import { createResolver } from "./graph/resolve.ts";
 
 export async function buildModuleGraph(
   builder: Builder,
@@ -23,54 +25,17 @@ export async function buildModuleGraph(
   await initModuleLexer;
 
   const bareSpecifiers = new Map<string, string>();
+  const loader = createLoader();
+  const resolver = createResolver();
 
   const graph = await createGraph(
     entrypoint.url().href,
     {
       kind: "codeOnly",
       defaultJsxImportSource: "react",
-      async load(specifier) {
+      load(specifier) {
         builder.log.debug(sprintf("%s %s", crayon.red("Load"), specifier));
-
-        let response: LoadResponse | undefined = undefined;
-        const cached = await cache(specifier);
-
-        if (cached) {
-          const content = await Deno.readTextFile(cached.path);
-          response = {
-            specifier,
-            kind: "module",
-            content,
-          };
-        } else {
-          response = await graphDefaultLoad(specifier);
-        }
-
-        if (bareSpecifiers.has(specifier)) {
-          const resolved = builder.resolveImportSpecifier(
-            bareSpecifiers.get(specifier)!,
-          );
-          if (resolved.matched) {
-            response = await graphDefaultLoad(resolved.resolvedImport.href);
-          } else {
-            // Do we need to worry about this?
-            // builder.log.error(
-            //   sprintf("Could not resolve %s in the importMap", specifier),
-            // );
-          }
-        }
-
-        if (response) {
-          const resolvedFacade = await resolveFacadeModule(response);
-          if (resolvedFacade) {
-            builder.log.debug(
-              sprintf("Facade resolved %s", resolvedFacade.specifier),
-            );
-            return resolvedFacade;
-          }
-        }
-
-        return response;
+        return loader(specifier);
       },
       resolve(specifier, referrer) {
         builder.log.debug(
@@ -82,53 +47,55 @@ export async function buildModuleGraph(
           ),
         );
 
-        let resolvedSpecifier: string | ResolveResult = specifier;
+        const resolved = resolver(specifier, referrer);
 
-        if (specifier.startsWith("./") || specifier.startsWith("../")) {
-          // Resolve a relative local file
-          if (referrer.startsWith("file://")) {
-            resolvedSpecifier = fromFileUrl(new URL(specifier, referrer).href)
-              .replace(
-                builder.context.output,
-                ".",
-              );
-            resolvedSpecifier = resolveSourceSpecifier(
-              localSources,
-              resolvedSpecifier,
-            );
-          } else {
-            const url = prepareRemoteUrl(new URL(specifier, referrer));
-            resolvedSpecifier = url.href;
-          }
-        } else if (
-          isRemoteSpecifier(specifier) ||
-          (specifier.startsWith("/") && isRemoteSpecifier(referrer))
-        ) {
-          const url = prepareRemoteUrl(new URL(specifier, referrer));
-          bareSpecifiers.set(specifier, url.href);
-          resolvedSpecifier = url.href;
-        } else {
-          // Bare import specifier
-          const resolved = builder.resolveImportSpecifier(
-            specifier,
-            new URL(referrer),
-          );
-          if (resolved && resolved.matched) {
-            resolvedSpecifier = resolved.resolvedImport.href;
-            bareSpecifiers.set(resolvedSpecifier, specifier);
-          }
-        }
+        // let resolvedSpecifier: string | ResolveResult = specifier;
+
+        // if (specifier.startsWith("./") || specifier.startsWith("../")) {
+        //   // Resolve a relative local file
+        //   if (referrer.startsWith("file://")) {
+        //     resolvedSpecifier = fromFileUrl(new URL(specifier, referrer).href)
+        //       .replace(
+        //         builder.context.output,
+        //         ".",
+        //       );
+        //     resolvedSpecifier = resolveSourceSpecifier(
+        //       localSources,
+        //       resolvedSpecifier,
+        //     );
+        //   } else {
+        //     const url = prepareRemoteUrl(new URL(specifier, referrer));
+        //     resolvedSpecifier = url.href;
+        //   }
+        // } else if (
+        //   isRemoteSpecifier(specifier) ||
+        //   (specifier.startsWith("/") && isRemoteSpecifier(referrer))
+        // ) {
+        //   const url = prepareRemoteUrl(new URL(specifier, referrer));
+        //   bareSpecifiers.set(specifier, url.href);
+        //   resolvedSpecifier = url.href;
+        // } else {
+        //   // Bare import specifier
+        //   const resolved = builder.resolveImportSpecifier(
+        //     specifier,
+        //     new URL(referrer),
+        //   );
+        //   if (resolved && resolved.matched) {
+        //     resolvedSpecifier = resolved.resolvedImport.href;
+        //     bareSpecifiers.set(resolvedSpecifier, specifier);
+        //   }
+        // }
 
         builder.log.debug(
           sprintf(
             "%s %s to %s",
             crayon.green("Resolved"),
             specifier,
-            resolvedSpecifier,
+            resolved,
           ),
         );
 
-        return resolvedSpecifier;
+        return resolved;
       },
     },
   );

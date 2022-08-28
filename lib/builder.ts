@@ -1,20 +1,7 @@
-import {
-  globToRegExp,
-  join,
-  log,
-  resolve,
-  sprintf,
-  toFileUrl,
-  walk,
-} from "./deps.ts";
+import { globToRegExp, join, log, resolve, sprintf, walk } from "./deps.ts";
 import { IFile } from "./file.ts";
 import { FileBag } from "./fileBag.ts";
 import { buildModuleGraph } from "./graph.ts";
-import {
-  ParsedImportMap,
-  parseImportMap,
-  resolveSpecifierFromImportMap,
-} from "./importMap.ts";
 import { Logger } from "./logger.ts";
 import { SourceFile } from "./sourceFile.ts";
 import { Entrypoint, EntrypointConfig } from "./entrypointFile.ts";
@@ -51,7 +38,7 @@ export type BuildResult = {
 export class Builder {
   private hasCopied = false;
   private isValid = false;
-  private importMap: ParsedImportMap = {
+  private importMap: ImportMap = {
     imports: {},
     scopes: {},
   };
@@ -73,13 +60,11 @@ export class Builder {
       throw new Error("output must be an absolute path");
     }
 
-    const importMap: ImportMap = JSON.parse(
+    this.importMap = JSON.parse(
       Deno.readTextFileSync(
         join(this.context.root, this.context.importMap),
       ),
     );
-
-    this.importMap = this.#parseImportMap(importMap);
   }
 
   setEntrypoints(entrypoints: BuilderEntrypoints) {
@@ -362,20 +347,6 @@ export class Builder {
     }
 
     return json;
-  }
-
-  resolveImportSpecifier(
-    specifier: string,
-    referrer: URL = new URL(import.meta.url),
-  ) {
-    return resolveSpecifierFromImportMap(specifier, this.importMap, referrer);
-  }
-
-  #parseImportMap(importMap: ImportMap) {
-    return parseImportMap(
-      importMap,
-      toFileUrl(this.context.output),
-    );
   }
 
   #buildPatterns(patterns?: string[]) {

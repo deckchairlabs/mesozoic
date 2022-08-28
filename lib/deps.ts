@@ -19,6 +19,7 @@ export {
   init as initModuleLexer,
   parse as parseModule,
 } from "https://esm.sh/es-module-lexer@1.0.3";
+export type { ImportSpecifier } from "https://esm.sh/es-module-lexer@1.0.3";
 
 export { sprintf } from "https://deno.land/std@0.153.0/fmt/printf.ts";
 
