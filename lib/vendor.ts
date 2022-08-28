@@ -12,7 +12,6 @@ export async function vendorEntrypoint(
   sources: FileBag,
 ) {
   const vendorPath = join("vendor", entrypoint.config?.vendorOutputDir || "");
-  const vendorUrlPrefix = `./${vendorPath}`;
   const vendorSources = new FileBag();
 
   const outputDir = join(
@@ -31,7 +30,7 @@ export async function vendorEntrypoint(
         if (resolved) {
           const path = rootUrlToSafeLocalDirname(
             new URL(module.specifier),
-            vendorUrlPrefix,
+            vendorPath,
           );
           vendorSources.add(new VirtualFile(path, outputDir, resolved.source));
         }
@@ -42,7 +41,7 @@ export async function vendorEntrypoint(
   const importMap: ImportMap = importMapFromEntrypoint(
     entrypoint,
     sources,
-    vendorUrlPrefix,
+    vendorPath,
   );
 
   entrypoint.setImportMap(importMap);
@@ -68,10 +67,11 @@ export async function vendorEntrypoint(
 function importMapFromEntrypoint(
   entrypoint: Entrypoint,
   sources: FileBag,
-  vendorUrlPrefix: string,
+  vendorPath: string,
 ) {
   const imports = new Map<string, string>();
   const bareSpecifiers = entrypoint.bareImportSpecifiers;
+  const vendorUrlPrefix = `./${vendorPath}`;
 
   if (entrypoint.moduleGraph) {
     const graph = entrypoint.moduleGraph.toJSON();

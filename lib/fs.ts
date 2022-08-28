@@ -1,4 +1,4 @@
-import { extname, join, sprintf } from "./deps.ts";
+import { extname, join, SEP, sprintf } from "./deps.ts";
 
 export function getUniquePath(
   path: string,
@@ -30,7 +30,7 @@ export function rootUrlToSafeLocalDirname(url: URL, prefix?: string): string {
     return chars.map((char) => isBannedSegmentChar(char) ? "_" : char).join("");
   }
 
-  const result: string[] = [prefix || ""];
+  const result: string[] = [];
 
   if (url.hostname) {
     result.push(sanitizeSegment(url.hostname));
@@ -49,7 +49,7 @@ export function rootUrlToSafeLocalDirname(url: URL, prefix?: string): string {
     );
   }
 
-  return join(...result);
+  return [prefix, join(...result)].join(SEP);
 }
 
 function isBannedSegmentChar(char: string) {
