@@ -17,10 +17,10 @@ import {
 } from "./importMap.ts";
 import { Logger } from "./logger.ts";
 import { SourceFile } from "./sourceFile.ts";
-import { EntrypointFile } from "./entrypointFile.ts";
+import { Entrypoint, EntrypointConfig } from "./entrypointFile.ts";
 import type { ImportMap } from "./types.ts";
 import { isRemoteSpecifier } from "./utils.ts";
-import { vendorRemoteModules } from "./vendor.ts";
+import { vendorEntrypoint } from "./vendor.ts";
 
 export type BuildContext = {
   root: string;
@@ -34,29 +34,18 @@ export type BuildContext = {
   logLevel?: log.LevelName;
 };
 
-export type BuilderEntrypointTarget = "browser" | "deno";
 /**
  * An object where the keys are a path of an entrypoint
  * relative to the {@link BuildContext.root}
  */
 export type BuilderEntrypoints = {
-  [path: string]: BuilderEntrypoint;
-};
-
-export type BuilderEntrypoint = {
-  /**
-   * The output directory for the vendored dependencies
-   * of this entrypoint, relative to the vendor output directory.
-   */
-  output: string;
-  target: BuilderEntrypointTarget;
+  [path: string]: EntrypointConfig;
 };
 
 export type BuildResult = {
   sources: FileBag;
   compiled: FileBag;
-  entrypoints: EntrypointFile[];
-  vendored: FileBag;
+  entrypoints: Entrypoint[];
 };
 
 export class Builder {
@@ -68,7 +57,7 @@ export class Builder {
   };
 
   public log: Logger;
-  public entrypoints: Map<string, BuilderEntrypoint> = new Map();
+  public entrypoints: Map<string, EntrypointConfig> = new Map();
 
   public excluded: RegExp[] = [];
   public hashed: RegExp[] = [];
@@ -150,7 +139,13 @@ export class Builder {
        */
       const entrypoints = Array.from(
         sources.filter((source) => this.isEntrypoint(source)),
-      ).map((source) => new EntrypointFile(source.path(), source.root()));
+      ).map((source) => {
+        const config = this.getEntrypoint(
+          source.relativeAlias() ||
+            source.relativePath(),
+        );
+        return new Entrypoint(source.path(), source.root(), config);
+      });
 
       /**
        * Get all the local sources
@@ -162,11 +157,10 @@ export class Builder {
       /**
        * Create the module graph for each entrypoint
        */
-      let vendoredSources = new FileBag();
 
       for (const entrypoint of entrypoints.values()) {
         const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
-        this.log.info(sprintf("Building module graph fo entrypoint %s", path));
+        this.log.info(sprintf("Building module graph for entrypoint %s", path));
 
         const graph = await buildModuleGraph(
           this,
@@ -179,30 +173,28 @@ export class Builder {
         this.log.success("Module graph built");
 
         /**
-         * Vendor remote modules for each entrypoint
+         * Vendor modules for each entrypoint
          */
-        // this.log.info(sprintf("Vendor remote modules for entrypoint %s", path));
+        this.log.info(sprintf("Vendor modules for entrypoint %s", path));
 
-        // const { vendored, outputDir } = await vendorRemoteModules(
-        //   this,
-        //   graph,
-        //   entrypoint,
-        //   localSources,
-        // );
+        await vendorEntrypoint(
+          this,
+          entrypoint,
+          localSources,
+        );
 
         // const copied = await this.copySources(vendored, outputDir);
         // vendoredSources = vendoredSources.merge(copied);
 
-        // this.log.success(
-        //   sprintf("Vendored modules for entrypoint %s", path),
-        // );
+        this.log.success(
+          sprintf("Vendored modules for entrypoint %s", path),
+        );
       }
 
       return {
         sources,
         compiled,
         entrypoints,
-        vendored: vendoredSources,
       };
     } catch (error) {
       throw error;

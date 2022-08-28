@@ -1,5 +1,6 @@
 import { Builder } from "./builder.ts";
 import {
+  cache,
   crayon,
   createGraph,
   graphDefaultLoad,
@@ -9,27 +10,40 @@ import {
   toFileUrl,
 } from "./deps.ts";
 import type { LoadResponse, ResolveResult } from "./types.ts";
-import { IFile } from "./file.ts";
 import { FileBag } from "./fileBag.ts";
 import { isRemoteSpecifier } from "./utils.ts";
+import { Entrypoint } from "./entrypointFile.ts";
 
 export async function buildModuleGraph(
   builder: Builder,
   localSources: FileBag,
-  entrypoint: IFile,
+  entrypoint: Entrypoint,
 ) {
   await initModuleLexer;
 
   const bareSpecifiers = new Map<string, string>();
 
-  return await createGraph(
+  const graph = await createGraph(
     entrypoint.url().href,
     {
       kind: "codeOnly",
       defaultJsxImportSource: "react",
       async load(specifier) {
-        builder.log.info(sprintf("%s %s", crayon.red("Load"), specifier));
-        let response = await graphDefaultLoad(specifier);
+        builder.log.debug(sprintf("%s %s", crayon.red("Load"), specifier));
+
+        let response: LoadResponse | undefined = undefined;
+        const cached = await cache(specifier);
+
+        if (cached) {
+          const content = await Deno.readTextFile(cached.path);
+          response = {
+            specifier,
+            kind: "module",
+            content,
+          };
+        } else {
+          response = await graphDefaultLoad(specifier);
+        }
 
         if (bareSpecifiers.has(specifier)) {
           const resolved = builder.resolveImportSpecifier(
@@ -38,16 +52,17 @@ export async function buildModuleGraph(
           if (resolved.matched) {
             response = await graphDefaultLoad(resolved.resolvedImport.href);
           } else {
-            builder.log.error(
-              sprintf("Could not resolve %s in the importMap", specifier),
-            );
+            // Do we need to worry about this?
+            // builder.log.error(
+            //   sprintf("Could not resolve %s in the importMap", specifier),
+            // );
           }
         }
 
         if (response) {
           const resolvedFacade = await resolveFacadeModule(response);
           if (resolvedFacade) {
-            builder.log.info(
+            builder.log.debug(
               sprintf("Facade resolved %s", resolvedFacade.specifier),
             );
             return resolvedFacade;
@@ -69,12 +84,19 @@ export async function buildModuleGraph(
         let resolvedSpecifier: string | ResolveResult = specifier;
 
         if (specifier.startsWith("./")) {
-          resolvedSpecifier = resolveSourceSpecifier(localSources, specifier);
+          // Resolve a relative local file
+          if (referrer.startsWith("file://")) {
+            resolvedSpecifier = resolveSourceSpecifier(localSources, specifier);
+          } else {
+            const url = prepareRemoteUrl(new URL(specifier, referrer));
+            resolvedSpecifier = url.href;
+          }
         } else if (
           isRemoteSpecifier(specifier) ||
           (specifier.startsWith("/") && isRemoteSpecifier(referrer))
         ) {
           const url = prepareRemoteUrl(new URL(specifier, referrer));
+          bareSpecifiers.set(specifier, url.href);
           resolvedSpecifier = url.href;
         } else {
           // Bare import specifier
@@ -88,7 +110,7 @@ export async function buildModuleGraph(
           }
         }
 
-        builder.log.info(
+        builder.log.debug(
           sprintf(
             "%s %s to %s",
             crayon.green("Resolved"),
@@ -102,19 +124,9 @@ export async function buildModuleGraph(
     },
   );
 
-  // if (didError) {
-  //   graph.free();
-  //   Deno.exit(1);
-  // }
+  entrypoint.setBareImportSpecifiers(bareSpecifiers);
 
-  // const graphJson = graph.toJSON();
-
-  // /**
-  //  * Merge and resolve redirects
-  //  */
-  // redirects = resolveRedirects(deepMerge(graphJson.redirects, redirects));
-
-  // return [graph, redirects] as const;
+  return graph;
 }
 
 export function resolveSourceSpecifier(sources: FileBag, specifier: string) {

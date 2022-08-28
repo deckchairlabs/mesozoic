@@ -24,13 +24,13 @@ export function pathWithStemSuffix(path: string, suffix: string) {
   return sprintf("%s%s", path, suffix);
 }
 
-export function rootUrlToSafeLocalDirname(url: URL): string {
+export function rootUrlToSafeLocalDirname(url: URL, prefix?: string): string {
   function sanitizeSegment(text: string): string {
     const chars = text.split("");
     return chars.map((char) => isBannedSegmentChar(char) ? "_" : char).join("");
   }
 
-  const result: string[] = [];
+  const result: string[] = [prefix || ""];
 
   if (url.hostname) {
     result.push(sanitizeSegment(url.hostname));
