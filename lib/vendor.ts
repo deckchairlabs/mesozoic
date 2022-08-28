@@ -1,10 +1,11 @@
 import { Builder } from "./builder.ts";
-import { join } from "./deps.ts";
+import { join, sprintf } from "./deps.ts";
 import { FileBag } from "./fileBag.ts";
 import { rootUrlToSafeLocalDirname } from "./fs.ts";
 import { VirtualFile } from "./virtualFile.ts";
 import { Entrypoint } from "./entrypointFile.ts";
 import { ImportMap } from "./importMap.ts";
+// import { groupBy } from "https://deno.land/std@0.153.0/collections/group_by.ts";
 
 export async function vendorEntrypoint(
   builder: Builder,
@@ -38,13 +39,14 @@ export async function vendorEntrypoint(
     }
   }
 
-  let importMap: ImportMap = importMapFromEntrypoint(
+  const importMap: ImportMap = importMapFromEntrypoint(
+    builder,
     entrypoint,
     sources,
     vendorPath,
   );
 
-  importMap = generateImportMapScopes(importMap, vendorPath);
+  // importMap = generateImportMapScopes(importMap, vendorPath);
 
   entrypoint.setImportMap(importMap);
 
@@ -67,6 +69,7 @@ export async function vendorEntrypoint(
 }
 
 function importMapFromEntrypoint(
+  builder: Builder,
   entrypoint: Entrypoint,
   sources: FileBag,
   vendorPath: string,
@@ -131,11 +134,24 @@ function importMapFromEntrypoint(
       else if (imports.has(bareSpecifier)) {
         imports.set(specifier, imports.get(bareSpecifier)!);
       } else if (entrypoint.moduleGraph.get(resolvedSpecifier)) {
-        const module = entrypoint.moduleGraph.get(resolvedSpecifier)!;
-        imports.set(
-          bareSpecifier,
-          rootUrlToSafeLocalDirname(new URL(module.specifier), vendorUrlPrefix),
-        );
+        try {
+          const module = entrypoint.moduleGraph.get(resolvedSpecifier)!;
+          imports.set(
+            bareSpecifier,
+            rootUrlToSafeLocalDirname(
+              new URL(module.specifier),
+              vendorUrlPrefix,
+            ),
+          );
+        } catch (error) {
+          builder.log.error(error);
+          throw new Error(
+            sprintf(
+              "Failed to resolve from module graph %s",
+              resolvedSpecifier,
+            ),
+          );
+        }
       } else {
         if (resolvedSpecifier.includes(".d.ts")) {
           // Ignore type imports, stupid
@@ -157,36 +173,34 @@ function importMapFromEntrypoint(
   return importMap;
 }
 
-import { groupBy } from "https://deno.land/std@0.153.0/collections/group_by.ts";
+// function generateImportMapScopes(importMap: ImportMap, vendorPath: string) {
+//   if (importMap.imports) {
+//     const entries = Object.entries(importMap.imports);
+//     const imports: Record<string, string> = {};
+//     const scopes: Record<string, Record<string, string>> = {};
 
-function generateImportMapScopes(importMap: ImportMap, vendorPath: string) {
-  if (importMap.imports) {
-    const entries = Object.entries(importMap.imports);
-    const imports: Record<string, string> = {};
-    const scopes: Record<string, Record<string, string>> = {};
+//     const groupedByOrigin = groupBy(entries, ([specifier]) => {
+//       const url = new URL(specifier, import.meta.url);
+//       return `${url.origin}/`;
+//     });
 
-    const groupedByOrigin = groupBy(entries, ([specifier]) => {
-      const url = new URL(specifier, import.meta.url);
-      return `${url.origin}/`;
-    });
+//     for (const [scope, specifiers] of Object.entries(groupedByOrigin)) {
+//       // Handle remote origins
+//       if (scope.startsWith("https://") || scope.startsWith("http://")) {
+//         const url = new URL(scope);
+//         imports[scope] = `./${join(vendorPath, url.host)}/`;
+//       } else if (specifiers) {
+//         for (const [specifier, resolved] of specifiers) {
+//           imports[specifier] = resolved;
+//         }
+//       }
+//     }
 
-    for (const [scope, specifiers] of Object.entries(groupedByOrigin)) {
-      // Handle remote origins
-      if (scope.startsWith("https://") || scope.startsWith("http://")) {
-        const url = new URL(scope);
-        imports[scope] = `./${join(vendorPath, url.host)}/`;
-      } else if (specifiers) {
-        for (const [specifier, resolved] of specifiers) {
-          imports[specifier] = resolved;
-        }
-      }
-    }
-
-    importMap.imports = imports;
-    importMap.scopes = scopes;
-  }
-  return importMap;
-}
+//     importMap.imports = imports;
+//     importMap.scopes = scopes;
+//   }
+//   return importMap;
+// }
 
 function removeSearchParams(url: URL) {
   for (const param of url.searchParams.keys()) {

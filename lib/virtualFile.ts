@@ -36,7 +36,7 @@ export class VirtualFile extends File implements IFile {
     return source;
   }
 
-  copyToHashed(to: string): Promise<IFile> {
+  copyToHashed(_to: string): Promise<IFile> {
     throw new Error("Method not implemented.");
   }
 
