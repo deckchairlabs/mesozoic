@@ -150,7 +150,9 @@ export function isBareSpecifier(specifier: string) {
     !specifier.startsWith("../");
 }
 
-export async function resolveFacadeModule(response: LoadResponse) {
+export async function resolveFacadeModule(
+  response: LoadResponse,
+): Promise<LoadResponse | undefined> {
   if (response.kind === "module") {
     const [imports, exports, facade] = await parseModule(response.content);
     if (facade && (exports.length === 1 || imports.length === 1)) {
@@ -166,8 +168,19 @@ export async function resolveFacadeModule(response: LoadResponse) {
       );
 
       if (uniqueSpecifiers[0]) {
-        const specifier = prepareRemoteUrl(new URL(uniqueSpecifiers[0]));
-        return await graphDefaultLoad(specifier.href);
+        const specifier = prepareRemoteUrl(new URL(uniqueSpecifiers[0])).href;
+        const cached = await cache(specifier);
+
+        if (cached) {
+          const content = await Deno.readTextFile(cached.path);
+          return {
+            specifier,
+            kind: "module",
+            content,
+          };
+        } else {
+          return graphDefaultLoad(specifier);
+        }
       }
     }
   }
