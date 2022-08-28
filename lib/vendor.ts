@@ -1,5 +1,5 @@
 import { Builder } from "./builder.ts";
-import { join, sprintf } from "./deps.ts";
+import { join } from "./deps.ts";
 import { FileBag } from "./fileBag.ts";
 import { rootUrlToSafeLocalDirname } from "./fs.ts";
 import { VirtualFile } from "./virtualFile.ts";
