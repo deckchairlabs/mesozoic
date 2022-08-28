@@ -3,6 +3,7 @@ import {
   cache,
   crayon,
   createGraph,
+  fromFileUrl,
   graphDefaultLoad,
   initModuleLexer,
   parseModule,
@@ -86,7 +87,15 @@ export async function buildModuleGraph(
         if (specifier.startsWith("./") || specifier.startsWith("../")) {
           // Resolve a relative local file
           if (referrer.startsWith("file://")) {
-            resolvedSpecifier = resolveSourceSpecifier(localSources, specifier);
+            resolvedSpecifier = fromFileUrl(new URL(specifier, referrer).href)
+              .replace(
+                builder.context.output,
+                ".",
+              );
+            resolvedSpecifier = resolveSourceSpecifier(
+              localSources,
+              resolvedSpecifier,
+            );
           } else {
             const url = prepareRemoteUrl(new URL(specifier, referrer));
             resolvedSpecifier = url.href;

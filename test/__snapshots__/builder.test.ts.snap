@@ -4,7 +4,8 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 {
   imports: {
     "./client.tsx": "./client.26c6bbe3.js",
-    "./src/app.tsx": "./src/app.62b16eca.js",
+    "./src/app.tsx": "./src/app.886415b0.js",
+    "./src/components/Test.tsx": "./src/components/Test.8f9fddfe.js",
     "/stable/react@18.2.0/deno/react.js": "./vendor/browser/esm.sh/stable/react@18.2.0/deno/react.js",
     "/v92/react-dom@18.2.0/deno/react-dom.js": "./vendor/browser/esm.sh/v92/react-dom@18.2.0/deno/react-dom.js",
     "/v92/scheduler@0.23.0/deno/scheduler.js": "./vendor/browser/esm.sh/v92/scheduler@0.23.0/deno/scheduler.js",
@@ -33,7 +34,8 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 {
   imports: {
     "./server.js": "./server.js",
-    "./src/app.tsx": "./src/app.62b16eca.js",
+    "./src/app.tsx": "./src/app.886415b0.js",
+    "./src/components/Test.tsx": "./src/components/Test.8f9fddfe.js",
     "/stable/react@18.2.0/deno/react.js": "./vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
     "/v92/use-sync-external-store@1.2.0/X-ZS9yZWFjdA/deno/cjs/use-sync-external-store-shim.production.min.js": "./vendor/server/esm.sh/v92/use-sync-external-store@1.2.0/X-ZS9yZWFjdA/deno/cjs/use-sync-external-store-shim.production.min.js",
     "/v92/use-sync-external-store@1.2.0/X-ZS9yZWFjdA/deno/shim.js": "./vendor/server/esm.sh/v92/use-sync-external-store@1.2.0/X-ZS9yZWFjdA/deno/shim.js",

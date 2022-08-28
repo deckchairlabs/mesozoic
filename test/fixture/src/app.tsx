@@ -1,4 +1,5 @@
 import useAsset from "ultra/hooks/use-asset.js";
+import Hello from "./components/Test.tsx";
 
 export default function App() {
   console.log("Hello world!");
@@ -17,6 +18,7 @@ export default function App() {
           <h1>
             <span></span>__<span></span>
           </h1>
+          <Hello />
           <p>
             Welcome to{" "}
             <strong>Ultra</strong>. This is a barebones starter for your web
