@@ -203,10 +203,6 @@ export function prepareRemoteUrl(url: URL) {
        */
       url.searchParams.append("no-dts", "");
       /**
-       * We only target modern javascript
-       */
-      url.searchParams.append("target", "es2020");
-      /**
        * We don't want development sources
        */
       url.searchParams.delete("dev");

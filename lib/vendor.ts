@@ -46,8 +46,6 @@ export async function vendorEntrypoint(
     vendorPath,
   );
 
-  // importMap = generateImportMapScopes(importMap, vendorPath);
-
   entrypoint.setImportMap(importMap);
 
   if (vendorSources.size > 0) {
@@ -111,7 +109,9 @@ function importMapFromEntrypoint(
             source.relativePath(),
           );
         } else {
-          throw new Error("failed to find local source");
+          throw new Error(
+            sprintf("failed to find local source %s", moduleSpecifier),
+          );
         }
       } else {
         imports.set(
@@ -169,11 +169,55 @@ function importMapFromEntrypoint(
     entrypoint.moduleGraph.free();
   }
 
-  const importMap: ImportMap = {
-    imports: Object.fromEntries(imports.entries()),
-  };
+  const importMap = generateScopedImportMap(imports, vendorPath);
 
   return importMap;
+}
+
+import { groupBy } from "https://deno.land/std@0.153.0/collections/group_by.ts";
+
+function generateScopedImportMap(
+  imports: Map<string, string>,
+  vendorPath: string,
+): ImportMap {
+  vendorPath = `./${vendorPath}/`;
+
+  const importSpecifiers = Array.from(imports.keys()).filter((specifier) =>
+    specifier.startsWith("http")
+  ).map((specifier) => new URL(specifier));
+
+  const groupedByOrigin = groupBy(
+    importSpecifiers,
+    (specifier) => specifier.origin,
+  );
+
+  const scopes = new Map<string, Record<string, string>>();
+
+  for (const [origin, specifiers] of Object.entries(groupedByOrigin)) {
+    if (specifiers) {
+      const url = new URL(origin);
+      const host = `${vendorPath}${url.host}/`;
+
+      imports.set(`${origin}/`, host);
+      const scoped = new Map<string, string>();
+
+      for (const specifier of specifiers.values()) {
+        scoped.set(
+          specifier.pathname,
+          [host, specifier.pathname.replace(/^\/+/, "")].join(""),
+        );
+
+        imports.delete(specifier.href);
+      }
+
+      scopes.set(host, Object.fromEntries(scoped));
+    }
+  }
+
+  return {
+    imports: Object.fromEntries(imports),
+    scopes: Object.fromEntries(scopes),
+  };
 }
 
 // function generateImportMapScopes(importMap: ImportMap, vendorPath: string) {

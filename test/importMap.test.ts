@@ -1,35 +1,38 @@
-import { Builder } from "../lib/builder.ts";
-import { assertEquals } from "./deps.ts";
-import { getFixtureDir, getOutputDir } from "./helpers.ts";
+import { groupBy } from "https://deno.land/std@0.153.0/collections/group_by.ts";
+import { default as importMap } from "./fixture/importMap/importMap.json" assert { type: "json" };
 
-Deno.test("it works", async () => {
-  const builder = new Builder({
-    root: getFixtureDir(),
-    output: getOutputDir(),
-    importMap: "./importMap.json",
-  });
+Deno.test("it works", () => {
+  const importSpecifiers = Object.keys(importMap.imports).filter((specifier) =>
+    specifier.startsWith("http")
+  ).map((specifier) => new URL(specifier));
 
-  await builder.cleanOutput();
-
-  const jsxRuntime = builder.resolveImportSpecifier("react/jsx-runtime");
-
-  assertEquals(jsxRuntime.matched, true);
-  assertEquals(
-    jsxRuntime.resolvedImport.href,
-    "https://esm.sh/react@18.2.0/jsx-runtime",
+  const groupedByOrigin = groupBy(
+    importSpecifiers,
+    (specifier) => specifier.origin,
   );
 
-  const reactDomServer = builder.resolveImportSpecifier(
-    "react-dom/server",
-  );
+  const imports = new Map<string, string>();
+  const scopes = new Map<string, Map<string, string>>();
+  const vendorPath = "./vendor/browser/";
 
-  assertEquals(reactDomServer.matched, true);
-  assertEquals(
-    reactDomServer.resolvedImport.href,
-    "https://esm.sh/react-dom@18.2.0/server",
-  );
+  for (const [origin, specifiers] of Object.entries(groupedByOrigin)) {
+    if (specifiers) {
+      const url = new URL(origin);
+      const host = `${vendorPath}${url.host}/`;
 
-  const nonExistant = builder.resolveImportSpecifier("something");
-  assertEquals(nonExistant.matched, false);
-  assertEquals(nonExistant.resolvedImport, null);
+      imports.set(`${origin}/`, host);
+      const scoped = new Map<string, string>();
+
+      for (const specifier of specifiers.values()) {
+        scoped.set(
+          specifier.pathname,
+          [host, specifier.pathname.replace(/^\/+/, "")].join(""),
+        );
+      }
+
+      scopes.set(host, scoped);
+    }
+  }
+
+  console.log({ imports, scopes });
 });

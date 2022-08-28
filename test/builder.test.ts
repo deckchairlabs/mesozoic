@@ -2,11 +2,11 @@ import { assertSnapshot } from "https://deno.land/std@0.153.0/testing/snapshot.t
 import { Builder } from "../mod.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
 
-const outputDir = getOutputDir();
+const outputDir = getOutputDir("app");
 
 async function createBuilder() {
   const builder = new Builder({
-    root: getFixtureDir(),
+    root: getFixtureDir("app"),
     output: outputDir,
     importMap: "./importMap.json",
     logLevel: "INFO",
