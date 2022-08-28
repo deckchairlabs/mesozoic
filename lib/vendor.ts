@@ -12,7 +12,7 @@ export async function vendorEntrypoint(
   sources: FileBag,
 ) {
   const vendorPath = join("vendor", entrypoint.config?.vendorOutputDir || "");
-  const vendorUrlPrefix = `/${vendorPath}`;
+  const vendorUrlPrefix = `./${vendorPath}`;
   const vendorSources = new FileBag();
 
   const outputDir = join(
