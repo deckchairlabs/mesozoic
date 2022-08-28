@@ -36,4 +36,8 @@ export class SourceFile extends File implements IFile {
 
     return sourceFile;
   }
+
+  clone(): SourceFile {
+    return new SourceFile(this.path(), this.root());
+  }
 }

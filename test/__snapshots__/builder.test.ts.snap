@@ -3,8 +3,8 @@ export const snapshot = {};
 snapshot[`it can copy, compile and vendor entrypoints producing valid import maps 1`] = `
 {
   imports: {
-    "./client.tsx": "./client.9d29f9c0.tsx",
-    "./src/app.tsx": "./src/app.62b16eca.tsx",
+    "./client.tsx": "./client.9d29f9c0.js",
+    "./src/app.tsx": "./src/app.62b16eca.js",
     "/stable/react@18.2.0/deno/react.js": "./vendor/browser/esm.sh/stable/react@18.2.0/deno/react.js",
     "/v92/react-dom@18.2.0/deno/react-dom.js": "./vendor/browser/esm.sh/v92/react-dom@18.2.0/deno/react-dom.js",
     "/v92/scheduler@0.23.0/deno/scheduler.js": "./vendor/browser/esm.sh/v92/scheduler@0.23.0/deno/scheduler.js",
@@ -26,8 +26,8 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 snapshot[`it can copy, compile and vendor entrypoints producing valid import maps 2`] = `
 {
   imports: {
-    "./server.tsx": "./server.tsx",
-    "./src/app.tsx": "./src/app.62b16eca.tsx",
+    "./server.js": "./server.js",
+    "./src/app.tsx": "./src/app.62b16eca.js",
     "/stable/react@18.2.0/deno/react.js": "./vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
     "https://deno.land/std@0.150.0/semver/mod.ts": "./vendor/server/deno.land/std@0.150.0/semver/mod.ts",
     "https://deno.land/std@0.153.0/_deno_unstable.ts": "./vendor/server/deno.land/std@0.153.0/_deno_unstable.ts",

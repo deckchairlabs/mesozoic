@@ -138,13 +138,17 @@ export class Builder {
        * Get the entrypoint source files
        */
       const entrypoints = Array.from(
-        sources.filter((source) => this.isEntrypoint(source)),
+        compiled.filter((source) => this.isEntrypoint(source)),
       ).map((source) => {
         const config = this.getEntrypoint(
           source.relativeAlias() ||
             source.relativePath(),
         );
-        return new Entrypoint(source.path(), source.root(), config);
+        return new Entrypoint(
+          source.path(),
+          source.root(),
+          config,
+        );
       });
 
       /**
@@ -259,7 +263,7 @@ export class Builder {
     return result;
   }
 
-  async copySource(source: IFile, destination: string) {
+  async copySource(source: IFile, destination: string = this.context.output) {
     if (!this.isExcluded(source)) {
       let copied: IFile;
       if (this.isHashable(source)) {
@@ -275,11 +279,27 @@ export class Builder {
   async compileSources(sources: FileBag) {
     this.#valid();
 
+    const compiled = new FileBag();
+
     for (const source of sources.values()) {
-      await this.compileSource(source);
+      const originalSource = source.clone();
+      const compiledSource = await this.compileSource(source);
+
+      /**
+       * If we compiled an entrypoint, we update that entrypoint
+       * to point to the new compiled relative path.
+       */
+      if (this.isEntrypoint(originalSource)) {
+        const path = originalSource.relativePath();
+        const config = this.entrypoints.get(originalSource.relativePath());
+
+        this.entrypoints.delete(path);
+        this.entrypoints.set(source.relativePath(), config!);
+      }
+      compiled.add(compiledSource);
     }
 
-    return sources;
+    return compiled;
   }
 
   async compileSource(source: IFile): Promise<IFile> {
@@ -302,6 +322,10 @@ export class Builder {
       sourceMaps: this.context?.compiler?.sourceMaps,
     });
 
+    const extension = source.extension();
+    const filename = source.filename().replace(extension, ".js");
+
+    await source.rename(filename);
     await source.write(compiled.code);
 
     return source;
@@ -317,7 +341,9 @@ export class Builder {
 
   toManifest(
     sources: FileBag,
-    { exclude = [], prefix }: { exclude?: string[]; prefix?: string },
+    { exclude = [], prefix }:
+      | { exclude?: string[]; prefix?: string }
+      | undefined = {},
   ) {
     const json = [];
 

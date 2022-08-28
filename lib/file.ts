@@ -1,6 +1,7 @@
-import { extname, join, sprintf, toFileUrl } from "./deps.ts";
+import { basename, extname, join, sprintf, toFileUrl } from "./deps.ts";
 
 export interface IFile {
+  filename(): string;
   path(): string;
   relativePath(): string;
   url(): URL;
@@ -19,6 +20,8 @@ export interface IFile {
   copyTo(to: string, filePath?: string): Promise<IFile>;
   copyToHashed(to: string): Promise<IFile>;
   remove(): Promise<boolean>;
+  rename(newFilename: string): Promise<string>;
+  clone(): IFile;
 }
 
 export abstract class File implements IFile {
@@ -34,6 +37,10 @@ export abstract class File implements IFile {
   unlock() {
     this.locked = false;
     return this;
+  }
+
+  filename() {
+    return basename(this.filePath);
   }
 
   path() {
@@ -128,6 +135,24 @@ export abstract class File implements IFile {
     } catch (error) {
       throw error;
     }
+  }
+
+  async rename(newFilename: string): Promise<string> {
+    try {
+      const path = this.path();
+      const filename = this.filename();
+      await Deno.rename(path, path.replace(filename, newFilename));
+
+      this.filePath = path.replace(filename, newFilename);
+
+      return newFilename;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  clone(): IFile {
+    throw new Error("Not implemented");
   }
 
   async copyToHashed(to: string): Promise<IFile> {
