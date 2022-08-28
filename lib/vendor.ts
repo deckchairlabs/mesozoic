@@ -148,9 +148,11 @@ function importMapFromEntrypoint(
               ),
             );
           } else {
-            builder.log.error(
-              `Failed to resolve bare specifier ${resolvedSpecifier}`,
-            );
+            if (resolvedSpecifier.includes(".d.ts") === false) {
+              builder.log.warning(
+                `Failed to resolve bare specifier ${resolvedSpecifier}`,
+              );
+            }
           }
         } catch (error) {
           throw new Error(
