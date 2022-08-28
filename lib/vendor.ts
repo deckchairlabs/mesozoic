@@ -38,11 +38,13 @@ export async function vendorEntrypoint(
     }
   }
 
-  const importMap: ImportMap = importMapFromEntrypoint(
+  let importMap: ImportMap = importMapFromEntrypoint(
     entrypoint,
     sources,
     vendorPath,
   );
+
+  importMap = generateImportMapScopes(importMap, vendorPath);
 
   entrypoint.setImportMap(importMap);
 
@@ -152,6 +154,37 @@ function importMapFromEntrypoint(
     imports: Object.fromEntries(imports.entries()),
   };
 
+  return importMap;
+}
+
+import { groupBy } from "https://deno.land/std@0.153.0/collections/group_by.ts";
+
+function generateImportMapScopes(importMap: ImportMap, vendorPath: string) {
+  if (importMap.imports) {
+    const entries = Object.entries(importMap.imports);
+    const imports: Record<string, string> = {};
+    const scopes: Record<string, Record<string, string>> = {};
+
+    const groupedByOrigin = groupBy(entries, ([specifier]) => {
+      const url = new URL(specifier, import.meta.url);
+      return `${url.origin}/`;
+    });
+
+    for (const [scope, specifiers] of Object.entries(groupedByOrigin)) {
+      // Handle remote origins
+      if (scope.startsWith("https://") || scope.startsWith("http://")) {
+        const url = new URL(scope);
+        imports[scope] = `./${join(vendorPath, url.host)}/`;
+      } else if (specifiers) {
+        for (const [specifier, resolved] of specifiers) {
+          imports[specifier] = resolved;
+        }
+      }
+    }
+
+    importMap.imports = imports;
+    importMap.scopes = scopes;
+  }
   return importMap;
 }
 
