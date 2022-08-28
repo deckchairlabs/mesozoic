@@ -63,6 +63,9 @@ export async function vendorEntrypoint(
     );
 
     await builder.copySources(vendorSources);
+    builder.log.success(
+      sprintf("Vendored %d dependencies", vendorSources.size - 1),
+    );
   }
 
   return entrypoint;
