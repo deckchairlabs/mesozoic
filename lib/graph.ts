@@ -83,7 +83,7 @@ export async function buildModuleGraph(
 
         let resolvedSpecifier: string | ResolveResult = specifier;
 
-        if (specifier.startsWith("./")) {
+        if (specifier.startsWith("./") || specifier.startsWith("../")) {
           // Resolve a relative local file
           if (referrer.startsWith("file://")) {
             resolvedSpecifier = resolveSourceSpecifier(localSources, specifier);
