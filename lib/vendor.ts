@@ -13,7 +13,8 @@ export async function vendorEntrypoint(
   entrypoint: Entrypoint,
   sources: FileBag,
 ) {
-  const vendorPath = join("vendor", entrypoint.config?.vendorOutputDir || "");
+  const outputName = entrypoint.config?.vendorOutputDir || "";
+  const vendorPath = join("vendor", outputName);
   const vendorSources = new FileBag();
 
   const outputDir = join(
@@ -55,10 +56,10 @@ export async function vendorEntrypoint(
     vendorSources.add(
       new VirtualFile(
         join(
-          vendorPath,
-          "importMap.json",
+          builder.context.output,
+          sprintf("importMap%s.json", outputName ? `.${outputName}` : ""),
         ),
-        outputDir,
+        builder.context.output,
         JSON.stringify(importMap, null, 2),
       ),
     );
