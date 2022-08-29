@@ -10,7 +10,7 @@ export function createLoader(
   sources: FileBag,
   target: "browser" | "deno" = "browser",
 ): Loader {
-  return (specifier: string) => {
+  return function loader(specifier: string) {
     try {
       if (isRemoteSpecifier(specifier)) {
         return loadRemote(specifier, target);

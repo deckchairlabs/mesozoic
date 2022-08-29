@@ -1,9 +1,10 @@
+import { groupBy } from "https://deno.land/std@0.153.0/collections/group_by.ts";
 import { Builder } from "./builder.ts";
 import { join, sprintf } from "./deps.ts";
-import { FileBag } from "./sources/fileBag.ts";
-import { rootUrlToSafeLocalDirname } from "./fs.ts";
-import { VirtualFile } from "./sources/virtualFile.ts";
 import { Entrypoint } from "./entrypoint.ts";
+import { rootUrlToSafeLocalDirname } from "./fs.ts";
+import { FileBag } from "./sources/fileBag.ts";
+import { VirtualFile } from "./sources/virtualFile.ts";
 import type { ImportMap } from "./types.ts";
 
 export async function vendorEntrypoint(
@@ -32,7 +33,9 @@ export async function vendorEntrypoint(
             new URL(module.specifier),
             vendorPath,
           );
-          vendorSources.add(new VirtualFile(path, outputDir, resolved.source));
+          vendorSources.add(
+            new VirtualFile(path, outputDir, resolved.source),
+          );
         }
       }
     }
@@ -172,8 +175,6 @@ function importMapFromEntrypoint(
 
   return importMap;
 }
-
-import { groupBy } from "https://deno.land/std@0.153.0/collections/group_by.ts";
 
 function generateScopedImportMap(
   imports: Map<string, string>,

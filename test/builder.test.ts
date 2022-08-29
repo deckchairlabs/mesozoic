@@ -9,7 +9,6 @@ async function createBuilder() {
     root: getFixtureDir("app"),
     output: outputDir,
     importMap: "./importMap.json",
-    // logLevel: "DEBUG",
   });
 
   await builder.cleanOutput();
@@ -25,10 +24,10 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
       vendorOutputDir: "browser",
       target: "browser",
     },
-    // "./server.tsx": {
-    //   vendorOutputDir: "server",
-    //   target: "deno",
-    // },
+    "./server.tsx": {
+      vendorOutputDir: "server",
+      target: "deno",
+    },
   });
 
   builder.setExcluded([
