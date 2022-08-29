@@ -1,90 +1,121 @@
-import type { ImportSpecifier } from "../deps.ts";
+import { ImportSpecifier, initModuleLexer } from "../deps.ts";
 import { parseModule } from "../deps.ts";
+import { FileBag } from "../fileBag.ts";
 import { LoadResponse } from "../types.ts";
+import { isLocalSpecifier, isRemoteSpecifier } from "./specifiers.ts";
 
-type Loader = (url: URL) => Promise<LoadResponse | undefined>;
+export type Loader = (url: string) => Promise<LoadResponse | undefined>;
 
-export function createLoader() {
-  return async (specifier: string) => {
-    const url = prepareUrl(new URL(specifier));
-    const response = await load(url);
-
+export function createLoader(
+  sources: FileBag,
+  target: "browser" | "deno" = "browser",
+): Loader {
+  return (specifier: string) => {
     try {
-      switch (url.protocol) {
-        case "file:": {
-        }
-        case "http:":
-        case "https:": {
-          if (response) {
-          }
-        }
+      if (isRemoteSpecifier(specifier)) {
+        return loadRemote(specifier, target);
+      } else {
+        return loadLocal(specifier, sources);
       }
     } catch {
-      return undefined;
+      console.log(specifier);
+      return Promise.resolve(undefined);
     }
   };
 }
 
-const load: Loader = async (url: URL) => {
+const cache = new WeakMap<URL, string>();
+
+const loadRemote = async (
+  specifier: string,
+  target: "browser" | "deno",
+): Promise<LoadResponse | undefined> => {
   try {
-    switch (url.protocol) {
-      case "file:": {
-        const content = await Deno.readTextFile(url);
-        return {
-          kind: "module",
-          specifier: String(url),
-          content,
-        };
-      }
+    const url = prepareUrl(new URL(specifier), target);
 
-      case "http:":
-      case "https:": {
-        const response = await fetch(String(url), { redirect: "follow" });
+    const requestHeaders = new Headers();
 
-        if (response.status !== 200) {
-          // ensure the body is read as to not leak resources
-          await response.arrayBuffer();
-          return undefined;
-        }
-
-        const content = await response.text();
-        const headers: Record<string, string> = {};
-
-        for (const [key, value] of response.headers) {
-          headers[key.toLowerCase()] = value;
-        }
-
-        return {
-          kind: "module",
-          specifier: response.url,
-          headers,
-          content,
-        };
-      }
-      default:
-        return undefined;
+    if (target === "browser") {
+      requestHeaders.set("User-Agent", "mesozoic");
     }
+
+    const request = new Request(String(url), {
+      redirect: "follow",
+      headers: requestHeaders,
+    });
+
+    if (cache.has(url)) {
+      const cached = cache.get(url)!;
+      console.log("cache hit", String(url));
+      return {
+        kind: "module",
+        specifier: String(new URL(url.pathname, url.origin)),
+        headers: Object.fromEntries(requestHeaders),
+        content: cached,
+      };
+    }
+
+    const response = await fetch(request);
+
+    if (response.status !== 200) {
+      // ensure the body is read as to not leak resources
+      await response.arrayBuffer();
+      return undefined;
+    }
+
+    const content = await response.text();
+    const headers: Record<string, string> = {};
+
+    for (const [key, value] of response.headers) {
+      headers[key.toLowerCase()] = value;
+    }
+
+    /**
+     * If we detect a "facade" and there is only 1 import OR 1 export
+     */
+    await initModuleLexer;
+    const [imports, exports, facade] = await parseModule(content);
+    if (facade && (exports.length === 1 || imports.length === 1)) {
+      const uniqueSpecifiers = resolveUniqueRemoteSpecifiers(imports);
+      if (uniqueSpecifiers[0]) {
+        const specifier = new URL(uniqueSpecifiers[0]);
+        return loadRemote(specifier.href, target);
+      }
+    }
+
+    cache.set(url, content);
+
+    return {
+      kind: "module",
+      specifier: String(new URL(url.pathname, url.origin)),
+      headers,
+      content,
+    };
   } catch {
     return undefined;
   }
 };
 
-export async function resolveFacadeModule(content: string, load: Loader) {
-  const [imports, exports, facade] = await parseModule(content);
-
-  /**
-   * If we detect a "facade" and there is only 1 import OR 1 export
-   */
-  if (facade && (exports.length === 1 || imports.length === 1)) {
-    /**
-     * We only do facade detection on remote modules
-     */
-    const uniqueSpecifiers = resolveUniqueRemoteSpecifiers(imports);
-
-    if (uniqueSpecifiers[0]) {
-      const specifier = new URL(uniqueSpecifiers[0]);
-      return load(specifier);
+export async function loadLocal(
+  specifier: string,
+  sources: FileBag,
+): Promise<LoadResponse | undefined> {
+  const source = await sources.find((source) => {
+    if (isLocalSpecifier(specifier)) {
+      return String(source.url()) === specifier;
     }
+    return source.relativePath() === specifier;
+  });
+
+  if (source) {
+    const content = await source.read();
+    return {
+      kind: "module",
+      specifier: isLocalSpecifier(specifier)
+        ? String(source.url())
+        : source.path(),
+      content,
+    };
   }
 }
 
@@ -100,20 +131,21 @@ export function resolveUniqueRemoteSpecifiers(
   );
 }
 
-export function prepareUrl(url: URL, target?: string) {
+export function prepareUrl(url: URL, target: "browser" | "deno" = "browser") {
   switch (url.host) {
     case "esm.sh":
       /**
        * We don't want types from esm.sh
        */
-      url.searchParams.append("no-dts", "");
+      url.searchParams.append("no-check", "1");
 
       /**
-       * Add the target if provided
+       * Add the target
        */
-      if (target) {
-        url.searchParams.append("target", target);
-      }
+      url.searchParams.append(
+        "target",
+        target === "browser" ? "es2022" : "deno",
+      );
       /**
        * We don't want development sources
        */

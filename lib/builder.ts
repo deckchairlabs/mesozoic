@@ -38,7 +38,8 @@ export type BuildResult = {
 export class Builder {
   private hasCopied = false;
   private isValid = false;
-  private importMap: ImportMap = {
+
+  public importMap: ImportMap = {
     imports: {},
     scopes: {},
   };
