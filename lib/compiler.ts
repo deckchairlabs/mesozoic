@@ -17,7 +17,7 @@ export type CompilerOptions = {
   useBuiltins?: boolean;
   externalHelpers?: boolean;
   dynamicImport?: boolean;
-  importSource?: string;
+  jsxImportSource?: string;
   runtime?: "automatic" | "classic" | undefined;
   development?: boolean;
   sourceMaps?: boolean;
@@ -31,7 +31,7 @@ export async function compile(source: string, options: CompilerOptions) {
     useBuiltins = true,
     externalHelpers = true,
     dynamicImport = true,
-    importSource = "react",
+    jsxImportSource = "react",
     runtime = "automatic",
     development,
     sourceMaps,
@@ -52,7 +52,7 @@ export async function compile(source: string, options: CompilerOptions) {
       transform: {
         react: {
           useBuiltins,
-          importSource,
+          importSource: jsxImportSource,
           runtime,
           development,
         },

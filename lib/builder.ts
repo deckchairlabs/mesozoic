@@ -16,6 +16,7 @@ export type BuildContext = {
   compiler?: {
     minify?: boolean;
     sourceMaps?: boolean;
+    jsxImportSource?: string;
   };
   name?: string;
   logLevel?: log.LevelName;
@@ -99,6 +100,12 @@ export class Builder {
     return this.hashed.some((pattern) => pattern.test(source.relativePath()));
   }
 
+  /**
+   * Allows excluding certain files from the build process, they won't be copied
+   * to the build output directory, so no further processing will occur on them.
+   *
+   * @param paths an array of relative paths to exclude from the build process.
+   */
   setExcluded(paths: string[]) {
     this.excluded = this.#buildPatterns([
       ...paths,
@@ -300,6 +307,7 @@ export class Builder {
       development: false,
       minify: this.context?.compiler?.minify,
       sourceMaps: this.context?.compiler?.sourceMaps,
+      jsxImportSource: this.context?.compiler?.jsxImportSource,
     });
 
     const extension = source.extension();
