@@ -21,17 +21,15 @@ export function createResolver(
   return (specifier: string, referrer: string): string => {
     let resolved = resolve(specifier, referrer);
 
-    if (isBareSpecifier(resolved)) {
-      const importMapResolved = importMapResolve(
-        specifier,
-        parsedImportMap,
-        new URL(referrer),
-      );
+    const importMapResolved = importMapResolve(
+      specifier,
+      parsedImportMap,
+      new URL(referrer),
+    );
 
-      if (importMapResolved.matched) {
-        resolved = importMapResolved.resolvedImport.href;
-        bareSpecifiers.set(specifier, resolved);
-      }
+    if (importMapResolved.matched) {
+      resolved = importMapResolved.resolvedImport.href;
+      bareSpecifiers.set(specifier, resolved);
     } else if (resolved.startsWith("file://")) {
       const path = fromFileUrl(resolved.replace(referrer, "./"));
 

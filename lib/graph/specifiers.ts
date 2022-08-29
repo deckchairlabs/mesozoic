@@ -23,3 +23,12 @@ export function isBareSpecifier(specifier: string) {
     isLocalSpecifier(specifier),
   ].every((condition) => condition === false);
 }
+
+export function isValidImportSpecifier(specifier: string) {
+  return [
+    specifier.endsWith(".js"),
+    specifier.endsWith(".jsx"),
+    specifier.endsWith(".ts"),
+    specifier.endsWith(".tsx"),
+  ].some((condition) => condition === true);
+}

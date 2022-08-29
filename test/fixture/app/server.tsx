@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.153.0/http/server.ts";
 import { createServer } from "ultra/server.ts";
+import rehypeHighlight from "https://esm.sh/rehype-highlight";
 import App from "./src/app.tsx";
 
 const server = await createServer({
@@ -8,6 +9,7 @@ const server = await createServer({
 });
 
 server.get("*", async (context) => {
+  console.log(rehypeHighlight);
   /**
    * Render the request
    */

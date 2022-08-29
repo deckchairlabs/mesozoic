@@ -23,15 +23,12 @@ export function createLoader(
   };
 }
 
-const cache = new WeakMap<URL, string>();
-
 const loadRemote = async (
   specifier: string,
   target: "browser" | "deno",
 ): Promise<LoadResponse | undefined> => {
   try {
     const url = prepareUrl(new URL(specifier), target);
-
     const requestHeaders = new Headers();
 
     if (target === "browser") {
@@ -43,22 +40,12 @@ const loadRemote = async (
       headers: requestHeaders,
     });
 
-    if (cache.has(url)) {
-      const cached = cache.get(url)!;
-      return {
-        kind: "module",
-        specifier: String(new URL(url.pathname, url.origin)),
-        headers: Object.fromEntries(requestHeaders),
-        content: cached,
-      };
-    }
-
     const response = await fetch(request);
+    const responseUrl = new URL(response.url);
 
     if (response.status !== 200) {
       // ensure the body is read as to not leak resources
       await response.arrayBuffer();
-      console.log(url);
       return undefined;
     }
 
@@ -74,6 +61,7 @@ const loadRemote = async (
      */
     await initModuleLexer;
     const [imports, exports, facade] = await parseModule(content);
+
     if (facade && (exports.length === 1 || imports.length === 1)) {
       const uniqueSpecifiers = resolveUniqueRemoteSpecifiers(imports);
       if (uniqueSpecifiers[0]) {
@@ -82,11 +70,9 @@ const loadRemote = async (
       }
     }
 
-    cache.set(url, content);
-
     return {
       kind: "module",
-      specifier: String(new URL(url.pathname, url.origin)),
+      specifier: String(new URL(responseUrl.pathname, responseUrl.origin)),
       headers,
       content,
     };

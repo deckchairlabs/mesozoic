@@ -3,6 +3,7 @@ import { Builder } from "./builder.ts";
 import { join, sprintf } from "./deps.ts";
 import { Entrypoint } from "./entrypoint.ts";
 import { rootUrlToSafeLocalDirname } from "./fs.ts";
+import { isRemoteSpecifier } from "./graph/specifiers.ts";
 import { FileBag } from "./sources/fileBag.ts";
 import { VirtualFile } from "./sources/virtualFile.ts";
 import type { ImportMap } from "./types.ts";
@@ -80,14 +81,15 @@ function importMapFromEntrypoint(
   const imports = new Map<string, string>();
   const bareSpecifiers = entrypoint.bareImportSpecifiers;
   const vendorUrlPrefix = `./${vendorPath}`;
+  const redirects = new Map<string, string>();
 
   if (entrypoint.moduleGraph) {
     const graph = entrypoint.moduleGraph.toJSON();
-    const redirects = new Map<string, string>();
     const modules = entrypoint.moduleGraph.modules.values();
 
     // Prepare the redirects
     for (const [specifier, redirect] of Object.entries(graph.redirects)) {
+      bareSpecifiers.set(specifier, redirect);
       redirects.set(
         specifier,
         rootUrlToSafeLocalDirname(new URL(redirect), vendorUrlPrefix),
@@ -134,7 +136,12 @@ function importMapFromEntrypoint(
 
       // If there was a redirect, use that
       if (redirects.has(bareSpecifier)) {
-        imports.set(specifier, redirects.get(bareSpecifier)!);
+        // Detect bare specifiers like https://esm.sh/rehype-highlight
+        if (isRemoteSpecifier(specifier)) {
+          imports.set(bareSpecifier, redirects.get(bareSpecifier)!);
+        } else {
+          imports.set(specifier, redirects.get(bareSpecifier)!);
+        }
       } // Otherwise check if there is already an import of this resolved specifier
       else if (imports.has(bareSpecifier)) {
         imports.set(specifier, imports.get(bareSpecifier)!);
@@ -171,19 +178,20 @@ function importMapFromEntrypoint(
     entrypoint.moduleGraph.free();
   }
 
-  const importMap = generateScopedImportMap(imports, vendorPath);
+  const importMap = generateScopedImportMap(imports, redirects, vendorPath);
 
   return importMap;
 }
 
 function generateScopedImportMap(
   imports: Map<string, string>,
+  redirects: Map<string, string>,
   vendorPath: string,
 ): ImportMap {
   vendorPath = `./${vendorPath}/`;
 
   const importSpecifiers = Array.from(imports.keys()).filter((specifier) =>
-    specifier.startsWith("http")
+    specifier.startsWith("http") && !redirects.get(specifier)
   ).map((specifier) => new URL(specifier));
 
   const groupedByOrigin = groupBy(
