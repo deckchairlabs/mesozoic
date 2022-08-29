@@ -1,4 +1,4 @@
-import { basename, extname, join, sprintf, toFileUrl } from "./deps.ts";
+import { basename, extname, join, sprintf, toFileUrl } from "../deps.ts";
 
 export interface IFile {
   filename(): string;

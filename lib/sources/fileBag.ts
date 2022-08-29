@@ -1,4 +1,4 @@
-import { sprintf } from "./deps.ts";
+import { sprintf } from "../deps.ts";
 import { IFile } from "./file.ts";
 
 /**

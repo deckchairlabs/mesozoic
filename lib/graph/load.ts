@@ -1,6 +1,6 @@
 import { ImportSpecifier, initModuleLexer } from "../deps.ts";
 import { parseModule } from "../deps.ts";
-import { FileBag } from "../fileBag.ts";
+import { FileBag } from "../sources/fileBag.ts";
 import { LoadResponse } from "../types.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./specifiers.ts";
 
@@ -18,7 +18,6 @@ export function createLoader(
         return loadLocal(specifier, sources);
       }
     } catch {
-      console.log(specifier);
       return Promise.resolve(undefined);
     }
   };
@@ -46,7 +45,6 @@ const loadRemote = async (
 
     if (cache.has(url)) {
       const cached = cache.get(url)!;
-      console.log("cache hit", String(url));
       return {
         kind: "module",
         specifier: String(new URL(url.pathname, url.origin)),
@@ -60,6 +58,7 @@ const loadRemote = async (
     if (response.status !== 200) {
       // ensure the body is read as to not leak resources
       await response.arrayBuffer();
+      console.log(url);
       return undefined;
     }
 
@@ -91,7 +90,8 @@ const loadRemote = async (
       headers,
       content,
     };
-  } catch {
+  } catch (error) {
+    console.error(error);
     return undefined;
   }
 };

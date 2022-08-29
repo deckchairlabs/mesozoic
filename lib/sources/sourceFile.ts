@@ -1,4 +1,4 @@
-import { dirname, ensureDir, join, sprintf } from "./deps.ts";
+import { dirname, ensureDir, join, sprintf } from "../deps.ts";
 import { File, IFile } from "./file.ts";
 
 export class SourceFile extends File implements IFile {

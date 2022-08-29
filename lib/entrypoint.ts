@@ -1,7 +1,6 @@
-import { IFile } from "./file.ts";
-import { ImportMap } from "./importMap.ts";
-import { SourceFile } from "./sourceFile.ts";
-import { ModuleGraph } from "./types.ts";
+import { IFile } from "./sources/file.ts";
+import { SourceFile } from "./sources/sourceFile.ts";
+import type { ImportMap, ModuleGraph } from "./types.ts";
 
 export type EntrypointTarget = "browser" | "deno";
 

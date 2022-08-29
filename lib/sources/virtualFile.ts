@@ -1,4 +1,4 @@
-import { dirname, ensureDir, join } from "./deps.ts";
+import { dirname, ensureDir, join } from "../deps.ts";
 import { File, IFile } from "./file.ts";
 import { SourceFile } from "./sourceFile.ts";
 

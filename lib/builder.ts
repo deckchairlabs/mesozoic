@@ -1,13 +1,13 @@
-import { globToRegExp, join, log, resolve, sprintf, walk } from "./deps.ts";
-import { IFile } from "./file.ts";
-import { FileBag } from "./fileBag.ts";
+import { crayon, globToRegExp, join, log, resolve, sprintf } from "./deps.ts";
+import { IFile } from "./sources/file.ts";
+import { FileBag } from "./sources/fileBag.ts";
 import { buildModuleGraph } from "./graph.ts";
 import { Logger } from "./logger.ts";
-import { SourceFile } from "./sourceFile.ts";
-import { Entrypoint, EntrypointConfig } from "./entrypointFile.ts";
+import { Entrypoint, EntrypointConfig } from "./entrypoint.ts";
 import type { ImportMap } from "./types.ts";
-import { isRemoteSpecifier } from "./utils.ts";
+import { isRemoteSpecifier } from "./graph/specifiers.ts";
 import { vendorEntrypoint } from "./vendor.ts";
+import { gatherSources } from "./sources/gatherSources.ts";
 
 export type BuildContext = {
   root: string;
@@ -141,7 +141,7 @@ export class Builder {
        * Get all the local sources
        */
       const localSources = sources.filter((source) =>
-        !isRemoteSpecifier(source.url())
+        !isRemoteSpecifier(String(source.url()))
       );
 
       /**
@@ -150,7 +150,13 @@ export class Builder {
 
       for (const entrypoint of entrypoints.values()) {
         const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
-        this.log.info(sprintf("Building module graph for entrypoint %s", path));
+        this.log.info(
+          sprintf(
+            'Building "%s" module graph for entrypoint %s',
+            crayon.lightBlue(entrypoint.config!.target),
+            path,
+          ),
+        );
 
         const graph = await buildModuleGraph(
           this,
@@ -172,9 +178,6 @@ export class Builder {
           entrypoint,
           localSources,
         );
-
-        // const copied = await this.copySources(vendored, outputDir);
-        // vendoredSources = vendoredSources.merge(copied);
 
         this.log.success(
           sprintf("Vendored modules for entrypoint %s", path),
@@ -206,17 +209,8 @@ export class Builder {
   /**
    * Walk the root for SourceFiles obeying exclusion patterns
    */
-  async gatherSources(from: string = this.context.root) {
-    const sources = new FileBag();
-
-    for await (const entry of walk(from)) {
-      if (entry.isFile) {
-        const sourceFile = new SourceFile(entry.path, from);
-        sources.add(sourceFile);
-      }
-    }
-
-    return sources;
+  gatherSources(from: string = this.context.root) {
+    return gatherSources(from);
   }
 
   async cleanOutput() {

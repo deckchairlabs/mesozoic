@@ -1,7 +1,7 @@
 import { Builder } from "./builder.ts";
-import { crayon, sprintf } from "./deps.ts";
-import { Entrypoint } from "./entrypointFile.ts";
-import { FileBag } from "./fileBag.ts";
+import { crayon, sprintf, toFileUrl } from "./deps.ts";
+import { Entrypoint } from "./entrypoint.ts";
+import { FileBag } from "./sources/fileBag.ts";
 import { createGraph } from "./graph/createGraph.ts";
 import { createLoader } from "./graph/load.ts";
 import { createResolver } from "./graph/resolve.ts";
@@ -12,12 +12,14 @@ export async function buildModuleGraph(
   entrypoint: Entrypoint,
 ) {
   const bareSpecifiers = new Map<string, string>();
-  const load = createLoader(sources, entrypoint.config?.target);
+  const target = entrypoint.config!.target;
+  const load = createLoader(sources, target);
+
   const resolve = createResolver(
     builder.importMap,
     sources,
     bareSpecifiers,
-    new URL(builder.context.root),
+    toFileUrl(builder.context.root),
   );
 
   const graph = await createGraph(

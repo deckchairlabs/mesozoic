@@ -1,6 +1,6 @@
 import { walk } from "../deps.ts";
-import { FileBag } from "../fileBag.ts";
-import { SourceFile } from "../sourceFile.ts";
+import { FileBag } from "./fileBag.ts";
+import { SourceFile } from "./sourceFile.ts";
 
 export async function gatherSources(from: string) {
   const sources = new FileBag();

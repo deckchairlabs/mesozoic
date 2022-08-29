@@ -8,8 +8,7 @@ import { VirtualFile } from "../lib/virtualFile.ts";
 import { createLoader } from "../lib/graph/load.ts";
 import { createGraph } from "../lib/graph/createGraph.ts";
 import { gatherSources } from "../lib/sources/gatherSources.ts";
-import { ensureTrailingSlash } from "../lib/url.ts";
-import { getFixtureDir } from "./helpers.ts";
+import { ensureTrailingSlash, getFixtureDir } from "./helpers.ts";
 
 const baseUrl = "file:///app/";
 
