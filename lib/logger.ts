@@ -61,8 +61,4 @@ export class Logger extends log.Logger {
   success(message: string) {
     return this.info(crayon.green(`✔ ${message}`));
   }
-
-  #formatBoolean(value: boolean) {
-    return value ? crayon.green("true") : crayon.red("false");
-  }
 }
