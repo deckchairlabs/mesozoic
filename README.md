@@ -11,7 +11,10 @@ const builder = new Builder({
 });
 
 /**
- * Setup your entrypoints, relative to "root"
+ * Setup your entrypoints, relative to "root".
+ * A module graph will be built for each entry point defined.
+ * Remote dependencies will also be independently fetched and output,
+ * into each entry points "vendorOutputDir" at ./vendor
  */
 builder.setEntrypoints({
   "./client.tsx": {
@@ -25,14 +28,15 @@ builder.setEntrypoints({
 });
 
 /**
- * Exclude files from the build, relative to "root"
+ * Exclude files from the build, relative to "root".
+ * Any file that matches the provided patterns wont' be copied to the output directory.
  */
 builder.setExcluded([
   "./README.md",
 ]);
 
 /**
- * Files with should have their contents hashed, great for long lived caching
+ * Files which should have their contents hashed and added to the filename, great for long lived caching
  */
 builder.setHashed([
   "./src/**/*.+(ts|tsx|js|jsx|css)",
@@ -40,7 +44,7 @@ builder.setHashed([
 ]);
 
 /**
- * Files which should be compiled, usually TypeScript or files with JSX
+ * Files which should be compiled, usually TypeScript or files with JSX.
  */
 builder.setCompiled([
   "./**/*.+(ts|tsx|js|jsx)",
