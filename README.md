@@ -1,6 +1,6 @@
 # 🌄 mesozoic
 
-A work in progress generic build system for Deno web/server apps.
+A generic build system for Deno web/server apps.
 
 ```ts
 import { Builder } from "https://deno.land/x/mesozoic@v1.0.0-alpha.32/mod.ts";
