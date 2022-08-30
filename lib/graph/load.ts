@@ -12,12 +12,14 @@ export type Loader = (
 export function createLoader(
   sources: FileBag,
   target: "browser" | "deno" = "browser",
-  skipDynamic: RegExp[] = [],
+  dynamicImportExclude: RegExp[] = [],
 ): Loader {
   return function loader(specifier: string, isDynamic?: boolean) {
     try {
       if (isRemoteSpecifier(specifier)) {
-        if (isDynamic && skipDynamic.some((skip) => skip.test(specifier))) {
+        if (
+          isDynamic && dynamicImportExclude.some((skip) => skip.test(specifier))
+        ) {
           return Promise.resolve(undefined);
         }
         return loadRemote(specifier, target);
