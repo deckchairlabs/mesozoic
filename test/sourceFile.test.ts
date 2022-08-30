@@ -1,4 +1,4 @@
-import { SourceFile } from "../lib/sourceFile.ts";
+import { SourceFile } from "../lib/sources/sourceFile.ts";
 import { assertEquals, assertRejects, assertSnapshot, join } from "./deps.ts";
 import { getFixtureDir, getFixturePath } from "./helpers.ts";
 
@@ -6,8 +6,8 @@ const outputDir = await Deno.makeTempDir();
 
 function createSourceFile(path: string) {
   return new SourceFile(
-    getFixturePath(path),
-    getFixtureDir(),
+    getFixturePath("app", path),
+    getFixtureDir("app"),
   );
 }
 
@@ -16,10 +16,10 @@ Deno.test("constructor", async () => {
   const sourceFile = createSourceFile(path);
 
   assertEquals(sourceFile.isLocked(), true);
-  assertEquals(sourceFile.root(), getFixtureDir());
+  assertEquals(sourceFile.root(), getFixtureDir("app"));
   assertEquals(
     sourceFile.path(),
-    getFixturePath(sourceFile.relativePath()),
+    getFixturePath("app", sourceFile.relativePath()),
   );
   assertEquals(sourceFile.relativePath(), path);
   assertEquals(await sourceFile.contentHash(), "62b16eca");

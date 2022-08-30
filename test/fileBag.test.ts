@@ -1,4 +1,4 @@
-import { FileBag } from "../lib/fileBag.ts";
+import { FileBag } from "../lib/sources/fileBag.ts";
 import { assertEquals } from "./deps.ts";
 
 Deno.test("constructor", () => {

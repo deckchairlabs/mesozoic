@@ -4,15 +4,22 @@ import { FileBag } from "../sources/fileBag.ts";
 import { LoadResponse } from "../types.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./specifiers.ts";
 
-export type Loader = (url: string) => Promise<LoadResponse | undefined>;
+export type Loader = (
+  url: string,
+  isDynamic?: boolean,
+) => Promise<LoadResponse | undefined>;
 
 export function createLoader(
   sources: FileBag,
   target: "browser" | "deno" = "browser",
+  skipDynamic: RegExp[] = [],
 ): Loader {
-  return function loader(specifier: string) {
+  return function loader(specifier: string, isDynamic?: boolean) {
     try {
       if (isRemoteSpecifier(specifier)) {
+        if (isDynamic && skipDynamic.some((skip) => skip.test(specifier))) {
+          return Promise.resolve(undefined);
+        }
         return loadRemote(specifier, target);
       } else {
         return loadLocal(specifier, sources);

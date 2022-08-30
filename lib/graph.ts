@@ -13,7 +13,7 @@ export async function buildModuleGraph(
 ) {
   const bareSpecifiers = new Map<string, string>();
   const target = entrypoint.config!.target;
-  const load = createLoader(sources, target);
+  const load = createLoader(sources, target, builder.dynamicImportExcluded);
 
   const resolve = createResolver(
     builder.importMap,
@@ -24,9 +24,9 @@ export async function buildModuleGraph(
 
   const graph = await createGraph(
     entrypoint.url().href,
-    (specifier) => {
+    (specifier, isDynamic) => {
       builder.log.debug(sprintf("%s %s", crayon.red("Load"), specifier));
-      return load(specifier);
+      return load(specifier, isDynamic);
     },
     (specifier, referrer) => {
       builder.log.debug(

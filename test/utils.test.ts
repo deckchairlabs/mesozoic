@@ -7,6 +7,6 @@ Deno.test("rootUrlToSafeLocalDirname", () => {
   );
   assertEquals(
     rootUrlToSafeLocalDirname(url),
-    "esm.sh/v92/react-dom@18.2.0/es2020/server.js",
+    "/esm.sh/v92/react-dom@18.2.0/es2020/server.js",
   );
 });

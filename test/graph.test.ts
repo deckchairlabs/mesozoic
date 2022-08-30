@@ -3,8 +3,8 @@ import {
   createResolver,
   resolveBareSpecifierRedirects,
 } from "../lib/graph/resolve.ts";
-import { FileBag } from "../lib/fileBag.ts";
-import { VirtualFile } from "../lib/virtualFile.ts";
+import { FileBag } from "../lib/sources/fileBag.ts";
+import { VirtualFile } from "../lib/sources/virtualFile.ts";
 import { createLoader } from "../lib/graph/load.ts";
 import { createGraph } from "../lib/graph/createGraph.ts";
 import { gatherSources } from "../lib/sources/gatherSources.ts";

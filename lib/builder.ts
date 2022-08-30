@@ -49,6 +49,7 @@ export class Builder {
   public entrypoints: Map<string, EntrypointConfig> = new Map();
 
   public excluded: RegExp[] = [];
+  public dynamicImportExcluded: RegExp[] = [];
   public hashed: RegExp[] = [];
   public compiled: RegExp[] = [];
 
@@ -115,6 +116,16 @@ export class Builder {
 
   isExcluded(source: IFile): boolean {
     return this.excluded.some((pattern) => pattern.test(source.relativePath()));
+  }
+
+  setDynamicImportExcluded(paths: string[]) {
+    this.dynamicImportExcluded = this.#buildPatterns(paths);
+  }
+
+  isDynamicImportSpecifierExcluded(specifier: string) {
+    return this.dynamicImportExcluded.some((pattern) =>
+      pattern.test(specifier)
+    );
   }
 
   async build(sources: FileBag): Promise<BuildResult> {
