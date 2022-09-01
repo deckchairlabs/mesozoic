@@ -12,7 +12,7 @@ import { gatherSources } from "./sources/gatherSources.ts";
 export type BuildContext = {
   root: string;
   output: string;
-  importMap: string;
+  importMapPath: string;
   compiler?: {
     minify?: boolean;
     sourceMaps?: boolean;
@@ -65,9 +65,12 @@ export class Builder {
 
     this.importMap = JSON.parse(
       Deno.readTextFileSync(
-        join(this.context.root, this.context.importMap),
+        join(this.context.root, this.context.importMapPath),
       ),
     );
+  }
+
+  async init() {
   }
 
   setEntrypoints(entrypoints: BuilderEntrypoints) {

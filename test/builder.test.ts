@@ -8,7 +8,7 @@ async function createBuilder() {
   const builder = new Builder({
     root: getFixtureDir("app"),
     output: outputDir,
-    importMap: "./importMap.json",
+    importMapPath: "./importMap.json",
   });
 
   await builder.cleanOutput();
