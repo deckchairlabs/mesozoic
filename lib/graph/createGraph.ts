@@ -9,10 +9,11 @@ export async function createGraph(
   entrypoint: string,
   load: Loader,
   resolve: Resolver,
+  jsxImportSource = "react",
 ) {
   return await denoCreateGraph(entrypoint, {
     kind: "codeOnly",
-    defaultJsxImportSource: "react",
+    defaultJsxImportSource: jsxImportSource,
     load,
     resolve,
   });
