@@ -4,7 +4,7 @@ import { FileBag } from "./sources/fileBag.ts";
 import { buildModuleGraph } from "./graph.ts";
 import { Logger } from "./logger.ts";
 import { Entrypoint, EntrypointConfig } from "./entrypoint.ts";
-import type { ImportMap } from "./types.ts";
+import type { GlobToRegExpOptions, ImportMap } from "./types.ts";
 import { isRemoteSpecifier } from "./graph/specifiers.ts";
 import { vendorEntrypoint } from "./vendor.ts";
 import { gatherSources } from "./sources/gatherSources.ts";
@@ -361,17 +361,19 @@ export class Builder {
     return json;
   }
 
+  globToRegExp(pattern: string, options: GlobToRegExpOptions = {
+    extended: true,
+    globstar: true,
+    caseInsensitive: false,
+  }) {
+    return globToRegExp(pattern, options);
+  }
+
   #buildPatterns(patterns?: string[]) {
     if (!patterns) {
       return [];
     }
 
-    return patterns.map((pattern) => {
-      return globToRegExp(pattern, {
-        extended: true,
-        globstar: true,
-        caseInsensitive: false,
-      });
-    });
+    return patterns.map((pattern) => this.globToRegExp(pattern));
   }
 }
