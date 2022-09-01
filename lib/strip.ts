@@ -1,21 +1,9 @@
-import init, {
+import {
   parse,
   print,
-} from "https://esm.sh/@swc/wasm-web@1.2.245/wasm-web.js";
-import { Visitor } from "https://esm.sh/@swc/core@1.2.245/Visitor.js";
-import { cache } from "https://deno.land/x/cache@0.2.13/mod.ts";
-import { toFileUrl } from "./deps.ts";
-import {
-  IfStatement,
-  Statement,
-  TsType,
-} from "https://esm.sh/v92/@swc/core@1.2.245/types.d.ts";
-
-const file = await cache(
-  "https://esm.sh/@swc/wasm-web@1.2.245/wasm-web_bg.wasm",
-);
-
-await init(toFileUrl(file.path));
+  Types,
+  Visitor
+} from "./swc.ts";
 
 export async function stripMesozoicConditionals(
   content: string,
@@ -42,7 +30,7 @@ export async function stripMesozoicConditionals(
 }
 
 class Stripper extends Visitor {
-  visitIfStatement(statement: IfStatement): Statement {
+  visitIfStatement(statement: Types.IfStatement): Types.Statement {
     if (
       statement.test.type === "Identifier" &&
       statement.test.value === "__MESOZOIC_BUILD__"
@@ -57,7 +45,7 @@ class Stripper extends Visitor {
     }
     return super.visitIfStatement(statement);
   }
-  visitTsType(type: TsType): TsType {
+  visitTsType(type: Types.TsType): Types.TsType {
     return type;
   }
 }
