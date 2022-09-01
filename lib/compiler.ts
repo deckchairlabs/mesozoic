@@ -1,12 +1,12 @@
 import init, {
   transform,
-} from "https://esm.sh/@swc/wasm-web@1.2.242/wasm-web.js";
-import type { JscTarget } from "https://esm.sh/@swc/core@1.2.242/types.d.ts";
+} from "https://esm.sh/@swc/wasm-web@1.2.245/wasm-web.js";
+import type { JscTarget } from "https://esm.sh/@swc/core@1.2.245/types.d.ts";
 import { cache } from "https://deno.land/x/cache@0.2.13/mod.ts";
 import { toFileUrl } from "./deps.ts";
 
 const file = await cache(
-  "https://esm.sh/@swc/wasm-web@1.2.242/wasm-web_bg.wasm",
+  "https://esm.sh/@swc/wasm-web@1.2.245/wasm-web_bg.wasm",
 );
 
 await init(toFileUrl(file.path));

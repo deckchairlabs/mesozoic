@@ -48,8 +48,8 @@ export class Builder {
   public log: Logger;
   public entrypoints: Map<string, EntrypointConfig> = new Map();
 
-  public excluded: RegExp[] = [];
-  public dynamicImportExcluded: RegExp[] = [];
+  public ignored: RegExp[] = [];
+  public dynamicImportIgnored: RegExp[] = [];
   public hashed: RegExp[] = [];
   public compiled: RegExp[] = [];
 
@@ -102,30 +102,28 @@ export class Builder {
   }
 
   /**
-   * Allows excluding certain files from the build process, they won't be copied
+   * Allows ignoring certain files from the build process, they won't be copied
    * to the build output directory, so no further processing will occur on them.
    *
    * @param paths an array of relative paths to exclude from the build process.
    */
-  setExcluded(paths: string[]) {
-    this.excluded = this.#buildPatterns([
+  setIgnored(paths: string[]) {
+    this.ignored = this.#buildPatterns([
       ...paths,
       this.context.output,
     ]);
   }
 
-  isExcluded(source: IFile): boolean {
-    return this.excluded.some((pattern) => pattern.test(source.relativePath()));
+  isIgnored(source: IFile): boolean {
+    return this.ignored.some((pattern) => pattern.test(source.relativePath()));
   }
 
-  setDynamicImportExcluded(paths: string[]) {
-    this.dynamicImportExcluded = this.#buildPatterns(paths);
+  setDynamicImportIgnored(paths: string[]) {
+    this.dynamicImportIgnored = this.#buildPatterns(paths);
   }
 
-  isDynamicImportSpecifierExcluded(specifier: string) {
-    return this.dynamicImportExcluded.some((pattern) =>
-      pattern.test(specifier)
-    );
+  isDynamicImportSpecifierIgnored(specifier: string) {
+    return this.dynamicImportIgnored.some((pattern) => pattern.test(specifier));
   }
 
   async build(sources: FileBag): Promise<BuildResult> {
@@ -262,7 +260,7 @@ export class Builder {
   }
 
   async copySource(source: IFile, destination: string = this.context.output) {
-    if (!this.isExcluded(source)) {
+    if (!this.isIgnored(source)) {
       let copied: IFile;
       if (this.isHashable(source)) {
         copied = await source.copyToHashed(destination);
@@ -340,19 +338,19 @@ export class Builder {
 
   toManifest(
     sources: FileBag,
-    { exclude = [], prefix }:
-      | { exclude?: string[]; prefix?: string }
+    { ignore = [], prefix }:
+      | { ignore?: string[]; prefix?: string }
       | undefined = {},
   ) {
     const json = [];
 
-    const excluded = this.#buildPatterns(exclude);
+    const ignored = this.#buildPatterns(ignore);
 
     for (const source of sources.values()) {
-      const isExcluded = excluded.some((pattern) =>
+      const isIgnored = ignored.some((pattern) =>
         pattern.test(source.relativePath())
       );
-      if (!isExcluded) {
+      if (!isIgnored) {
         json.push([
           source.relativeAlias() ?? source.relativePath(),
           prefix ? resolve(prefix, source.relativePath()) : source.path(),

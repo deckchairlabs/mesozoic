@@ -30,7 +30,7 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
     },
   });
 
-  builder.setExcluded([
+  builder.setIgnored([
     "./README.md",
     "./.private/**/*",
     "./.git/**/*",
@@ -41,7 +41,7 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
     "./client.+(ts|tsx|js|jsx)",
   ]);
 
-  builder.setDynamicImportExcluded([
+  builder.setDynamicImportIgnored([
     "https://deno.land/x/ultra@v2.0.0-alpha.17/lib/middleware/compiler.ts",
   ]);
 

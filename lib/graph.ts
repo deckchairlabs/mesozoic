@@ -13,7 +13,7 @@ export async function buildModuleGraph(
 ) {
   const bareSpecifiers = new Map<string, string>();
   const target = entrypoint.config!.target;
-  const load = createLoader(sources, target, builder.dynamicImportExcluded);
+  const load = createLoader(sources, target, builder.dynamicImportIgnored);
 
   const resolve = createResolver(
     builder.importMap,

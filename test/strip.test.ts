@@ -3,8 +3,10 @@ import { stripMesozoicConditionals } from "../lib/strip.ts";
 
 Deno.test("it works", async () => {
   const source = `
+    import React from 'react';
     if (__MESOZOIC_BUILD__) {
       console.log('removed')
+      console.log(React)
     } else {
       console.log('not removed')
     }
@@ -15,11 +17,10 @@ Deno.test("it works", async () => {
 
   const result = await stripMesozoicConditionals(source);
 
+  assertEquals(result.includes("React"), false);
   assertEquals(result.includes("console.log('removed')"), false);
   assertEquals(
-    result.includes(
-      "const {default: compiler} = await import('./compiler.ts');",
-    ),
+    result.includes("compiler"),
     false,
   );
   assertEquals(result.includes("console.log('not removed')"), true);

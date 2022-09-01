@@ -31,7 +31,8 @@ export function createResolver(
       resolved = importMapResolved.resolvedImport.href;
       bareSpecifiers.set(specifier, resolved);
     } else if (resolved.startsWith("file://")) {
-      const path = fromFileUrl(resolved.replace(referrer, "./"));
+      let path = resolved.replace(referrer, "./");
+      path = path.startsWith("file://") ? fromFileUrl(path) : path;
 
       const source = sources.find((source) => {
         return source.alias() === path || source.path() === path;
