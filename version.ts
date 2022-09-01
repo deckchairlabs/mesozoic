@@ -1,4 +1,4 @@
-export const VERSION = "1.0.0-alpha.34";
+export const VERSION = "1.0.0-alpha.35";
 export const VERSION_REGEX = /\/\/deno\.land\/x\/mesozoic@v[\w\.\-]+\//;
 
 /** `prepublish` will be invoked before publish, return `false` to prevent the publish. */
