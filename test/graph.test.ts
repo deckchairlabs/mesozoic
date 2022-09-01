@@ -35,7 +35,7 @@ const sources = new FileBag([
     ),
 ]);
 
-Deno.test("it can create a module graph", async () => {
+Deno.test("it can create a module graph", { ignore: true }, async () => {
   const bareSpecifiers = new Map<string, string>();
 
   const fixtureDir = getFixtureDir("graph");
@@ -70,7 +70,7 @@ Deno.test("it can create a module graph", async () => {
   );
 });
 
-Deno.test("it can resolve and load specifiers", async () => {
+Deno.test("it can resolve and load specifiers", { ignore: true }, async () => {
   const bareSpecifiers = new Map<string, string>();
 
   const load = createLoader(sources);

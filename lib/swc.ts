@@ -7,8 +7,7 @@ export {
 export type { JscTarget } from "https://esm.sh/@swc/core@1.2.246/types.d.ts";
 export { Visitor } from "https://esm.sh/@swc/core@1.2.246/Visitor.js";
 export * as Types from "https://esm.sh/v92/@swc/core@1.2.246/types.d.ts";
-import { cache } from "https://deno.land/x/cache@0.2.13/mod.ts";
-import { toFileUrl } from "./deps.ts";
+import { cache, toFileUrl } from "./deps.ts";
 
 const file = await cache(
   "https://esm.sh/@swc/wasm-web@1.2.246/wasm-web_bg.wasm",

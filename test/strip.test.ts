@@ -1,7 +1,7 @@
 import { assertEquals } from "./deps.ts";
 import { stripMesozoicConditionals } from "../lib/strip.ts";
 
-Deno.test("it works", async () => {
+Deno.test("it works", { ignore: true }, async () => {
   const source = `
     import React from 'react';
     if (__MESOZOIC_BUILD__) {
