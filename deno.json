@@ -6,6 +6,7 @@
     "files": {
       "exclude": [
         "./test/fixture/app/.build/",
+        "./test/fixture/importMap/vendor/",
         "./test/fixture/graph/",
         "./test/__snapshots__/"
       ]

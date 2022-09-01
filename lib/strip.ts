@@ -1,9 +1,4 @@
-import {
-  parse,
-  print,
-  Types,
-  Visitor
-} from "./swc.ts";
+import { parse, print, Types, Visitor } from "./swc.ts";
 
 export async function stripMesozoicConditionals(
   content: string,
