@@ -30,5 +30,7 @@ export function isValidImportSpecifier(specifier: string) {
     specifier.endsWith(".jsx"),
     specifier.endsWith(".ts"),
     specifier.endsWith(".tsx"),
+    specifier.endsWith(".json"),
+    specifier.endsWith(".wasm"),
   ].some((condition) => condition === true);
 }
