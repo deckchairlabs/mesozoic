@@ -1,14 +1,14 @@
 # 🌄 mesozoic
 
-[![GitHub Workflow Status][actions-badge]][actions]
+![GitHub Workflow Status](https://github.com/deckchairlabs/mesozoic/actions/workflows/ci.yml/badge.svg)
 [![Deno module](https://shield.deno.dev/x/mesozoic)](https://deno.land/x/mesozoic)
 ![Deno compatibility](https://shield.deno.dev/deno/^1.20.0)
 
-A generic build system for Deno web/server apps.
+### A generic build system for Deno web apps.
 
 ## What does it do?
 
-Mesozoic takes your input source files from `root`, copies those sources to
+Mesozoic takes your source files from `root`, copies those source files to
 `output` (preserving your project directory structure), transforms your
 JavaScript/TypeScript with [swc](https://swc.rs/), transforms your stylesheets
 with [ParcelCSS](https://github.com/parcel-bundler/parcel-css) and writes those
