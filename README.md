@@ -25,6 +25,14 @@ import { Builder } from "https://deno.land/x/mesozoic@v1.0.0-alpha.39/mod.ts";
 const builder = new Builder({
   root: "/absolute/path/to/source",
   output: "/absolute/path/to/output",
+  importMapPath: "./importMap.json",
+  compiler: {
+    minify: true,
+    sourceMaps: false,
+    jsxImportSource: "react",
+  },
+  name: "mesozoic",
+  logLevel: "INFO",
 });
 
 /**

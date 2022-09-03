@@ -11,15 +11,32 @@ import { gatherSources } from "./sources/gatherSources.ts";
 import { cssProcessor } from "./processor/css.ts";
 
 export type BuildContext = {
+  /**
+   * Absolute path to the project root directory.
+   */
   root: string;
+  /**
+   * Absolute path to the ourput directory.
+   */
   output: string;
+  /**
+   * Relative path to your importMap from root.
+   */
   importMapPath: string;
   compiler?: {
     minify?: boolean;
     sourceMaps?: boolean;
     jsxImportSource?: string;
   };
+  /**
+   * Give your build system a custom name. Used as logging prefix.
+   * @default "mesozoic"
+   */
   name?: string;
+  /**
+   * Customise the logging level
+   * @default "INFO"
+   */
   logLevel?: log.LevelName;
 };
 
