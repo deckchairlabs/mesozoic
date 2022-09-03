@@ -37,12 +37,12 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
   ]);
 
   builder.setHashed([
-    "./+(src|public)/**/*.+(ts|tsx|js|jsx|css)",
+    "./+(src|public)/**/*.+(ts|tsx|js|jsx|css|jpg)",
     "./client.+(ts|tsx|js|jsx)",
   ]);
 
   builder.setDynamicImportIgnored([
-    "https://deno.land/x/ultra@v2.0.0-alpha.17/lib/middleware/compiler.ts",
+    "https://deno.land/x/ultra@v2.0.0-beta.1/lib/middleware/compiler.ts",
   ]);
 
   builder.setCompiled([

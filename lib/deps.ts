@@ -31,6 +31,7 @@ export {
   globToRegExp,
   join,
   normalize,
+  relative,
   resolve,
   SEP,
   toFileUrl,

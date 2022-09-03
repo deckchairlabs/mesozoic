@@ -1,7 +1,15 @@
-import { basename, extname, join, sprintf, toFileUrl } from "../deps.ts";
+import {
+  basename,
+  dirname,
+  extname,
+  join,
+  sprintf,
+  toFileUrl,
+} from "../deps.ts";
 
 export interface IFile {
   filename(): string;
+  dirname(): string;
   path(): string;
   relativePath(): string;
   url(): URL;
@@ -41,6 +49,10 @@ export abstract class File implements IFile {
 
   filename() {
     return basename(this.filePath);
+  }
+
+  dirname() {
+    return dirname(this.filePath);
   }
 
   path() {

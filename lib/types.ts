@@ -1,3 +1,5 @@
+import { FileBag } from "./sources/fileBag.ts";
+
 export type {
   LoadResponse,
   ModuleGraph,
@@ -7,3 +9,7 @@ export type {
 export type { GlobToRegExpOptions } from "https://deno.land/std@0.153.0/path/glob.ts";
 
 export type { ImportMap } from "https://esm.sh/@import-maps/resolve@1.0.1";
+
+export type SourceProcessor = (
+  sources: FileBag,
+) => Promise<FileBag> | FileBag;

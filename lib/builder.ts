@@ -8,6 +8,7 @@ import type { GlobToRegExpOptions, ImportMap } from "./types.ts";
 import { isRemoteSpecifier } from "./graph/specifiers.ts";
 import { vendorEntrypoint } from "./vendor.ts";
 import { gatherSources } from "./sources/gatherSources.ts";
+import { cssProcessor } from "./processor/css.ts";
 
 export type BuildContext = {
   root: string;
@@ -135,6 +136,11 @@ export class Builder {
     try {
       const compilable = sources.filter((source) => this.isCompilable(source));
       const compiled = await this.compileSources(compilable);
+
+      /**
+       * Process css files
+       */
+      await cssProcessor(sources);
 
       /**
        * Get the entrypoint source files
@@ -326,14 +332,6 @@ export class Builder {
     await source.write(compiled.code);
 
     return source;
-  }
-
-  processSources(
-    sources: FileBag,
-    processor: (source: IFile) => Promise<IFile> | IFile,
-  ) {
-    this.#valid();
-    return Promise.all(sources.toArray().map((source) => processor(source)));
   }
 
   toManifest(
