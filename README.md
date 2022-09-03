@@ -28,15 +28,16 @@ builder.setEntrypoints({
 });
 
 /**
- * Exclude files from the build, relative to "root".
- * Any file that matches the provided patterns wont' be copied to the output directory.
+ * Ignore files from the build, relative to "root".
+ * Any file that matches the provided patterns won't be copied to the build output directory.
  */
-builder.setExcluded([
+builder.setIgnored([
   "./README.md",
 ]);
 
 /**
- * Files which should have their contents hashed and added to the filename, great for long lived caching
+ * Files which should have their contents hashed and added to the filename,
+ * great for long term caching (https://web.dev/use-long-term-caching/)
  */
 builder.setHashed([
   "./src/**/*.+(ts|tsx|js|jsx|css)",
