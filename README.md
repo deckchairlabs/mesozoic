@@ -62,7 +62,7 @@ builder.setHashed([
 ]);
 
 /**
- * Files which should be compiled, usually TypeScript or files with JSX.
+ * Files which should be compiled by SWC, usually TypeScript or files with JSX.
  */
 builder.setCompiled([
   "./**/*.+(ts|tsx|js|jsx)",
