@@ -25,6 +25,14 @@ export class ConditionalExpressionStripperVisitor extends Visitor {
           statement.test,
           this.conditional.expression,
         );
+      } else if (
+        this.isMemberExpression(statement.test) &&
+        this.isMemberExpression(this.conditional.expression)
+      ) {
+        replaceStatement = this.#testMemberExpressionAgainstConditional(
+          statement.test,
+          this.conditional.expression,
+        );
       }
 
       if (replaceStatement) {
@@ -47,6 +55,10 @@ export class ConditionalExpressionStripperVisitor extends Visitor {
     return super.visitIfStatement(statement);
   }
 
+  visitTsType(type: Types.TsType): Types.TsType {
+    return type;
+  }
+
   isBinaryExpression(
     expression: Types.Expression | undefined,
   ): expression is Types.BinaryExpression {
@@ -57,19 +69,37 @@ export class ConditionalExpressionStripperVisitor extends Visitor {
     return expression.type === "BinaryExpression";
   }
 
-  isIdentifier(expression: Types.Expression): expression is Types.Identifier {
+  isMemberExpression(
+    expression: Types.Expression | undefined,
+  ): expression is Types.MemberExpression {
+    if (!expression) {
+      return false;
+    }
+
+    return expression.type === "MemberExpression";
+  }
+
+  isIdentifier(
+    expression: Types.Expression | Types.ComputedPropName,
+  ): expression is Types.Identifier {
     return expression.type === "Identifier";
   }
 
-  visitTsType(type: Types.TsType): Types.TsType {
-    return type;
+  isStringLiteral(
+    expression: Types.Expression,
+  ): expression is Types.StringLiteral {
+    return expression.type === "StringLiteral";
   }
 
   #testIdentifiersMatch(
-    identifier1: Types.Identifier,
-    identifier2: Types.Identifier,
+    exp1: Types.Expression | Types.PrivateName | Types.ComputedPropName,
+    exp2: Types.Expression | Types.PrivateName | Types.ComputedPropName,
   ) {
-    return identifier1.value === identifier2.value;
+    if (this.isIdentifier(exp1) && this.isIdentifier(exp2)) {
+      return exp1.value === exp2.value;
+    }
+
+    return false;
   }
 
   #testStringLiteralsMatch(
@@ -82,16 +112,30 @@ export class ConditionalExpressionStripperVisitor extends Visitor {
   #testExpressionsMatch(
     exp1: Types.Expression,
     exp2: Types.Expression,
-  ) {
+  ): boolean {
     if (this.isIdentifier(exp1) && this.isIdentifier(exp2)) {
       return this.#testIdentifiersMatch(exp1, exp2);
     }
 
-    if (exp1.type === "StringLiteral" && exp2.type === "StringLiteral") {
+    if (this.isStringLiteral(exp1) && this.isStringLiteral(exp2)) {
       return this.#testStringLiteralsMatch(exp1, exp2);
     }
 
+    if (this.isMemberExpression(exp1) && this.isMemberExpression(exp2)) {
+      return this.#testExpressionsMatch(exp1, exp2);
+    }
+
     return false;
+  }
+
+  #testMemberExpressionAgainstConditional(
+    expression: Types.MemberExpression,
+    conditional: Types.MemberExpression,
+  ) {
+    return [
+      this.#testIdentifiersMatch(expression.object, conditional.object),
+      this.#testIdentifiersMatch(expression.property, conditional.property),
+    ].every((value) => value);
   }
 
   #testBinaryExpressionAgainstConditional(

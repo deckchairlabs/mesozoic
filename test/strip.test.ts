@@ -25,6 +25,7 @@ Deno.test("it works", async () => {
   );
 
   assertEquals(result.includes("React"), true);
+  assertEquals(result.includes("__DEV__"), false);
   assertEquals(result.includes("console.log('removed')"), false);
   assertEquals(
     result.includes("compiler"),
