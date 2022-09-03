@@ -27,10 +27,17 @@ export function createResolver(
       new URL(referrer),
     );
 
+    /**
+     * If we get a resolved match from the importMap
+     * we use that over anything else.
+     */
     if (importMapResolved.matched) {
       resolved = importMapResolved.resolvedImport.href;
       bareSpecifiers.set(specifier, resolved);
     } else if (resolved.startsWith("file://")) {
+      /**
+       * This is a local source file, attempt to find it within the sources FileBag
+       */
       let path = resolved.replace(referrer, "./");
       path = path.startsWith("file://") ? fromFileUrl(path) : path;
 
