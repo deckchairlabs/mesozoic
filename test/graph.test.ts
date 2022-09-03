@@ -73,7 +73,7 @@ Deno.test("it can create a module graph", async () => {
   );
 });
 
-Deno.test("it can resolve and load specifiers", { ignore: true }, async () => {
+Deno.test("it can resolve and load specifiers", async () => {
   const bareSpecifiers = new Map<string, string>();
 
   const load = createLoader(sources);
@@ -112,7 +112,7 @@ Deno.test("it can resolve and load specifiers", { ignore: true }, async () => {
    */
   assertEquals(
     resolve("./client.tsx", baseUrl),
-    "./client.tsx",
+    "file:///app/client.tsx",
   );
 
   /**
@@ -123,12 +123,12 @@ Deno.test("it can resolve and load specifiers", { ignore: true }, async () => {
 
   assertEquals(
     resolve("./src/app.tsx", baseUrl),
-    "./src/app.1234567890.tsx",
+    "file:///app/src/app.1234567890.tsx",
   );
 
   assertEquals(
     resolve("./src/components/Test.tsx", baseUrl),
-    "./src/components/Test.1234567890.tsx",
+    "file:///app/src/components/Test.1234567890.tsx",
   );
 
   assertEquals(Object.fromEntries(bareSpecifiers), {
@@ -172,7 +172,7 @@ Deno.test("it can resolve and load specifiers", { ignore: true }, async () => {
 
   const app = await load(resolve("./src/app.tsx", baseUrl));
   assertEquals(app?.kind, "module");
-  assertEquals(app?.specifier, "./src/app.1234567890.tsx");
+  assertEquals(app?.specifier, "file:///app/src/app.1234567890.tsx");
 });
 
 Deno.test("it can resolve and load for a specific target", async () => {

@@ -33,6 +33,4 @@ Deno.test("it works", () => {
       scopes.set(host, scoped);
     }
   }
-
-  console.log({ imports, scopes });
 });
