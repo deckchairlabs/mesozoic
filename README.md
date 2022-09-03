@@ -1,6 +1,23 @@
 # 🌄 mesozoic
 
+[![GitHub Workflow Status][actions-badge]][actions]
+[![Deno module](https://shield.deno.dev/x/mesozoic)](https://deno.land/x/mesozoic)
+![Deno compatibility](https://shield.deno.dev/deno/^1.20.0)
+
 A generic build system for Deno web/server apps.
+
+## What does it do?
+
+Mesozoic takes your input source files from `root`, copies those sources to
+`output` (preserving your project directory structure), transforms your
+JavaScript/TypeScript with [swc](https://swc.rs/), transforms your stylesheets
+with [ParcelCSS](https://github.com/parcel-bundler/parcel-css) and writes those
+resulting transformations to your `output` directory.
+
+## API
+
+You can build your own bespoke build system on top of Mesozoic, which
+[Ultra.js](https://ultrajs.dev) is currently doing.
 
 ```ts
 import { Builder } from "https://deno.land/x/mesozoic@v1.0.0-alpha.38/mod.ts";
