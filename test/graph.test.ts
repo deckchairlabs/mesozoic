@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows, toFileUrl } from "./deps.ts";
+import { assertEquals, assertThrows, join, toFileUrl } from "./deps.ts";
 import {
   createResolver,
   resolveBareSpecifierRedirects,
@@ -21,6 +21,7 @@ const importMap = {
     "@tanstack/react-query":
       "https://esm.sh/@tanstack/react-query?external=react",
     "ultra/": "https://deno.land/x/ultra/",
+    "graphql-type-json": "https://cdn.skypack.dev/graphql-type-json@0.3.2?dts",
   },
 };
 
@@ -35,7 +36,7 @@ const sources = new FileBag([
     ),
 ]);
 
-Deno.test("it can create a module graph", { ignore: true }, async () => {
+Deno.test("it can create a module graph", async () => {
   const bareSpecifiers = new Map<string, string>();
 
   const fixtureDir = getFixtureDir("graph");
@@ -50,7 +51,7 @@ Deno.test("it can create a module graph", { ignore: true }, async () => {
     fixtureUrl,
   );
 
-  const entrypoint = toFileUrl(resolve("./client.tsx", String(fixtureUrl)));
+  const entrypoint = join(String(fixtureUrl), "./client.tsx");
   const graph = await createGraph(String(entrypoint), load, resolve);
 
   const { redirects } = graph.toJSON();
@@ -66,6 +67,8 @@ Deno.test("it can create a module graph", { ignore: true }, async () => {
       "react/jsx-runtime":
         "https://esm.sh/stable/react@18.2.0/es2022/jsx-runtime.js",
       "react": "https://esm.sh/stable/react@18.2.0/es2022/react.js",
+      "graphql-type-json":
+        "https://cdn.skypack.dev/-/graphql-type-json@v0.3.2-DhOL463jxxvyflH53O4H/dist=es2019,mode=imports/optimized/graphql-type-json.js",
     },
   );
 });

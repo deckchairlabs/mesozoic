@@ -72,7 +72,10 @@ const loadRemote = async (
     const [imports, exports, facade] = await parseModule(content);
 
     if (facade && (exports.length === 1 || imports.length === 1)) {
-      const uniqueSpecifiers = resolveUniqueRemoteSpecifiers(imports);
+      const uniqueSpecifiers = resolveUniqueRemoteSpecifiers(
+        imports,
+        specifier,
+      );
       if (uniqueSpecifiers[0]) {
         const specifier = new URL(uniqueSpecifiers[0]);
         return loadRemote(specifier.href, target);
@@ -116,12 +119,27 @@ export async function loadLocal(
 
 export function resolveUniqueRemoteSpecifiers(
   imports: readonly ImportSpecifier[],
+  referrer: string,
 ) {
+  // Resolve the named imports
+  let namedImports = imports.map((specifier) => specifier.n).filter(
+    nonNullable,
+  );
+
+  /**
+   * Resolve relative imports like "export * from '/-/graphql-type-json/...'";
+   */
+  namedImports = namedImports.map((specifier) => {
+    if (specifier.startsWith("/") && referrer.startsWith("http")) {
+      return new URL(specifier, referrer).href;
+    }
+    return specifier;
+  });
+
+  // Resolve unique remote imports
   return Array.from(
     new Set(
-      imports.map((element) => element.n).filter((specifier) =>
-        specifier?.startsWith("http")
-      ),
+      namedImports.filter((specifier) => specifier?.startsWith("http")),
     ).values(),
   );
 }
@@ -149,4 +167,8 @@ export function prepareUrl(url: URL, target: "browser" | "deno" = "browser") {
   }
 
   return url;
+}
+
+export function nonNullable<T>(value: T): value is NonNullable<T> {
+  return value !== null && value !== undefined;
 }
