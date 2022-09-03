@@ -70,9 +70,6 @@ export class Builder {
     );
   }
 
-  async init() {
-  }
-
   setEntrypoints(entrypoints: BuilderEntrypoints) {
     this.entrypoints = new Map(Object.entries(entrypoints));
   }
