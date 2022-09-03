@@ -11,6 +11,9 @@ export async function createGraph(
   resolve: Resolver,
   jsxImportSource = "react",
 ) {
+  /**
+   * Create a codeOnly Module Graph
+   */
   return await denoCreateGraph(entrypoint, {
     kind: "codeOnly",
     defaultJsxImportSource: jsxImportSource,

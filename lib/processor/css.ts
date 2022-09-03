@@ -9,7 +9,7 @@ const file = await cache(
   "https://esm.sh/@parcel/css-wasm@1.13.1/parcel_css_node_bg.wasm",
 );
 
-// @ts-ignore whatever
+// @ts-ignore https://github.com/parcel-bundler/parcel-css/pull/269
 await init(toFileUrl(file.path));
 
 export const cssProcessor: SourceProcessor = async (sources) => {
@@ -24,6 +24,7 @@ export const cssProcessor: SourceProcessor = async (sources) => {
       code: sourceBytes,
       minify: true,
       cssModules: false,
+      // TODO(deckchairlabs): make browserlist targets configurable
       targets: browserslistToTargets(["chrome 100"]),
       errorRecovery: true,
       sourceMap: true,
