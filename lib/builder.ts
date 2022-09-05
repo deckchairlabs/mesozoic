@@ -23,6 +23,13 @@ export type BuildContext = {
    * Relative path to your importMap from root.
    */
   importMapPath: string;
+
+  /**
+   * The kind of module graph to build
+   * @default "codeOnly"
+   */
+  graphKind: "codeOnly" | "all";
+
   compiler?: {
     minify?: boolean;
     sourceMaps?: boolean;

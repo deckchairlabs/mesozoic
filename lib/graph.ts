@@ -51,6 +51,7 @@ export async function buildModuleGraph(
 
       return resolved;
     },
+    builder.context.graphKind,
     builder.context.compiler?.jsxImportSource,
   );
 

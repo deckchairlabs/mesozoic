@@ -9,13 +9,14 @@ export async function createGraph(
   entrypoint: string,
   load: Loader,
   resolve: Resolver,
+  kind: "codeOnly" | "all" = "all",
   jsxImportSource = "react",
 ) {
   /**
    * Create a codeOnly Module Graph
    */
   return await denoCreateGraph(entrypoint, {
-    kind: "codeOnly",
+    kind,
     defaultJsxImportSource: jsxImportSource,
     load,
     resolve,
