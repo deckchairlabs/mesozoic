@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows, join, toFileUrl } from "./deps.ts";
+import { assertEquals, assertThrows, toFileUrl } from "./deps.ts";
 import {
   createResolver,
   resolveBareSpecifierRedirects,
@@ -8,14 +8,9 @@ import { VirtualFile } from "../lib/sources/virtualFile.ts";
 import { createLoader } from "../lib/graph/load.ts";
 import { createGraph } from "../lib/graph/createGraph.ts";
 import { gatherSources } from "../lib/sources/gatherSources.ts";
-import {
-  ensureRelativePath,
-  ensureTrailingSlash,
-  getFixtureDir,
-} from "./helpers.ts";
-import { SEP } from "../lib/deps.ts";
+import { ensureTrailingSlash, getFixtureDir } from "./helpers.ts";
 
-const baseUrl = ensureTrailingSlash(toFileUrl(join(SEP, "app")).href);
+const baseUrl = "file:///app/";
 
 const importMap = {
   imports: {
@@ -56,7 +51,7 @@ Deno.test("it can create a module graph", async () => {
     fixtureUrl,
   );
 
-  const entrypoint = join(String(fixtureUrl), ensureRelativePath("client.tsx"));
+  const entrypoint = new URL("client.tsx", fixtureUrl);
   const graph = await createGraph(String(entrypoint), load, resolve);
 
   const { redirects } = graph.toJSON();
@@ -116,7 +111,7 @@ Deno.test("it can resolve and load specifiers", async () => {
    * Relative local file path specifiers
    */
   assertEquals(
-    resolve([".", "client.tsx"].join(SEP), baseUrl),
+    resolve("./client.tsx", baseUrl),
     "file:///app/client.tsx",
   );
 

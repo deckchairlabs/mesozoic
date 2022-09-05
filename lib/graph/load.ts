@@ -98,7 +98,7 @@ export async function loadLocal(
   specifier: string,
   sources: FileBag,
 ): Promise<LoadResponse | undefined> {
-  const source = await sources.find((source) => {
+  const source = sources.find((source) => {
     if (isLocalSpecifier(specifier)) {
       return String(source.url()) === specifier;
     }
