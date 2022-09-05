@@ -1,3 +1,4 @@
+import { SEP } from "../lib/deps.ts";
 import { join } from "./deps.ts";
 
 export function getFixtureDir(path: string) {
@@ -18,6 +19,10 @@ export function createRelativeUrl(
   base: URL,
 ): URL {
   return new URL(url, ensureTrailingSlash(base));
+}
+
+export function ensureRelativePath(path: string) {
+  return path.startsWith(".") ? path : [".", path].join(SEP);
 }
 
 export function ensureTrailingSlash(string: string | URL) {

@@ -8,9 +8,14 @@ import { VirtualFile } from "../lib/sources/virtualFile.ts";
 import { createLoader } from "../lib/graph/load.ts";
 import { createGraph } from "../lib/graph/createGraph.ts";
 import { gatherSources } from "../lib/sources/gatherSources.ts";
-import { ensureTrailingSlash, getFixtureDir } from "./helpers.ts";
+import {
+  ensureRelativePath,
+  ensureTrailingSlash,
+  getFixtureDir,
+} from "./helpers.ts";
+import { SEP } from "../lib/deps.ts";
 
-const baseUrl = "file:///app/";
+const baseUrl = ensureTrailingSlash(toFileUrl(join(SEP, "app")).href);
 
 const importMap = {
   imports: {
@@ -51,7 +56,7 @@ Deno.test("it can create a module graph", async () => {
     fixtureUrl,
   );
 
-  const entrypoint = join(String(fixtureUrl), "./client.tsx");
+  const entrypoint = join(String(fixtureUrl), ensureRelativePath("client.tsx"));
   const graph = await createGraph(String(entrypoint), load, resolve);
 
   const { redirects } = graph.toJSON();
@@ -111,7 +116,7 @@ Deno.test("it can resolve and load specifiers", async () => {
    * Relative local file path specifiers
    */
   assertEquals(
-    resolve("./client.tsx", baseUrl),
+    resolve([".", "client.tsx"].join(SEP), baseUrl),
     "file:///app/client.tsx",
   );
 
@@ -153,14 +158,14 @@ Deno.test("it can resolve and load specifiers", async () => {
   assertEquals(reactDom?.kind, "module");
   assertEquals(
     reactDom?.specifier,
-    "https://esm.sh/v92/react-dom@18.2.0/es2022/react-dom.js",
+    "https://esm.sh/v93/react-dom@18.2.0/es2022/react-dom.js",
   );
 
   const reactDomServer = await load(resolve("react-dom/server", baseUrl));
   assertEquals(reactDomServer?.kind, "module");
   assertEquals(
     reactDomServer?.specifier,
-    "https://esm.sh/v92/react-dom@18.2.0/es2022/server.js",
+    "https://esm.sh/v93/react-dom@18.2.0/es2022/server.js",
   );
 
   const jsxRuntime = await load(resolve("react/jsx-runtime", baseUrl));

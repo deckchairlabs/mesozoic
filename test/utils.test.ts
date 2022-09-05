@@ -1,4 +1,4 @@
-import { assertEquals } from "./deps.ts";
+import { assertEquals, normalize } from "./deps.ts";
 import { rootUrlToSafeLocalDirname } from "../lib/fs.ts";
 
 Deno.test("rootUrlToSafeLocalDirname", () => {
@@ -7,6 +7,6 @@ Deno.test("rootUrlToSafeLocalDirname", () => {
   );
   assertEquals(
     rootUrlToSafeLocalDirname(url),
-    "/esm.sh/v92/react-dom@18.2.0/es2020/server.js",
+    normalize("/esm.sh/v92/react-dom@18.2.0/es2020/server.js"),
   );
 });

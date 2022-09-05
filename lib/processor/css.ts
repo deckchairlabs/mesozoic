@@ -2,7 +2,7 @@ import init, {
   browserslistToTargets,
   transform,
 } from "https://esm.sh/@parcel/css-wasm@1.13.1/index.js";
-import { cache, join, toFileUrl } from "../deps.ts";
+import { cache, join, SEP, toFileUrl } from "../deps.ts";
 import { SourceProcessor } from "../types.ts";
 
 const file = await cache(
@@ -45,7 +45,7 @@ export const cssProcessor: SourceProcessor = async (sources) => {
       for (const dependency of result.dependencies) {
         if (dependency.type === "url") {
           const relativeRoot = source.dirname().replace(source.root(), ".");
-          const lookupPath = `./${join(relativeRoot, dependency.url)}`;
+          const lookupPath = `.${SEP}${join(relativeRoot, dependency.url)}`;
           const dependencySource = await sources.get(lookupPath);
 
           if (dependencySource) {

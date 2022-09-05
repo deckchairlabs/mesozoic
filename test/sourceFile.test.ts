@@ -1,6 +1,10 @@
 import { SourceFile } from "../lib/sources/sourceFile.ts";
 import { assertEquals, assertRejects, assertSnapshot, join } from "./deps.ts";
-import { getFixtureDir, getFixturePath } from "./helpers.ts";
+import {
+  ensureRelativePath,
+  getFixtureDir,
+  getFixturePath,
+} from "./helpers.ts";
 
 const outputDir = await Deno.makeTempDir();
 
@@ -12,7 +16,7 @@ function createSourceFile(path: string) {
 }
 
 Deno.test("constructor", async () => {
-  const path = "./src/app.tsx";
+  const path = join("src", "app.tsx");
   const sourceFile = createSourceFile(path);
 
   assertEquals(sourceFile.isLocked(), true);
@@ -21,7 +25,7 @@ Deno.test("constructor", async () => {
     sourceFile.path(),
     getFixturePath("app", sourceFile.relativePath()),
   );
-  assertEquals(sourceFile.relativePath(), path);
+  assertEquals(sourceFile.relativePath(), ensureRelativePath(path));
   assertEquals(await sourceFile.contentHash(), "886415b0");
 });
 
@@ -53,11 +57,11 @@ Deno.test("remove a locked file", () => {
 });
 
 Deno.test("read a file", async (t) => {
-  const sourceFile = createSourceFile("./src/app.tsx");
+  const sourceFile = createSourceFile(join("src", "app.tsx"));
   assertSnapshot(t, await sourceFile.read());
 });
 
 Deno.test("read a non existent file", () => {
-  const sourceFile = createSourceFile("./src/app2.tsx");
+  const sourceFile = createSourceFile(join("src", "app2.tsx"));
   assertRejects(() => sourceFile.read());
 });
