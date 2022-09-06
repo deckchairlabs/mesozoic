@@ -17,7 +17,7 @@ export type CompilerOptions = {
 export async function compile(source: string, options: CompilerOptions) {
   const {
     filename,
-    target = "es2020",
+    target = "es2022",
     useBuiltins = true,
     externalHelpers = true,
     dynamicImport = true,
