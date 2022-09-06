@@ -13,7 +13,7 @@ export async function createGraph(
   jsxImportSource = "react",
 ) {
   /**
-   * Create a codeOnly Module Graph
+   * Create a Module Graph for the provided entrypoint
    */
   return await denoCreateGraph(entrypoint, {
     kind,

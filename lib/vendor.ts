@@ -35,6 +35,7 @@ export async function vendorEntrypoint(
             new URL(module.specifier),
             vendorPath,
           );
+
           vendorSources.add(
             new VirtualFile(path, outputDir, resolved.source),
           );
