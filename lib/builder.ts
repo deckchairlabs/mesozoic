@@ -28,7 +28,7 @@ export type BuildContext = {
    * The kind of module graph to build
    * @default "codeOnly"
    */
-  graphKind: "codeOnly" | "all";
+  graphKind?: "codeOnly" | "all";
 
   compiler?: {
     minify?: boolean;

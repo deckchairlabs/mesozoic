@@ -1,5 +1,8 @@
 import useAsset from "ultra/hooks/use-asset.js";
 import Hello from "./components/Test.tsx";
+import type { Foo } from "./types.ts";
+
+const foo: Foo = "bar";
 
 export default function App() {
   console.log("Hello world!");
