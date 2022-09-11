@@ -1,9 +1,9 @@
-import type { JscTarget } from "./swc.ts";
+import type { Types } from "./swc.ts";
 import { transform } from "./swc.ts";
 
 export type CompilerOptions = {
   filename?: string;
-  target?: JscTarget;
+  target?: Types.JscTarget;
   useBuiltins?: boolean;
   externalHelpers?: boolean;
   dynamicImport?: boolean;
