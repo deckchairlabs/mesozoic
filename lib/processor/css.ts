@@ -1,15 +1,14 @@
 import init, {
   browserslistToTargets,
   transform,
-} from "https://esm.sh/@parcel/css-wasm@1.13.1/index.js";
+} from "https://esm.sh/lightningcss-wasm@1.14.0/index.js";
 import { cache, join, SEP, toFileUrl } from "../deps.ts";
 import { SourceProcessor } from "../types.ts";
 
 const file = await cache(
-  "https://esm.sh/@parcel/css-wasm@1.13.1/parcel_css_node_bg.wasm",
+  "https://esm.sh/lightningcss-wasm@1.14.0/lightningcss_node_bg.wasm",
 );
 
-// @ts-ignore https://github.com/parcel-bundler/parcel-css/pull/269
 await init(toFileUrl(file.path));
 
 export const cssProcessor: SourceProcessor = async (sources) => {

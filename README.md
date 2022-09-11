@@ -11,8 +11,8 @@
 Mesozoic takes your source files from `root`, copies those source files to
 `output` (preserving your project directory structure), transforms your
 JavaScript/TypeScript with [swc](https://swc.rs/), transforms your stylesheets
-with [ParcelCSS](https://github.com/parcel-bundler/parcel-css) and writes those
-resulting transformations to your `output` directory.
+with [Lightning CSS](https://lightningcss.dev/) and writes those resulting
+transformations to your `output` directory.
 
 ## API
 
