@@ -3,6 +3,7 @@ import { parseModule } from "../deps.ts";
 import { FileBag } from "../sources/fileBag.ts";
 import { LoadResponse } from "../types.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./specifiers.ts";
+await initModuleLexer;
 
 export type Loader = (
   url: string,
@@ -68,7 +69,6 @@ const loadRemote = async (
     /**
      * If we detect a "facade" and there is only 1 import OR 1 export
      */
-    await initModuleLexer;
     const [imports, exports, facade] = await parseModule(content);
 
     if (facade && (exports.length === 1 || imports.length === 1)) {
