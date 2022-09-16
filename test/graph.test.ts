@@ -14,12 +14,12 @@ const baseUrl = "file:///app/";
 
 const importMap = {
   imports: {
-    "react": "https://esm.sh/react",
-    "react/": "https://esm.sh/react/",
-    "react-dom": "https://esm.sh/react-dom",
-    "react-dom/": "https://esm.sh/react-dom/",
+    "react": "https://esm.sh/react@18.2.0?pin=v93",
+    "react/": "https://esm.sh/react@18.2.0&pin=v93/",
+    "react-dom": "https://esm.sh/react-dom@18.2.0?pin=v93",
+    "react-dom/": "https://esm.sh/react-dom@18.2.0&pin=v93/",
     "@tanstack/react-query":
-      "https://esm.sh/@tanstack/react-query?external=react",
+      "https://esm.sh/@tanstack/react-query?external=react&pin=v93",
     "ultra/": "https://deno.land/x/ultra/",
     "graphql-type-json": "https://cdn.skypack.dev/graphql-type-json@0.3.2?dts",
   },
@@ -89,17 +89,17 @@ Deno.test("it can resolve and load specifiers", async () => {
    */
   assertEquals(
     resolve("react", baseUrl),
-    "https://esm.sh/react",
+    "https://esm.sh/react@18.2.0?pin=v93",
   );
 
   assertEquals(
-    resolve("react/client", baseUrl),
-    "https://esm.sh/react/client",
+    resolve("react-dom/client", baseUrl),
+    "https://esm.sh/react-dom@18.2.0&pin=v93/client",
   );
 
   assertEquals(
     resolve("@tanstack/react-query", baseUrl),
-    "https://esm.sh/@tanstack/react-query?external=react",
+    "https://esm.sh/@tanstack/react-query?external=react&pin=v93",
   );
 
   assertEquals(
@@ -132,10 +132,10 @@ Deno.test("it can resolve and load specifiers", async () => {
   );
 
   assertEquals(Object.fromEntries(bareSpecifiers), {
-    "react": "https://esm.sh/react",
-    "react/client": "https://esm.sh/react/client",
+    "react": "https://esm.sh/react@18.2.0?pin=v93",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0&pin=v93/client",
     "@tanstack/react-query":
-      "https://esm.sh/@tanstack/react-query?external=react",
+      "https://esm.sh/@tanstack/react-query?external=react&pin=v93",
     "ultra/server.ts": "https://deno.land/x/ultra/server.ts",
   });
 
