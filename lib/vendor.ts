@@ -83,8 +83,32 @@ function importMapFromEntrypoint(
   const bareSpecifiers = entrypoint.bareImportSpecifiers;
   const vendorUrlPrefix = `./${vendorPath}`;
 
+  function pushScopedImport(specifier: URL) {
+    const scopeUrl = new URL("/", specifier);
+
+    const scopedPath = rootUrlToSafeLocalDirname(scopeUrl, vendorUrlPrefix) +
+      "/";
+
+    if (!scopes.has(scopedPath)) {
+      scopes.set(scopedPath, []);
+    }
+
+    const scope = scopes.get(scopedPath);
+    scope?.push(specifier.pathname);
+
+    if (!imports.has(String(scopeUrl))) {
+      imports.set(String(scopeUrl), scopedPath);
+    }
+  }
+
   if (entrypoint.moduleGraph) {
+    const graph = entrypoint.moduleGraph.toJSON();
     const modules = entrypoint.moduleGraph.modules.values();
+
+    // Prepare the redirects
+    for (const [specifier, redirect] of Object.entries(graph.redirects)) {
+      bareSpecifiers.set(specifier, redirect);
+    }
 
     for (const module of modules) {
       const rootUrl = removeSearchParams(new URL(module.specifier));
@@ -108,21 +132,7 @@ function importMapFromEntrypoint(
           );
         }
       } else {
-        const scopeUrl = new URL("/", rootUrl);
-        const scopedPath =
-          rootUrlToSafeLocalDirname(scopeUrl, vendorUrlPrefix) +
-          "/";
-
-        if (!scopes.has(scopedPath)) {
-          scopes.set(scopedPath, []);
-        }
-
-        const scope = scopes.get(scopedPath);
-        scope?.push(rootUrl.pathname);
-
-        if (!imports.has(String(scopeUrl))) {
-          imports.set(String(scopeUrl), scopedPath);
-        }
+        pushScopedImport(rootUrl);
       }
     }
 
@@ -181,7 +191,9 @@ function collapseRemoteSpecifiers(scopes: Map<string, string[]>) {
   for (const [scope, imports] of scopes) {
     const paths = new Map(
       imports.map((specifier) => {
-        const path = specifier.substring(1, specifier.indexOf("/", 1));
+        const indexOfSlash = specifier.indexOf("/", 1);
+        const end = indexOfSlash >= 0 ? indexOfSlash : undefined;
+        const path = specifier.substring(1, end);
         return [`/${path}/`, scope + path + "/"];
       }),
     );
