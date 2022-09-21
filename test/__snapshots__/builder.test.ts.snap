@@ -11,7 +11,7 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
     react: "./vendor/browser/esm.sh/stable/react@18.2.0/es2022/react.js",
     "react-dom/client": "./vendor/browser/esm.sh/v93/react-dom@18.2.0/es2022/client.js",
     "react/jsx-runtime": "./vendor/browser/esm.sh/stable/react@18.2.0/es2022/jsx-runtime.js",
-    "ultra/hooks/use-asset.js": "./vendor/browser/deno.land/x/ultra@v2.0.0-beta.2/hooks/use-asset.js",
+    "ultra/hooks/use-asset.js": "./vendor/browser/deno.land/x/ultra@v2.0.0-beta.7/hooks/use-asset.js",
   },
   scopes: {
     "./vendor/browser/deno.land/": {
@@ -36,8 +36,8 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
     react: "./vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
     "react-dom/server": "./vendor/server/esm.sh/v93/react-dom@18.2.0/deno/server.js",
     "react/jsx-runtime": "./vendor/server/esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
-    "ultra/hooks/use-asset.js": "./vendor/server/deno.land/x/ultra@v2.0.0-beta.2/hooks/use-asset.js",
-    "ultra/server.ts": "./vendor/server/deno.land/x/ultra@v2.0.0-beta.2/server.ts",
+    "ultra/hooks/use-asset.js": "./vendor/server/deno.land/x/ultra@v2.0.0-beta.7/hooks/use-asset.js",
+    "ultra/server.ts": "./vendor/server/deno.land/x/ultra@v2.0.0-beta.7/server.ts",
   },
   scopes: {
     "./vendor/server/deno.land/": {
