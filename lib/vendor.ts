@@ -1,9 +1,7 @@
-import { groupBy } from "https://deno.land/std@0.153.0/collections/group_by.ts";
 import { Builder } from "./builder.ts";
 import { join, sprintf } from "./deps.ts";
 import { Entrypoint } from "./entrypoint.ts";
 import { rootUrlToSafeLocalDirname } from "./fs.ts";
-import { isRemoteSpecifier } from "./graph/specifiers.ts";
 import { FileBag } from "./sources/fileBag.ts";
 import { VirtualFile } from "./sources/virtualFile.ts";
 import type { ImportMap } from "./types.ts";
@@ -81,32 +79,22 @@ function importMapFromEntrypoint(
   vendorPath: string,
 ) {
   const imports = new Map<string, string>();
+  const scopes = new Map<string, string[]>();
   const bareSpecifiers = entrypoint.bareImportSpecifiers;
   const vendorUrlPrefix = `./${vendorPath}`;
-  const redirects = new Map<string, string>();
 
   if (entrypoint.moduleGraph) {
-    const graph = entrypoint.moduleGraph.toJSON();
     const modules = entrypoint.moduleGraph.modules.values();
 
-    // Prepare the redirects
-    for (const [specifier, redirect] of Object.entries(graph.redirects)) {
-      bareSpecifiers.set(specifier, redirect);
-      redirects.set(
-        specifier,
-        rootUrlToSafeLocalDirname(new URL(redirect), vendorUrlPrefix),
-      );
-    }
-
     for (const module of modules) {
-      const moduleSpecifier =
-        removeSearchParams(new URL(module.specifier)).href;
+      const rootUrl = removeSearchParams(new URL(module.specifier));
+      const specifier = String(rootUrl);
 
       // Resolve local source
-      if (moduleSpecifier.startsWith("file://")) {
+      if (specifier.startsWith("file://")) {
         // Find the local source matching this specifier
         const source = sources.find((source) =>
-          source.url().href === moduleSpecifier
+          source.url().href === specifier
         );
 
         if (source) {
@@ -116,14 +104,25 @@ function importMapFromEntrypoint(
           );
         } else {
           throw new Error(
-            sprintf("failed to find local source %s", moduleSpecifier),
+            sprintf("failed to find local source %s", specifier),
           );
         }
       } else {
-        imports.set(
-          moduleSpecifier,
-          rootUrlToSafeLocalDirname(new URL(moduleSpecifier), vendorUrlPrefix),
-        );
+        const scopeUrl = new URL("/", rootUrl);
+        const scopedPath =
+          rootUrlToSafeLocalDirname(scopeUrl, vendorUrlPrefix) +
+          "/";
+
+        if (!scopes.has(scopedPath)) {
+          scopes.set(scopedPath, []);
+        }
+
+        const scope = scopes.get(scopedPath);
+        scope?.push(rootUrl.pathname);
+
+        if (!imports.has(String(scopeUrl))) {
+          imports.set(String(scopeUrl), scopedPath);
+        }
       }
     }
 
@@ -136,28 +135,18 @@ function importMapFromEntrypoint(
         specifier = resolvedSpecifier;
       }
 
-      // If there was a redirect, use that
-      if (redirects.has(bareSpecifier)) {
-        // Detect bare specifiers like https://esm.sh/rehype-highlight
-        if (isRemoteSpecifier(specifier)) {
-          imports.set(bareSpecifier, redirects.get(bareSpecifier)!);
-        } else {
-          imports.set(specifier, redirects.get(bareSpecifier)!);
-        }
-      } // Otherwise check if there is already an import of this resolved specifier
-      else if (imports.has(bareSpecifier)) {
+      if (imports.has(bareSpecifier)) {
         imports.set(specifier, imports.get(bareSpecifier)!);
       } else {
         try {
           const module = entrypoint.moduleGraph.get(resolvedSpecifier);
           if (module) {
-            imports.set(
-              bareSpecifier,
-              rootUrlToSafeLocalDirname(
-                new URL(module.specifier),
-                vendorUrlPrefix,
-              ),
+            const vendorPath = rootUrlToSafeLocalDirname(
+              new URL(module.specifier),
+              vendorUrlPrefix,
             );
+            // react -> ./vendor/path/react.js
+            imports.set(bareSpecifier, vendorPath);
           } else {
             if (resolvedSpecifier.includes(".d.ts") === false) {
               builder.log.warning(
@@ -180,54 +169,27 @@ function importMapFromEntrypoint(
     entrypoint.moduleGraph.free();
   }
 
-  const importMap = generateScopedImportMap(imports, redirects, vendorPath);
-
-  return importMap;
-}
-
-function generateScopedImportMap(
-  imports: Map<string, string>,
-  redirects: Map<string, string>,
-  vendorPath: string,
-): ImportMap {
-  vendorPath = `./${vendorPath}/`;
-
-  const importSpecifiers = Array.from(imports.keys()).filter((specifier) =>
-    specifier.startsWith("http") && !redirects.get(specifier)
-  ).map((specifier) => new URL(specifier));
-
-  const groupedByOrigin = groupBy(
-    importSpecifiers,
-    (specifier) => specifier.origin,
-  );
-
-  const scopes = new Map<string, Record<string, string>>();
-
-  for (const [origin, specifiers] of Object.entries(groupedByOrigin)) {
-    if (specifiers) {
-      const url = new URL(origin);
-      const host = `${vendorPath}${url.host}/`;
-
-      imports.set(`${origin}/`, host);
-      const scoped = new Map<string, string>();
-
-      for (const specifier of specifiers.values()) {
-        scoped.set(
-          specifier.pathname,
-          [host, specifier.pathname.replace(/^\/+/, "")].join(""),
-        );
-
-        imports.delete(specifier.href);
-      }
-
-      scopes.set(host, Object.fromEntries(scoped));
-    }
-  }
-
   return {
     imports: Object.fromEntries(imports),
-    scopes: Object.fromEntries(scopes),
+    scopes: Object.fromEntries(collapseRemoteSpecifiers(scopes)),
   };
+}
+
+function collapseRemoteSpecifiers(scopes: Map<string, string[]>) {
+  const collapsed: Map<string, Record<string, string>> = new Map();
+
+  for (const [scope, imports] of scopes) {
+    const paths = new Map(
+      imports.map((specifier) => {
+        const path = specifier.substring(1, specifier.indexOf("/", 1));
+        return [`/${path}/`, scope + path + "/"];
+      }),
+    );
+
+    collapsed.set(scope, Object.fromEntries(paths));
+  }
+
+  return collapsed;
 }
 
 function removeSearchParams(url: URL) {

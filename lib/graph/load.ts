@@ -3,6 +3,7 @@ import { parseModule } from "../deps.ts";
 import { FileBag } from "../sources/fileBag.ts";
 import { LoadResponse } from "../types.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./specifiers.ts";
+
 await initModuleLexer;
 
 export type Loader = (
@@ -163,6 +164,7 @@ export function prepareUrl(url: URL, target: "browser" | "deno" = "browser") {
        * We don't want development sources
        */
       url.searchParams.delete("dev");
+      url.pathname = url.pathname.replace("&dev", "");
       break;
   }
 
