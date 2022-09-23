@@ -13,3 +13,5 @@ export type { ImportMap } from "https://esm.sh/@import-maps/resolve@1.0.1";
 export type SourceProcessor = (
   sources: FileBag,
 ) => Promise<FileBag> | FileBag;
+
+export type Target = "browser" | "deno";

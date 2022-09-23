@@ -1,8 +1,6 @@
 import { IFile } from "./sources/file.ts";
 import { SourceFile } from "./sources/sourceFile.ts";
-import type { ImportMap, ModuleGraph } from "./types.ts";
-
-export type EntrypointTarget = "browser" | "deno";
+import type { ImportMap, ModuleGraph, Target } from "./types.ts";
 
 export type EntrypointConfig = {
   /**
@@ -10,7 +8,7 @@ export type EntrypointConfig = {
    * of this entrypoint, relative to the vendor output directory.
    */
   vendorOutputDir: string;
-  target: EntrypointTarget;
+  target: Target;
 };
 
 export class Entrypoint extends SourceFile implements IFile {

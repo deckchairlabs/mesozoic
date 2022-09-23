@@ -193,7 +193,6 @@ export class Builder {
       /**
        * Create the module graph for each entrypoint
        */
-
       for (const entrypoint of entrypoints.values()) {
         const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
         this.log.info(
