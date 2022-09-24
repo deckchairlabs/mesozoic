@@ -1,6 +1,7 @@
-import { normalize, sprintf, walk } from "../deps.ts";
+import { fromFileUrl, normalize, sprintf, walk } from "../deps.ts";
 import { rootUrlToSafeLocalDirname } from "../fs.ts";
-import { ModuleGraph } from "../types.ts";
+import { isRemoteSpecifier } from "../graph/specifiers.ts";
+import { Module } from "../types.ts";
 import { IFile } from "./file.ts";
 import { SourceFile } from "./sourceFile.ts";
 import { VirtualFile } from "./virtualFile.ts";
@@ -22,28 +23,31 @@ export class FileBag extends Set<IFile> {
     return new FileBag(items);
   }
 
-  static fromModuleGraph(graph: ModuleGraph, destination: string) {
+  static fromModules(
+    modules: Module[],
+    path: string,
+  ) {
     const items: IFile[] = [];
-    const modules = graph.modules.values();
 
     for (const module of modules) {
-      if (module.specifier.startsWith("file://") === false) {
-        const resolved = graph.get(module.specifier);
+      if (isRemoteSpecifier(module.specifier)) {
+        const safePath = rootUrlToSafeLocalDirname(
+          new URL(module.specifier),
+          ".",
+        );
 
-        if (resolved) {
-          const path = rootUrlToSafeLocalDirname(
-            new URL(module.specifier),
-            destination,
-          );
-
-          items.push(
-            new VirtualFile(path, destination, resolved.source),
-          );
-        }
+        const file = new VirtualFile(safePath, path, module.source);
+        items.push(file);
       } else {
-        console.log(module.specifier);
+        const file = new VirtualFile(
+          fromFileUrl(module.specifier),
+          path,
+          module.source,
+        );
+        items.push(file);
       }
     }
+
     return new FileBag(items);
   }
 

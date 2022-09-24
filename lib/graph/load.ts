@@ -1,4 +1,5 @@
 import {
+  cache,
   crayon,
   ImportSpecifier,
   initModuleLexer,
@@ -8,7 +9,7 @@ import {
 import { parseModule } from "../deps.ts";
 import { Logger } from "../logger.ts";
 import { FileBag } from "../sources/fileBag.ts";
-import { LoadResponse, LoadResponseModule, Target } from "../types.ts";
+import { LoadResponse, LoadResponseModule, Policy, Target } from "../types.ts";
 import { wrapFn } from "../utils.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./specifiers.ts";
 
@@ -75,11 +76,14 @@ export function createLoadRequest(specifier: string, target: Target) {
 export async function loadRemoteSpecifier(
   specifier: string,
   target: "browser" | "deno",
+  policy?: Policy,
 ): Promise<LoadResponse | undefined> {
   try {
     const request = createLoadRequest(specifier, target);
-    const response = await fetch(request);
-    const responseUrl = new URL(response.url);
+    const cached = await cache(request.url, policy);
+
+    const response = await fetch(toFileUrl(cached.path));
+    const responseUrl = cached.url;
 
     if (response.status !== 200) {
       // ensure the body is read as to not leak resources
@@ -100,7 +104,7 @@ export async function loadRemoteSpecifier(
     );
 
     if (facadeRedirect) {
-      return loadRemoteSpecifier(facadeRedirect.href, target);
+      return loadRemoteSpecifier(facadeRedirect.href, target, policy);
     }
 
     return {
@@ -178,7 +182,7 @@ export function resolveUniqueRemoteSpecifiers(
    */
   namedImports = namedImports.map((specifier) => {
     if (specifier.startsWith("/") && isRemoteSpecifier(referrer)) {
-      return new URL(specifier, referrer).href;
+      return String(new URL(specifier, referrer));
     }
     return specifier;
   });

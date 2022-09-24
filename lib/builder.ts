@@ -21,7 +21,7 @@ import type {
 import { vendorModuleGraph } from "./vendor.ts";
 import { gatherSources } from "./sources/gatherSources.ts";
 import { cssProcessor } from "./processor/css.ts";
-import { isRemoteSpecifier } from "./graph/specifiers.ts";
+import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
 import { createLoader, wrapLoaderWithLogging } from "./graph/load.ts";
 import {
   BareSpecifiersMap,
@@ -199,26 +199,22 @@ export class Builder {
   async build(sources: FileBag) {
     try {
       /**
-       * Get all the local sources
-       */
-      const localSources = sources.filter((source) =>
-        !isRemoteSpecifier(String(source.url()))
-      );
-
-      /**
        * Create a module graph for each entrypoint and vendor the dependencies
        */
-      const vendorOutputDir = join(this.context.output, "vendor");
-
       for (const entrypoint of this.entrypoints.values()) {
         const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
         const bareSpecifiers: BareSpecifiersMap = new Map();
+        const vendorOutputDir = join(
+          this.context.output,
+          "vendor",
+          entrypoint.config?.vendorOutputDir || "",
+        );
         const target = entrypoint.config!.target;
 
         const resolver = wrapResolverWithLogging(
           createResolver({
             importMap: this.importMap,
-            sources: localSources,
+            sources,
             bareSpecifiers,
             baseURL: toFileUrl(this.context.root),
           }),
@@ -227,7 +223,7 @@ export class Builder {
 
         const loader = wrapLoaderWithLogging(
           createLoader({
-            sources: localSources,
+            sources,
             target,
             dynamicImportIgnored: this.dynamicImportIgnored,
           }),
@@ -249,7 +245,25 @@ export class Builder {
           load: loader,
         });
 
-        const sources = FileBag.fromModuleGraph(graph, this.context.output);
+        const remoteModules = graph.modules.filter((module) =>
+          isRemoteSpecifier(module.specifier)
+        );
+        const localModules = graph.modules.filter((module) =>
+          isLocalSpecifier(module.specifier)
+        );
+
+        const remoteSources = FileBag.fromModules(
+          remoteModules,
+          vendorOutputDir,
+        );
+
+        const localSources = FileBag.fromModules(
+          localModules,
+          this.context.root,
+        );
+
+        console.log(localSources.size);
+        console.log(remoteSources.size);
 
         this.log.success("Module graph built");
 
