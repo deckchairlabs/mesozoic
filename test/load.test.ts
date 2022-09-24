@@ -1,6 +1,7 @@
 import { assertEquals } from "./deps.ts";
 import {
   createLoadRequest,
+  isModuleResponse,
   loadLocalSpecifier,
   loadRemoteSpecifier,
   prepareRequestUrl,
@@ -20,6 +21,13 @@ Deno.test("it can load a remote specifier", async () => {
     response?.specifier,
     "https://esm.sh/stable/react@18.2.0/deno/react.js",
   );
+
+  if (isModuleResponse(response)) {
+    assertEquals(
+      response.content.length > 0,
+      true,
+    );
+  }
 });
 
 Deno.test("it can load a local specifier", async () => {
@@ -29,6 +37,10 @@ Deno.test("it can load a local specifier", async () => {
   const response = await loadLocalSpecifier("./client.tsx", sources);
   assertEquals(response?.kind, "module");
   assertEquals(response?.specifier, "file:///app/client.tsx");
+
+  if (isModuleResponse(response)) {
+    assertEquals(response.content, "testing");
+  }
 });
 
 Deno.test("it can prepare a request url", () => {

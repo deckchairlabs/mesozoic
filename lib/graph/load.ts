@@ -8,7 +8,7 @@ import {
 import { parseModule } from "../deps.ts";
 import { Logger } from "../logger.ts";
 import { FileBag } from "../sources/fileBag.ts";
-import { LoadResponse, Target } from "../types.ts";
+import { LoadResponse, LoadResponseModule, Target } from "../types.ts";
 import { wrapFn } from "../utils.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./specifiers.ts";
 
@@ -136,6 +136,12 @@ export async function loadLocalSpecifier(
       content,
     };
   }
+}
+
+export function isModuleResponse(
+  response: LoadResponse | undefined,
+): response is LoadResponseModule {
+  return response?.kind === "module";
 }
 
 export async function resolveFacadeModuleRedirect(
