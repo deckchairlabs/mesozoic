@@ -157,6 +157,7 @@ export async function resolveFacadeModuleRedirect(
       imports,
       specifier,
     );
+
     if (uniqueSpecifiers[0]) {
       return new URL(uniqueSpecifiers[0]);
     }

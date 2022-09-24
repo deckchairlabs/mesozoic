@@ -1,10 +1,4 @@
-import {
-  crayon,
-  fromFileUrl,
-  importMapResolve,
-  parseImportMap,
-  sprintf,
-} from "../deps.ts";
+import { crayon, importMapResolve, parseImportMap, sprintf } from "../deps.ts";
 import { Logger } from "../logger.ts";
 import { FileBag } from "../sources/fileBag.ts";
 import { ImportMap, ResolveResult } from "../types.ts";
@@ -67,9 +61,9 @@ export function createResolver(options: CreateLoaderOptions): Resolver {
 export function createImportMapResolver(
   importMap: ImportMap,
   baseURL: URL,
-): Resolver {
+) {
   const parsedImportMap = parseImportMap(importMap, baseURL);
-  return function importMapResolver(specifier, referrer) {
+  return function importMapResolver(specifier: string, referrer: string) {
     const resolved = importMapResolve(
       specifier,
       parsedImportMap,
@@ -79,24 +73,19 @@ export function createImportMapResolver(
     if (resolved.matched) {
       return resolved.resolvedImport.href;
     }
-
-    return specifier;
   };
 }
 
-export function createLocalResolver(sources: FileBag): Resolver {
-  return function localResolver(specifier, referrer) {
-    if (!specifier.startsWith("file://")) {
-      throw new Error("specifier must start with file://");
-    }
-
+export function createLocalResolver(sources: FileBag) {
+  return function localResolver(specifier: string, referrer: string) {
     /**
      * This is a local source file, attempt to find it within the sources FileBag
      */
-    let path = specifier.replace(referrer, "./");
-    path = path.startsWith("file://") ? fromFileUrl(path) : path;
+    const url = new URL(specifier, referrer);
 
-    const source = sources.find((source) => source.path() === path);
+    const source = sources.find((source) =>
+      String(source.url()) === String(url)
+    );
 
     if (source) {
       return String(source.url());
@@ -167,7 +156,11 @@ export function resolveBareSpecifierRedirects(
   redirects: Record<string, string>,
 ) {
   for (const [specifier, resolved] of specifiers.entries()) {
-    specifiers.set(specifier, redirects[resolved] || resolved);
+    if (redirects[resolved]) {
+      specifiers.set(specifier, redirects[resolved]);
+    } else {
+      specifiers.delete(specifier);
+    }
   }
 
   return specifiers;

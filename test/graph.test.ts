@@ -28,13 +28,8 @@ const importMap = {
 
 const sources = new FileBag([
   new VirtualFile("./client.tsx", baseUrl, "entrypoint"),
-  new VirtualFile("./src/app.1234567890.tsx", baseUrl, "app.tsx").setAlias(
-    "./src/app.tsx",
-  ),
-  new VirtualFile("./src/components/Test.1234567890.tsx", baseUrl, "testing")
-    .setAlias(
-      "./src/components/Test.tsx",
-    ),
+  new VirtualFile("./src/app.tsx", baseUrl, "app.tsx"),
+  new VirtualFile("./src/components/Test.tsx", baseUrl, "testing"),
 ]);
 
 Deno.test("it can create a module graph", async () => {
@@ -81,7 +76,7 @@ Deno.test("it can create a module graph", async () => {
 Deno.test("it can resolve and load specifiers", async () => {
   const bareSpecifiers: BareSpecifiersMap = new Map();
 
-  const load = createLoader({ sources, target: "deno" });
+  const load = createLoader({ sources, target: "browser" });
   const resolve = createResolver({
     importMap,
     sources,
@@ -128,12 +123,12 @@ Deno.test("it can resolve and load specifiers", async () => {
 
   assertEquals(
     resolve("./src/app.tsx", baseUrl),
-    "file:///app/src/app.1234567890.tsx",
+    "file:///app/src/app.tsx",
   );
 
   assertEquals(
     resolve("./src/components/Test.tsx", baseUrl),
-    "file:///app/src/components/Test.1234567890.tsx",
+    "file:///app/src/components/Test.tsx",
   );
 
   assertEquals(Object.fromEntries(bareSpecifiers), {
@@ -177,7 +172,7 @@ Deno.test("it can resolve and load specifiers", async () => {
 
   const app = await load(resolve("./src/app.tsx", baseUrl));
   assertEquals(app?.kind, "module");
-  assertEquals(app?.specifier, "file:///app/src/app.1234567890.tsx");
+  assertEquals(app?.specifier, "file:///app/src/app.tsx");
 });
 
 Deno.test("it can resolve and load for a specific target", async () => {

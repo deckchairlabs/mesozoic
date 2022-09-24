@@ -17,27 +17,27 @@ Deno.test("it works", () => {
   const bareSpecifiers = new Map<string, string>();
 
   const sources = new FileBag();
-  sources.add(new VirtualFile("./client.tsx", "file:///app", "testing"));
+  sources.add(new VirtualFile("./client.tsx", "file:///", "testing"));
 
-  const resolver = createResolver({
+  const resolve = createResolver({
     importMap,
     bareSpecifiers,
     sources,
-    baseURL: new URL("file:///app"),
+    baseURL: new URL("file:///"),
   });
 
   assertEquals(
-    resolver("react", "file:///app.tsx"),
+    resolve("react", "file:///app.tsx"),
     "https://esm.sh/react@18.2.0",
   );
 
   assertEquals(
-    resolver("https://esm.sh/react@18.2.0", "file:///app.tsx"),
+    resolve("https://esm.sh/react@18.2.0", "file:///app.tsx"),
     "https://esm.sh/react@18.2.0",
   );
 
   assertEquals(
-    resolver("file:///client.tsx", "file:///app.tsx"),
+    resolve("./client.tsx", "file:///app.tsx"),
     "file:///client.tsx",
   );
 });
@@ -59,14 +59,14 @@ Deno.test("it can resolve a specifier with a referrer", () => {
 });
 
 Deno.test("it can resolve from an importMap", () => {
-  const resolver = createImportMapResolver({
+  const resolve = createImportMapResolver({
     imports: {
       "react": "https://esm.sh/react@18.2.0",
     },
   }, new URL("file:///app.tsx"));
 
   assertEquals(
-    resolver("react", "file:///app.tsx"),
+    resolve("react", "file:///app.tsx"),
     "https://esm.sh/react@18.2.0",
   );
 });
@@ -75,9 +75,20 @@ Deno.test("it can resolve from a FileBag", () => {
   const sources = new FileBag();
   sources.add(new VirtualFile("./client.tsx", "file:///app", "testing"));
 
-  const resolver = createLocalResolver(sources);
+  const resolve = createLocalResolver(sources);
+
   assertEquals(
-    resolver("file:///app/client.tsx", "file:///app/app.tsx"),
+    resolve("./client.tsx", "file:///app/app.tsx"),
+    "file:///app/client.tsx",
+  );
+
+  assertEquals(
+    resolve("file:///app/client.tsx", "file:///app/app.tsx"),
+    "file:///app/client.tsx",
+  );
+
+  assertEquals(
+    resolve("client.tsx", "file:///app/app.tsx"),
     "file:///app/client.tsx",
   );
 });
