@@ -25,7 +25,9 @@ export const resolverCache = new Map<string, string>();
 
 export function createResolver(options: CreateLoaderOptions): Resolver {
   const { importMap, sources, bareSpecifiers, baseURL } = options;
-  const parsedImportMap = parseImportMap(importMap, baseURL);
+
+  const importMapResolver = createImportMapResolver(importMap, baseURL);
+  const localResolver = createLocalResolver(sources);
 
   return (specifier: string, referrer: string): string => {
     const cacheKey = [specifier, referrer].join(":");
@@ -36,46 +38,77 @@ export function createResolver(options: CreateLoaderOptions): Resolver {
 
     let resolved = resolve(specifier, referrer);
 
-    const importMapResolved = importMapResolve(
+    const importMapResolved = importMapResolver(
       specifier,
-      parsedImportMap,
-      new URL(referrer),
+      referrer,
     );
 
     /**
      * If we get a resolved match from the importMap
      * we use that over anything else.
      */
-    if (importMapResolved.matched) {
-      resolved = importMapResolved.resolvedImport.href;
+    if (importMapResolved) {
+      resolved = importMapResolved;
       bareSpecifiers.set(specifier, resolved);
     } else if (resolved.startsWith("file://")) {
-      /**
-       * This is a local source file, attempt to find it within the sources FileBag
-       */
-      let path = resolved.replace(referrer, "./");
-      path = path.startsWith("file://") ? fromFileUrl(path) : path;
-
-      const source = sources.find((source) => {
-        return source.alias() === path || source.path() === path;
-      });
-
-      if (source) {
-        resolved = String(source.url());
-      } else {
-        throw new Error(
-          sprintf(
-            "failed to resolve local source %s from %s",
-            specifier,
-            referrer,
-          ),
-        );
+      try {
+        resolved = localResolver(resolved, referrer);
+      } catch (error) {
+        throw error;
       }
     }
 
     resolverCache.set(cacheKey, resolved);
 
     return resolved;
+  };
+}
+
+export function createImportMapResolver(
+  importMap: ImportMap,
+  baseURL: URL,
+): Resolver {
+  const parsedImportMap = parseImportMap(importMap, baseURL);
+  return function importMapResolver(specifier, referrer) {
+    const resolved = importMapResolve(
+      specifier,
+      parsedImportMap,
+      new URL(referrer),
+    );
+
+    if (resolved.matched) {
+      return resolved.resolvedImport.href;
+    }
+
+    return specifier;
+  };
+}
+
+export function createLocalResolver(sources: FileBag): Resolver {
+  return function localResolver(specifier, referrer) {
+    if (!specifier.startsWith("file://")) {
+      throw new Error("specifier must start with file://");
+    }
+
+    /**
+     * This is a local source file, attempt to find it within the sources FileBag
+     */
+    let path = specifier.replace(referrer, "./");
+    path = path.startsWith("file://") ? fromFileUrl(path) : path;
+
+    const source = sources.find((source) => source.path() === path);
+
+    if (source) {
+      return String(source.url());
+    } else {
+      throw new Error(
+        sprintf(
+          "failed to resolve local source %s from %s",
+          specifier,
+          referrer,
+        ),
+      );
+    }
   };
 }
 

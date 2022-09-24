@@ -1,4 +1,4 @@
-import { dirname, ensureDir, fromFileUrl, join, toFileUrl } from "../deps.ts";
+import { dirname, ensureDir, join } from "../deps.ts";
 import { File, IFile } from "./file.ts";
 import { SourceFile } from "./sourceFile.ts";
 
@@ -12,14 +12,6 @@ export class VirtualFile extends File implements IFile {
   ) {
     super(filePath, rootPath);
     this.content = content;
-  }
-
-  url() {
-    const rootPath = this.rootPath.startsWith("file://")
-      ? fromFileUrl(this.rootPath)
-      : this.rootPath;
-
-    return toFileUrl(join(rootPath, this.filePath));
   }
 
   readBytes(): Promise<Uint8Array> {
