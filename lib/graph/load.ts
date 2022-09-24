@@ -1,4 +1,10 @@
-import { crayon, ImportSpecifier, initModuleLexer, sprintf } from "../deps.ts";
+import {
+  crayon,
+  ImportSpecifier,
+  initModuleLexer,
+  sprintf,
+  toFileUrl,
+} from "../deps.ts";
 import { parseModule } from "../deps.ts";
 import { Logger } from "../logger.ts";
 import { FileBag } from "../sources/fileBag.ts";
@@ -31,9 +37,9 @@ export function createLoader(options: CreateLoaderOptions): Loader {
         ) {
           return Promise.resolve(undefined);
         }
-        return loadRemote(specifier, target);
+        return loadRemoteSpecifier(specifier, target);
       } else {
-        return loadLocal(specifier, sources);
+        return loadLocalSpecifier(specifier, sources);
       }
     } catch {
       return Promise.resolve(undefined);
@@ -52,10 +58,24 @@ export function wrapLoaderWithLogging(
   );
 }
 
-const loadRemote = async (
+export function createLoadRequest(specifier: string, target: Target) {
+  const url = prepareRequestUrl(new URL(specifier), target);
+  const requestHeaders = new Headers();
+
+  if (target === "browser") {
+    requestHeaders.set("User-Agent", "mesozoic");
+  }
+
+  return new Request(String(url), {
+    redirect: "follow",
+    headers: requestHeaders,
+  });
+}
+
+export async function loadRemoteSpecifier(
   specifier: string,
   target: "browser" | "deno",
-): Promise<LoadResponse | undefined> => {
+): Promise<LoadResponse | undefined> {
   try {
     const request = createLoadRequest(specifier, target);
     const response = await fetch(request);
@@ -80,7 +100,7 @@ const loadRemote = async (
     );
 
     if (facadeRedirect) {
-      return loadRemote(facadeRedirect.href, target);
+      return loadRemoteSpecifier(facadeRedirect.href, target);
     }
 
     return {
@@ -93,20 +113,29 @@ const loadRemote = async (
     console.error(error);
     return undefined;
   }
-};
+}
 
-export function createLoadRequest(specifier: string, target: Target) {
-  const url = prepareUrl(new URL(specifier), target);
-  const requestHeaders = new Headers();
-
-  if (target === "browser") {
-    requestHeaders.set("User-Agent", "mesozoic");
-  }
-
-  return new Request(String(url), {
-    redirect: "follow",
-    headers: requestHeaders,
+export async function loadLocalSpecifier(
+  specifier: string,
+  sources: FileBag,
+): Promise<LoadResponse | undefined> {
+  const source = sources.find((source) => {
+    if (isLocalSpecifier(specifier)) {
+      return String(source.url()) === specifier;
+    }
+    return source.relativePath() === specifier;
   });
+
+  if (source) {
+    const content = await source.read();
+    return {
+      kind: "module",
+      specifier: isLocalSpecifier(specifier)
+        ? String(source.url())
+        : String(toFileUrl(source.path())),
+      content,
+    };
+  }
 }
 
 export async function resolveFacadeModuleRedirect(
@@ -125,29 +154,6 @@ export async function resolveFacadeModuleRedirect(
     if (uniqueSpecifiers[0]) {
       return new URL(uniqueSpecifiers[0]);
     }
-  }
-}
-
-export async function loadLocal(
-  specifier: string,
-  sources: FileBag,
-): Promise<LoadResponse | undefined> {
-  const source = sources.find((source) => {
-    if (isLocalSpecifier(specifier)) {
-      return String(source.url()) === specifier;
-    }
-    return source.relativePath() === specifier;
-  });
-
-  if (source) {
-    const content = await source.read();
-    return {
-      kind: "module",
-      specifier: isLocalSpecifier(specifier)
-        ? String(source.url())
-        : source.path(),
-      content,
-    };
   }
 }
 
@@ -178,7 +184,10 @@ export function resolveUniqueRemoteSpecifiers(
   );
 }
 
-export function prepareUrl(url: URL, target: "browser" | "deno" = "browser") {
+export function prepareRequestUrl(
+  url: URL,
+  target: "browser" | "deno" = "browser",
+) {
   switch (url.host) {
     case "esm.sh":
       /**

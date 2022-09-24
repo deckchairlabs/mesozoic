@@ -1,8 +1,9 @@
-import { isAbsolute } from "https://deno.land/std@0.153.0/path/win32.ts";
 import {
   basename,
   dirname,
   extname,
+  fromFileUrl,
+  isAbsolute,
   join,
   sprintf,
   toFileUrl,
@@ -38,8 +39,12 @@ export abstract class File implements IFile {
   private locked = true;
 
   constructor(public filePath: string, public rootPath: string) {
+    if (rootPath.startsWith("file://")) {
+      this.rootPath = fromFileUrl(rootPath);
+    }
+
     if (!isAbsolute(filePath)) {
-      this.filePath = join(rootPath, filePath);
+      this.filePath = join(this.rootPath, filePath);
     }
   }
 

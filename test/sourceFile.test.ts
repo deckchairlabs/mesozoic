@@ -29,6 +29,21 @@ Deno.test("constructor", async () => {
   assertEquals(await sourceFile.contentHash(), "d28e4b24");
 });
 
+Deno.test("url", () => {
+  const file = new SourceFile("./client.tsx", "file:///app");
+  assertEquals(file.url(), new URL("file:///app/client.tsx"));
+});
+
+Deno.test("path", () => {
+  const file = new SourceFile("./client.tsx", "file:///app");
+  assertEquals(file.path(), "/app/client.tsx");
+});
+
+Deno.test("relativePath", () => {
+  const file = new SourceFile("./client.tsx", "file:///app");
+  assertEquals(file.relativePath(), "./client.tsx");
+});
+
 Deno.test("copyTo", async () => {
   const sourceFile = createSourceFile(join("src", "app.tsx"));
 
