@@ -1,8 +1,10 @@
 import {
-  parse,
-  resolve as importMapResolve,
-} from "https://esm.sh/@import-maps/resolve@1.0.1";
-import { crayon, fromFileUrl, sprintf } from "../deps.ts";
+  crayon,
+  fromFileUrl,
+  importMapResolve,
+  parseImportMap,
+  sprintf,
+} from "../deps.ts";
 import { Logger } from "../logger.ts";
 import { FileBag } from "../sources/fileBag.ts";
 import { ImportMap, ResolveResult } from "../types.ts";
@@ -19,11 +21,19 @@ type CreateLoaderOptions = {
   baseURL: URL;
 };
 
+export const resolverCache = new Map<string, string>();
+
 export function createResolver(options: CreateLoaderOptions): Resolver {
   const { importMap, sources, bareSpecifiers, baseURL } = options;
-  const parsedImportMap = parse(importMap, baseURL);
+  const parsedImportMap = parseImportMap(importMap, baseURL);
 
   return (specifier: string, referrer: string): string => {
+    const cacheKey = [specifier, referrer].join(":");
+
+    if (resolverCache.has(cacheKey)) {
+      return resolverCache.get(cacheKey)!;
+    }
+
     let resolved = resolve(specifier, referrer);
 
     const importMapResolved = importMapResolve(
@@ -62,6 +72,8 @@ export function createResolver(options: CreateLoaderOptions): Resolver {
         );
       }
     }
+
+    resolverCache.set(cacheKey, resolved);
 
     return resolved;
   };

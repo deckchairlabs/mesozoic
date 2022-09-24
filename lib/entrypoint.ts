@@ -15,7 +15,7 @@ export class Entrypoint extends SourceFile implements IFile {
   constructor(
     filePath: string,
     rootPath: string,
-    public config?: EntrypointConfig,
+    public config: EntrypointConfig,
   ) {
     super(filePath, rootPath);
   }

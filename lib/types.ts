@@ -11,7 +11,7 @@ export type { GlobToRegExpOptions } from "https://deno.land/std@0.153.0/path/glo
 export type {
   ImportMap,
   ParsedImportMap,
-} from "https://esm.sh/@import-maps/resolve@1.0.1/types/index.d.ts";
+} from "https://esm.sh/@import-maps/resolve@1.0.1";
 
 export type SourceProcessor = (
   sources: FileBag,

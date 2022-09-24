@@ -16,7 +16,7 @@ export type Loader = (
 type CreateLoaderOptions = {
   sources: FileBag;
   target: Target;
-  dynamicImportIgnored: RegExp[];
+  dynamicImportIgnored?: RegExp[];
 };
 
 export function createLoader(options: CreateLoaderOptions): Loader {
@@ -26,7 +26,8 @@ export function createLoader(options: CreateLoaderOptions): Loader {
     try {
       if (isRemoteSpecifier(specifier)) {
         if (
-          isDynamic && dynamicImportIgnored.some((skip) => skip.test(specifier))
+          isDynamic &&
+          dynamicImportIgnored?.some((skip) => skip.test(specifier))
         ) {
           return Promise.resolve(undefined);
         }
@@ -56,18 +57,7 @@ const loadRemote = async (
   target: "browser" | "deno",
 ): Promise<LoadResponse | undefined> => {
   try {
-    const url = prepareUrl(new URL(specifier), target);
-    const requestHeaders = new Headers();
-
-    if (target === "browser") {
-      requestHeaders.set("User-Agent", "mesozoic");
-    }
-
-    const request = new Request(String(url), {
-      redirect: "follow",
-      headers: requestHeaders,
-    });
-
+    const request = createLoadRequest(specifier, target);
     const response = await fetch(request);
     const responseUrl = new URL(response.url);
 
@@ -84,20 +74,13 @@ const loadRemote = async (
       headers[key.toLowerCase()] = value;
     }
 
-    /**
-     * If we detect a "facade" and there is only 1 import OR 1 export
-     */
-    const [imports, exports, facade] = await parseModule(content);
+    const facadeRedirect = await resolveFacadeModuleRedirect(
+      specifier,
+      content,
+    );
 
-    if (facade && (exports.length === 1 || imports.length === 1)) {
-      const uniqueSpecifiers = resolveUniqueRemoteSpecifiers(
-        imports,
-        specifier,
-      );
-      if (uniqueSpecifiers[0]) {
-        const specifier = new URL(uniqueSpecifiers[0]);
-        return loadRemote(specifier.href, target);
-      }
+    if (facadeRedirect) {
+      return loadRemote(facadeRedirect.href, target);
     }
 
     return {
@@ -111,6 +94,39 @@ const loadRemote = async (
     return undefined;
   }
 };
+
+export function createLoadRequest(specifier: string, target: Target) {
+  const url = prepareUrl(new URL(specifier), target);
+  const requestHeaders = new Headers();
+
+  if (target === "browser") {
+    requestHeaders.set("User-Agent", "mesozoic");
+  }
+
+  return new Request(String(url), {
+    redirect: "follow",
+    headers: requestHeaders,
+  });
+}
+
+export async function resolveFacadeModuleRedirect(
+  specifier: string,
+  content: string,
+): Promise<URL | undefined> {
+  const [imports, exports, facade] = await parseModule(content);
+  /**
+   * If we detect a "facade" and there is only 1 import OR 1 export
+   */
+  if (facade && (exports.length === 1 || imports.length === 1)) {
+    const uniqueSpecifiers = resolveUniqueRemoteSpecifiers(
+      imports,
+      specifier,
+    );
+    if (uniqueSpecifiers[0]) {
+      return new URL(uniqueSpecifiers[0]);
+    }
+  }
+}
 
 export async function loadLocal(
   specifier: string,
@@ -148,7 +164,7 @@ export function resolveUniqueRemoteSpecifiers(
    * Resolve relative imports like "export * from '/-/graphql-type-json/...'";
    */
   namedImports = namedImports.map((specifier) => {
-    if (specifier.startsWith("/") && referrer.startsWith("http")) {
+    if (specifier.startsWith("/") && isRemoteSpecifier(referrer)) {
       return new URL(specifier, referrer).href;
     }
     return specifier;
@@ -157,7 +173,7 @@ export function resolveUniqueRemoteSpecifiers(
   // Resolve unique remote imports
   return Array.from(
     new Set(
-      namedImports.filter((specifier) => specifier?.startsWith("http")),
+      namedImports.filter((specifier) => isRemoteSpecifier(specifier)),
     ).values(),
   );
 }

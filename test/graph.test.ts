@@ -7,9 +7,9 @@ import {
 import { FileBag } from "../lib/sources/fileBag.ts";
 import { VirtualFile } from "../lib/sources/virtualFile.ts";
 import { createLoader } from "../lib/graph/load.ts";
-import { createGraph } from "../lib/graph/createGraph.ts";
 import { gatherSources } from "../lib/sources/gatherSources.ts";
 import { ensureTrailingSlash, getFixtureDir } from "./helpers.ts";
+import { createGraph } from "../lib/deps.ts";
 
 const baseUrl = "file:///app/";
 
@@ -44,16 +44,20 @@ Deno.test("it can create a module graph", async () => {
   const fixtureUrl = toFileUrl(ensureTrailingSlash(fixtureDir));
 
   const sources = await gatherSources(fixtureDir);
-  const load = createLoader(sources);
-  const resolve = createResolver(
+  const load = createLoader({ sources, target: "browser" });
+  const resolve = createResolver({
     importMap,
     sources,
     bareSpecifiers,
-    fixtureUrl,
-  );
+    baseURL: fixtureUrl,
+  });
 
   const entrypoint = new URL("client.tsx", fixtureUrl);
-  const graph = await createGraph(String(entrypoint), load, resolve);
+  const graph = await createGraph(String(entrypoint), {
+    load,
+    resolve,
+    defaultJsxImportSource: "react",
+  });
 
   const { redirects } = graph.toJSON();
 
@@ -77,13 +81,13 @@ Deno.test("it can create a module graph", async () => {
 Deno.test("it can resolve and load specifiers", async () => {
   const bareSpecifiers: BareSpecifiersMap = new Map();
 
-  const load = createLoader(sources);
-  const resolve = createResolver(
+  const load = createLoader({ sources, target: "deno" });
+  const resolve = createResolver({
     importMap,
     sources,
     bareSpecifiers,
-    new URL(baseUrl),
-  );
+    baseURL: new URL(baseUrl),
+  });
 
   /**
    * Bare import specifiers
@@ -179,13 +183,13 @@ Deno.test("it can resolve and load specifiers", async () => {
 Deno.test("it can resolve and load for a specific target", async () => {
   const bareSpecifiers: BareSpecifiersMap = new Map();
 
-  const load = createLoader(sources, "deno");
-  const resolve = createResolver(
+  const load = createLoader({ sources, target: "deno" });
+  const resolve = createResolver({
     importMap,
     sources,
     bareSpecifiers,
-    new URL(baseUrl),
-  );
+    baseURL: new URL(baseUrl),
+  });
 
   /**
    * Test loading modules

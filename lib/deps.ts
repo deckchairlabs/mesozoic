@@ -24,10 +24,6 @@ export {
   parse as parseImportMap,
   resolve as importMapResolve,
 } from "https://esm.sh/@import-maps/resolve@1.0.1/resolve.js";
-export type {
-  ImportMap,
-  ParsedImportMap,
-} from "https://esm.sh/@import-maps/resolve@1.0.1/types/index.d.ts";
 
 export { sprintf } from "https://deno.land/std@0.153.0/fmt/printf.ts";
 
@@ -37,6 +33,7 @@ export {
   extname,
   fromFileUrl,
   globToRegExp,
+  isAbsolute,
   join,
   normalize,
   relative,

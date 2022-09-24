@@ -1,3 +1,4 @@
+import { isAbsolute } from "https://deno.land/std@0.153.0/path/win32.ts";
 import {
   basename,
   dirname,
@@ -36,7 +37,11 @@ export abstract class File implements IFile {
   private aliasPath?: string;
   private locked = true;
 
-  constructor(public filePath: string, public rootPath: string) {}
+  constructor(public filePath: string, public rootPath: string) {
+    if (!isAbsolute(filePath)) {
+      this.filePath = join(rootPath, filePath);
+    }
+  }
 
   isLocked() {
     return this.locked;

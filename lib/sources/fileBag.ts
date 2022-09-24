@@ -1,18 +1,50 @@
-import { sprintf } from "../deps.ts";
+import { normalize, sprintf, walk } from "../deps.ts";
+import { rootUrlToSafeLocalDirname } from "../fs.ts";
+import { ModuleGraph } from "../types.ts";
 import { IFile } from "./file.ts";
+import { SourceFile } from "./sourceFile.ts";
+import { VirtualFile } from "./virtualFile.ts";
 
 /**
  * A FileBag holds and manages implementations of IFile
  */
 export class FileBag extends Set<IFile> {
-  private static create(items: IFile[]): FileBag {
-    const fileBag = new FileBag();
-    if (items) {
-      for (const item of items) {
-        fileBag.add(item);
+  static async from(path: string) {
+    const items: IFile[] = [];
+
+    for await (const entry of walk(path)) {
+      if (entry.isFile) {
+        const sourceFile = new SourceFile(normalize(entry.path), path);
+        items.push(sourceFile);
       }
     }
-    return fileBag;
+
+    return new FileBag(items);
+  }
+
+  static fromModuleGraph(graph: ModuleGraph, destination: string) {
+    const items: IFile[] = [];
+    const modules = graph.modules.values();
+
+    for (const module of modules) {
+      if (module.specifier.startsWith("file://") === false) {
+        const resolved = graph.get(module.specifier);
+
+        if (resolved) {
+          const path = rootUrlToSafeLocalDirname(
+            new URL(module.specifier),
+            destination,
+          );
+
+          items.push(
+            new VirtualFile(path, destination, resolved.source),
+          );
+        }
+      } else {
+        console.log(module.specifier);
+      }
+    }
+    return new FileBag(items);
   }
 
   get(path: string): Promise<IFile> {
@@ -26,6 +58,23 @@ export class FileBag extends Set<IFile> {
         new Error(sprintf("source does not exist at %s", path)),
       );
     }
+  }
+
+  async copyTo(destination: string) {
+    const items: IFile[] = [];
+
+    for (const source of this.values()) {
+      try {
+        const copied = await source.copyTo(destination);
+        if (copied) {
+          items.push(copied);
+        }
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    return new FileBag(items);
   }
 
   /**
@@ -57,13 +106,14 @@ export class FileBag extends Set<IFile> {
 
   filter(predicate: (file: IFile) => boolean) {
     const items: IFile[] = [];
+
     for (const source of this.values()) {
       if (predicate(source)) {
         items.push(source);
       }
     }
 
-    return FileBag.create(items);
+    return new FileBag(items);
   }
 
   toArray() {
