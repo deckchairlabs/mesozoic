@@ -1,37 +1,45 @@
-import { Builder } from "./builder.ts";
 import { join, sprintf } from "./deps.ts";
-import { Entrypoint } from "./entrypoint.ts";
 import { rootUrlToSafeLocalDirname } from "./fs.ts";
+import { BareSpecifiersMap } from "./graph/resolve.ts";
 import { FileBag } from "./sources/fileBag.ts";
 import { VirtualFile } from "./sources/virtualFile.ts";
-import type { ImportMap } from "./types.ts";
+import type { ImportMap, ModuleGraph } from "./types.ts";
 
-export async function vendorEntrypoint(
-  builder: Builder,
-  entrypoint: Entrypoint,
-  sources: FileBag,
-) {
-  const outputName = entrypoint.config?.vendorOutputDir || "";
-  const vendorPath = join("vendor", outputName);
+type VendorModuleGraphOptions = {
+  output: string;
+  vendorOutput: string;
+  graph: ModuleGraph;
+  sources: FileBag;
+  bareSpecifiers: BareSpecifiersMap;
+};
+
+export function vendorModuleGraph(options: VendorModuleGraphOptions) {
+  const {
+    graph: moduleGraph,
+    output,
+    vendorOutput,
+    sources,
+    bareSpecifiers,
+  } = options;
+
   const vendorSources = new FileBag();
 
   const outputDir = join(
-    builder.context.output,
-    vendorPath,
+    output,
+    vendorOutput,
   );
 
-  if (entrypoint.moduleGraph) {
-    const graph = entrypoint.moduleGraph;
+  if (moduleGraph) {
+    const graph = moduleGraph;
     const modules = graph.modules.values();
 
     for (const module of modules) {
-      // Don't vendor local files
       if (module.specifier.startsWith("file://") === false) {
         const resolved = graph.get(module.specifier);
         if (resolved) {
           const path = rootUrlToSafeLocalDirname(
             new URL(module.specifier),
-            vendorPath,
+            vendorOutput,
           );
 
           vendorSources.add(
@@ -42,45 +50,24 @@ export async function vendorEntrypoint(
     }
   }
 
-  const importMap: ImportMap = importMapFromEntrypoint(
-    builder,
-    entrypoint,
+  const importMap: ImportMap = createImportMapFromModuleGraph(
+    moduleGraph,
     sources,
-    vendorPath,
+    bareSpecifiers,
+    vendorOutput,
   );
 
-  entrypoint.setImportMap(importMap);
-
-  if (vendorSources.size > 0) {
-    vendorSources.add(
-      new VirtualFile(
-        join(
-          builder.context.output,
-          sprintf("importMap%s.json", outputName ? `.${outputName}` : ""),
-        ),
-        builder.context.output,
-        JSON.stringify(importMap, null, 2),
-      ),
-    );
-
-    await builder.copySources(vendorSources);
-    builder.log.success(
-      sprintf("Vendored %d dependencies", vendorSources.size - 1),
-    );
-  }
-
-  return entrypoint;
+  return importMap;
 }
 
-function importMapFromEntrypoint(
-  builder: Builder,
-  entrypoint: Entrypoint,
+function createImportMapFromModuleGraph(
+  moduleGraph: ModuleGraph,
   sources: FileBag,
+  bareSpecifiers: BareSpecifiersMap,
   vendorPath: string,
 ) {
   const imports = new Map<string, string>();
   const scopes = new Map<string, string[]>();
-  const bareSpecifiers = entrypoint.bareImportSpecifiers;
   const vendorUrlPrefix = `./${vendorPath}`;
 
   function pushScopedImport(specifier: URL) {
@@ -101,9 +88,9 @@ function importMapFromEntrypoint(
     }
   }
 
-  if (entrypoint.moduleGraph) {
-    const graph = entrypoint.moduleGraph.toJSON();
-    const modules = entrypoint.moduleGraph.modules.values();
+  if (moduleGraph) {
+    const graph = moduleGraph.toJSON();
+    const modules = moduleGraph.modules.values();
 
     // Prepare the redirects
     for (const [specifier, redirect] of Object.entries(graph.redirects)) {
@@ -149,7 +136,7 @@ function importMapFromEntrypoint(
         imports.set(specifier, imports.get(bareSpecifier)!);
       } else {
         try {
-          const module = entrypoint.moduleGraph.get(resolvedSpecifier);
+          const module = moduleGraph.get(resolvedSpecifier);
           if (module) {
             const vendorPath = rootUrlToSafeLocalDirname(
               new URL(module.specifier),
@@ -159,9 +146,7 @@ function importMapFromEntrypoint(
             imports.set(bareSpecifier, vendorPath);
           } else {
             if (resolvedSpecifier.includes(".d.ts") === false) {
-              builder.log.warning(
-                `Failed to resolve bare specifier ${resolvedSpecifier}`,
-              );
+              // no-op
             }
           }
         } catch (error) {
@@ -175,8 +160,6 @@ function importMapFromEntrypoint(
         }
       }
     }
-
-    entrypoint.moduleGraph.free();
   }
 
   return {

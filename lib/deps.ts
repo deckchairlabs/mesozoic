@@ -18,8 +18,16 @@ export { deepMerge } from "https://deno.land/std@0.153.0/collections/deep_merge.
 export {
   init as initModuleLexer,
   parse as parseModule,
-} from "https://esm.sh/es-module-lexer@1.0.3";
-export type { ImportSpecifier } from "https://esm.sh/es-module-lexer@1.0.3";
+} from "https://esm.sh/es-module-lexer@1.0.3/es-module-lexer.js";
+export type { ImportSpecifier } from "https://esm.sh/v95/es-module-lexer@1.0.3/types/lexer.d.ts";
+export {
+  parse as parseImportMap,
+  resolve as importMapResolve,
+} from "https://esm.sh/@import-maps/resolve@1.0.1/resolve.js";
+export type {
+  ImportMap,
+  ParsedImportMap,
+} from "https://esm.sh/@import-maps/resolve@1.0.1/types/index.d.ts";
 
 export { sprintf } from "https://deno.land/std@0.153.0/fmt/printf.ts";
 

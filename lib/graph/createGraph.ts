@@ -5,17 +5,17 @@ import {
 import { Loader } from "./load.ts";
 import { Resolver } from "./resolve.ts";
 
-export async function createGraph(
+export function createGraph(
   entrypoint: string,
   load: Loader,
   resolve: Resolver,
-  kind: "codeOnly" | "all" = "all",
+  kind: "codeOnly" | "all" = "codeOnly",
   jsxImportSource = "react",
 ) {
   /**
    * Create a Module Graph for the provided entrypoint
    */
-  return await denoCreateGraph(entrypoint, {
+  return denoCreateGraph(entrypoint, {
     kind,
     defaultJsxImportSource: jsxImportSource,
     load,

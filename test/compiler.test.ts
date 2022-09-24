@@ -1,5 +1,5 @@
 import { assertEquals } from "./deps.ts";
-import { optimize } from "../lib/optimizer.ts";
+import { compile } from "../lib/compiler.ts";
 
 Deno.test("it works", async () => {
   const source = `
@@ -49,7 +49,7 @@ Deno.test("it works", async () => {
     export default exports;
   `;
 
-  const result = await optimize(
+  const { code: result } = await compile(
     source,
     {
       globals: {

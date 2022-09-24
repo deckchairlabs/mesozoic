@@ -1,7 +1,9 @@
-import { ImportSpecifier, initModuleLexer } from "../deps.ts";
+import { crayon, ImportSpecifier, initModuleLexer, sprintf } from "../deps.ts";
 import { parseModule } from "../deps.ts";
+import { Logger } from "../logger.ts";
 import { FileBag } from "../sources/fileBag.ts";
-import { LoadResponse } from "../types.ts";
+import { LoadResponse, Target } from "../types.ts";
+import { wrapFn } from "../utils.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./specifiers.ts";
 
 await initModuleLexer;
@@ -11,11 +13,15 @@ export type Loader = (
   isDynamic?: boolean,
 ) => Promise<LoadResponse | undefined>;
 
-export function createLoader(
-  sources: FileBag,
-  target: "browser" | "deno" = "browser",
-  dynamicImportIgnored: RegExp[] = [],
-): Loader {
+type CreateLoaderOptions = {
+  sources: FileBag;
+  target: Target;
+  dynamicImportIgnored: RegExp[];
+};
+
+export function createLoader(options: CreateLoaderOptions): Loader {
+  const { sources, target, dynamicImportIgnored } = options;
+
   return function loader(specifier: string, isDynamic?: boolean) {
     try {
       if (isRemoteSpecifier(specifier)) {
@@ -32,6 +38,17 @@ export function createLoader(
       return Promise.resolve(undefined);
     }
   };
+}
+
+export function wrapLoaderWithLogging(
+  loader: Loader,
+  logger: Logger,
+): Loader {
+  return wrapFn(
+    loader,
+    (specifier) =>
+      logger.debug(sprintf("%s %s", crayon.red("Load"), specifier)),
+  );
 }
 
 const loadRemote = async (

@@ -2,21 +2,26 @@ import {
   parse,
   resolve as importMapResolve,
 } from "https://esm.sh/@import-maps/resolve@1.0.1";
-import { fromFileUrl, sprintf } from "../deps.ts";
+import { crayon, fromFileUrl, sprintf } from "../deps.ts";
+import { Logger } from "../logger.ts";
 import { FileBag } from "../sources/fileBag.ts";
 import { ImportMap, ResolveResult } from "../types.ts";
+import { wrapFn } from "../utils.ts";
 import { isBareSpecifier, isRemoteSpecifier } from "./specifiers.ts";
 
 export type Resolver = (specifier: string, referrer: string) => string;
 export type BareSpecifiersMap = Map<string, string>;
 
-export function createResolver(
-  importMap: ImportMap,
-  sources: FileBag,
-  bareSpecifiers: BareSpecifiersMap,
-  baseUrl: URL,
-): Resolver {
-  const parsedImportMap = parse(importMap, baseUrl);
+type CreateLoaderOptions = {
+  importMap: ImportMap;
+  sources: FileBag;
+  bareSpecifiers: BareSpecifiersMap;
+  baseURL: URL;
+};
+
+export function createResolver(options: CreateLoaderOptions): Resolver {
+  const { importMap, sources, bareSpecifiers, baseURL } = options;
+  const parsedImportMap = parse(importMap, baseURL);
 
   return (specifier: string, referrer: string): string => {
     let resolved = resolve(specifier, referrer);
@@ -60,6 +65,33 @@ export function createResolver(
 
     return resolved;
   };
+}
+
+export function wrapResolverWithLogging(
+  resolver: Resolver,
+  logger: Logger,
+): Resolver {
+  const before = (specifier: string, referrer: string) =>
+    logger.debug(
+      sprintf(
+        "%s %s from %s",
+        crayon.lightBlue("Resolve"),
+        specifier,
+        referrer,
+      ),
+    );
+
+  const after = (resolved: string, specifier: string) =>
+    logger?.debug(
+      sprintf(
+        "%s %s to %s",
+        crayon.green("Resolved"),
+        specifier,
+        resolved,
+      ),
+    );
+
+  return wrapFn(resolver, before, after);
 }
 
 export function resolve(specifier: string, referrer: string) {

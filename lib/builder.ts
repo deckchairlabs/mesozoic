@@ -1,14 +1,33 @@
-import { crayon, globToRegExp, join, log, resolve, sprintf } from "./deps.ts";
+import {
+  crayon,
+  globToRegExp,
+  join,
+  log,
+  resolve,
+  sprintf,
+  toFileUrl,
+} from "./deps.ts";
 import { IFile } from "./sources/file.ts";
 import { FileBag } from "./sources/fileBag.ts";
-import { buildModuleGraph } from "./graph.ts";
 import { Logger } from "./logger.ts";
 import { Entrypoint, EntrypointConfig } from "./entrypoint.ts";
-import type { GlobToRegExpOptions, ImportMap } from "./types.ts";
-import { isRemoteSpecifier } from "./graph/specifiers.ts";
-import { vendorEntrypoint } from "./vendor.ts";
+import type {
+  GlobToRegExpOptions,
+  ImportMap,
+  ModuleGraph,
+  Target,
+} from "./types.ts";
+import { vendorModuleGraph } from "./vendor.ts";
 import { gatherSources } from "./sources/gatherSources.ts";
 import { cssProcessor } from "./processor/css.ts";
+import { createGraph } from "./graph/createGraph.ts";
+import { isRemoteSpecifier } from "./graph/specifiers.ts";
+import { createLoader, wrapLoaderWithLogging } from "./graph/load.ts";
+import {
+  BareSpecifiersMap,
+  createResolver,
+  wrapResolverWithLogging,
+} from "./graph/resolve.ts";
 
 export type BuildContext = {
   /**
@@ -35,6 +54,7 @@ export type BuildContext = {
     sourceMaps?: boolean;
     jsxImportSource?: string;
   };
+
   /**
    * Give your build system a custom name. Used as logging prefix.
    * @default "mesozoic"
@@ -57,7 +77,6 @@ export type BuilderEntrypoints = {
 
 export type BuildResult = {
   sources: FileBag;
-  compiled: FileBag;
   entrypoints: Entrypoint[];
 };
 
@@ -78,12 +97,16 @@ export class Builder {
   public hashed: RegExp[] = [];
   public compiled: RegExp[] = [];
 
+  public moduleGraphs: Map<Entrypoint, ModuleGraph> = new Map();
+  public importMaps: Map<Entrypoint, ImportMap> = new Map();
+
   constructor(public readonly context: BuildContext) {
     this.log = new Logger(context?.logLevel || "INFO", context?.name);
 
     if (this.context.root.startsWith(".")) {
       throw new Error("root must be an absolute path");
     }
+
     if (this.context.output.startsWith(".")) {
       throw new Error("output must be an absolute path");
     }
@@ -158,19 +181,19 @@ export class Builder {
      * Gather compilable sources and compile them
      */
     try {
-      const compilable = sources.filter((source) => this.isCompilable(source));
-      const compiled = await this.compileSources(compilable);
+      // const compilable = sources.filter((source) => this.isCompilable(source));
+      // const compiled = await this.compileSources(compilable);
 
-      /**
-       * Process css files
-       */
-      await cssProcessor(sources);
+      // /**
+      //  * Process css files
+      //  */
+      // await cssProcessor(sources);
 
       /**
        * Get the entrypoint source files
        */
       const entrypoints = Array.from(
-        compiled.filter((source) => this.isEntrypoint(source)),
+        sources.filter((source) => this.isEntrypoint(source)),
       ).map((source) => {
         const config = this.getEntrypoint(
           source.relativeAlias() ||
@@ -195,6 +218,7 @@ export class Builder {
        */
       for (const entrypoint of entrypoints.values()) {
         const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
+
         this.log.info(
           sprintf(
             'Building "%s" module graph for entrypoint %s',
@@ -203,13 +227,35 @@ export class Builder {
           ),
         );
 
-        const graph = await buildModuleGraph(
-          this,
-          localSources,
-          entrypoint,
+        const bareSpecifiers: BareSpecifiersMap = new Map();
+        const target = entrypoint.config!.target;
+
+        const resolver = wrapResolverWithLogging(
+          createResolver({
+            importMap: this.importMap,
+            sources: localSources,
+            bareSpecifiers,
+            baseURL: toFileUrl(this.context.root),
+          }),
+          this.log,
         );
 
-        entrypoint.setModuleGraph(graph);
+        const loader = wrapLoaderWithLogging(
+          createLoader({
+            sources: localSources,
+            target,
+            dynamicImportIgnored: this.dynamicImportIgnored,
+          }),
+          this.log,
+        );
+
+        const graph = await createGraph(
+          String(entrypoint),
+          loader,
+          resolver,
+          "codeOnly",
+          this.context.compiler?.jsxImportSource,
+        );
 
         this.log.success("Module graph built");
 
@@ -218,11 +264,17 @@ export class Builder {
          */
         this.log.info(sprintf("Vendor modules for entrypoint %s", path));
 
-        await vendorEntrypoint(
+        const importMap = vendorModuleGraph(
           this,
-          entrypoint,
+          graph,
           localSources,
+          {
+            outputDir: entrypoint.config?.vendorOutputDir,
+          },
         );
+
+        this.moduleGraphs.set(entrypoint, graph);
+        this.importMaps.set(entrypoint, importMap);
 
         this.log.success(
           sprintf("Vendored modules for entrypoint %s", path),
@@ -231,7 +283,6 @@ export class Builder {
 
       return {
         sources,
-        compiled,
         entrypoints,
       };
     } catch (error) {
@@ -288,27 +339,20 @@ export class Builder {
     return result;
   }
 
-  async copySource(source: IFile, destination: string = this.context.output) {
+  copySource(source: IFile, destination: string = this.context.output) {
     if (!this.isIgnored(source)) {
-      let copied: IFile;
-      if (this.isHashable(source)) {
-        copied = await source.copyToHashed(destination);
-      } else {
-        copied = await source.copyTo(destination);
-      }
-
-      return copied;
+      return source.copyTo(destination);
     }
   }
 
-  async compileSources(sources: FileBag) {
+  async compileSources(sources: FileBag, target: Target | undefined) {
     this.#valid();
 
     const compiled = new FileBag();
 
     for (const source of sources.values()) {
       const originalSource = source.clone();
-      const compiledSource = await this.compileSource(source);
+      const compiledSource = await this.compileSource(source, target);
 
       /**
        * If we compiled an entrypoint, we update that entrypoint
@@ -321,27 +365,28 @@ export class Builder {
         this.entrypoints.delete(path);
         this.entrypoints.set(source.relativePath(), config!);
       }
+
       compiled.add(compiledSource);
     }
 
     return compiled;
   }
 
-  async compileSource(source: IFile): Promise<IFile> {
+  async compileSource(
+    source: IFile,
+    target: Target | undefined,
+  ): Promise<IFile> {
     const { compile } = await import("./compiler.ts");
 
     if (!this.isCompilable(source)) {
-      throw new Error(
-        sprintf(
-          "source is not compilable: %s",
-          source.relativePath(),
-        ),
-      );
+      return source;
     }
 
     const content = await source.read();
+
     const compiled = await compile(content, {
       filename: source.path(),
+      target,
       development: false,
       minify: this.context?.compiler?.minify,
       sourceMaps: this.context?.compiler?.sourceMaps,
@@ -350,8 +395,8 @@ export class Builder {
 
     const extension = source.extension();
     const filename = source.filename().replace(extension, ".js");
-
     await source.rename(filename);
+
     await source.write(compiled.code);
 
     return source;

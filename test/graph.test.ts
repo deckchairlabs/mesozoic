@@ -1,5 +1,6 @@
 import { assertEquals, assertThrows, toFileUrl } from "./deps.ts";
 import {
+  BareSpecifiersMap,
   createResolver,
   resolveBareSpecifierRedirects,
 } from "../lib/graph/resolve.ts";
@@ -37,7 +38,7 @@ const sources = new FileBag([
 ]);
 
 Deno.test("it can create a module graph", async () => {
-  const bareSpecifiers = new Map<string, string>();
+  const bareSpecifiers: BareSpecifiersMap = new Map();
 
   const fixtureDir = getFixtureDir("graph");
   const fixtureUrl = toFileUrl(ensureTrailingSlash(fixtureDir));
@@ -74,7 +75,7 @@ Deno.test("it can create a module graph", async () => {
 });
 
 Deno.test("it can resolve and load specifiers", async () => {
-  const bareSpecifiers = new Map<string, string>();
+  const bareSpecifiers: BareSpecifiersMap = new Map();
 
   const load = createLoader(sources);
   const resolve = createResolver(
@@ -176,7 +177,7 @@ Deno.test("it can resolve and load specifiers", async () => {
 });
 
 Deno.test("it can resolve and load for a specific target", async () => {
-  const bareSpecifiers = new Map<string, string>();
+  const bareSpecifiers: BareSpecifiersMap = new Map();
 
   const load = createLoader(sources, "deno");
   const resolve = createResolver(
