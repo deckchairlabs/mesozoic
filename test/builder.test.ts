@@ -50,9 +50,9 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
   ]);
 
   const sources = await builder.gatherSources();
-  await builder.build(sources);
+  const { entrypoints } = await builder.build(sources);
 
-  // for (const entrypoint of entrypoints.values()) {
-  //   assertSnapshot(t, builder.getImportMap(entrypoint));
-  // }
+  for (const entrypoint of entrypoints) {
+    console.log(builder.getImportMap(entrypoint));
+  }
 });

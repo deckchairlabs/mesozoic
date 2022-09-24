@@ -248,6 +248,7 @@ export class Builder {
         const remoteModules = graph.modules.filter((module) =>
           isRemoteSpecifier(module.specifier)
         );
+
         const localModules = graph.modules.filter((module) =>
           isLocalSpecifier(module.specifier)
         );
@@ -262,26 +263,30 @@ export class Builder {
           this.context.root,
         );
 
-        console.log(localSources.size);
-        console.log(remoteSources.size);
+        this.log.debug(
+          sprintf(
+            `Total modules: local %d, remote %d`,
+            localSources.size,
+            remoteSources.size,
+          ),
+        );
 
         this.log.success("Module graph built");
 
-        // /**
-        //  * Vendor modules for each entrypoint
-        //  */
-        // this.log.info(sprintf("Vendor modules for entrypoint %s", path));
+        /**
+         * Vendor modules for each entrypoint
+         */
+        this.log.info(sprintf("Vendor modules for entrypoint %s", path));
 
-        // const importMap = vendorModuleGraph({
-        //   graph,
-        //   output: vendorOutputDir,
-        //   sources,
-        //   vendorOutput: entrypoint.config.vendorOutputDir,
-        //   bareSpecifiers,
-        // });
+        const importMap = vendorModuleGraph(graph, {
+          output: this.context.output,
+          sources,
+          vendorPath: entrypoint.config.vendorOutputDir,
+          bareSpecifiers,
+        });
 
         // this.moduleGraphs.set(entrypoint, graph);
-        // this.importMaps.set(entrypoint, importMap);
+        this.importMaps.set(entrypoint, importMap);
 
         // this.log.success(
         //   sprintf("Vendored modules for entrypoint %s", path),
@@ -289,6 +294,10 @@ export class Builder {
       }
 
       this.#cleanup();
+
+      return {
+        entrypoints: this.entrypoints.values(),
+      };
     } catch (error) {
       throw error;
     }

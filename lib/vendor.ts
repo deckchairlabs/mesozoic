@@ -1,33 +1,33 @@
 import { join, sprintf } from "./deps.ts";
 import { rootUrlToSafeLocalDirname } from "./fs.ts";
-import { BareSpecifiersMap } from "./graph/resolve.ts";
+import {
+  BareSpecifiersMap,
+  resolveBareSpecifierRedirects,
+} from "./graph/resolve.ts";
 import { FileBag } from "./sources/fileBag.ts";
 import { VirtualFile } from "./sources/virtualFile.ts";
 import type { ImportMap, ModuleGraph } from "./types.ts";
 
 type VendorModuleGraphOptions = {
   output: string;
-  vendorOutput: string;
-  graph: ModuleGraph;
+  vendorPath: string;
   sources: FileBag;
   bareSpecifiers: BareSpecifiersMap;
 };
 
-export function vendorModuleGraph(options: VendorModuleGraphOptions) {
+export function vendorModuleGraph(
+  moduleGraph: ModuleGraph,
+  options: VendorModuleGraphOptions,
+) {
   const {
-    graph: moduleGraph,
     output,
-    vendorOutput,
+    vendorPath,
     sources,
     bareSpecifiers,
   } = options;
 
   const vendorSources = new FileBag();
-
-  const outputDir = join(
-    output,
-    vendorOutput,
-  );
+  const vendorDir = "vendor";
 
   if (moduleGraph) {
     const graph = moduleGraph;
@@ -36,15 +36,15 @@ export function vendorModuleGraph(options: VendorModuleGraphOptions) {
     for (const module of modules) {
       if (module.specifier.startsWith("file://") === false) {
         const resolved = graph.get(module.specifier);
+
         if (resolved) {
           const path = rootUrlToSafeLocalDirname(
             new URL(module.specifier),
-            vendorOutput,
+            join(output, vendorDir, vendorPath),
           );
 
-          vendorSources.add(
-            new VirtualFile(path, outputDir, resolved.source),
-          );
+          const file = new VirtualFile(path, output, resolved.source);
+          vendorSources.add(file);
         }
       }
     }
@@ -52,23 +52,36 @@ export function vendorModuleGraph(options: VendorModuleGraphOptions) {
 
   const importMap: ImportMap = createImportMapFromModuleGraph(
     moduleGraph,
-    sources,
-    bareSpecifiers,
-    vendorOutput,
+    { sources, bareSpecifiers, vendorPath, vendorDir },
   );
 
   return importMap;
 }
 
+type CreateImportMapFromModuleGraphOptions = {
+  sources: FileBag;
+  bareSpecifiers: BareSpecifiersMap;
+  vendorPath: string;
+  vendorDir: string;
+};
+
 function createImportMapFromModuleGraph(
   moduleGraph: ModuleGraph,
-  sources: FileBag,
-  bareSpecifiers: BareSpecifiersMap,
-  vendorPath: string,
+  options: CreateImportMapFromModuleGraphOptions,
 ) {
+  const { sources, vendorPath, vendorDir } = options;
   const imports = new Map<string, string>();
   const scopes = new Map<string, string[]>();
-  const vendorUrlPrefix = `./${vendorPath}`;
+  const vendorUrlPrefix = `./${vendorDir}/${vendorPath}`;
+
+  const graph = moduleGraph.toJSON();
+  const modules = moduleGraph.modules.values();
+  const redirects = graph.redirects;
+
+  const bareSpecifiers = resolveBareSpecifierRedirects(
+    options.bareSpecifiers,
+    redirects,
+  );
 
   function pushScopedImport(specifier: URL) {
     const scopeUrl = new URL("/", specifier);
@@ -88,76 +101,63 @@ function createImportMapFromModuleGraph(
     }
   }
 
-  if (moduleGraph) {
-    const graph = moduleGraph.toJSON();
-    const modules = moduleGraph.modules.values();
+  for (const module of modules) {
+    const rootUrl = removeSearchParams(new URL(module.specifier));
+    const specifier = String(rootUrl);
 
-    // Prepare the redirects
-    for (const [specifier, redirect] of Object.entries(graph.redirects)) {
-      bareSpecifiers.set(specifier, redirect);
-    }
+    // Resolve local source
+    if (specifier.startsWith("file://")) {
+      // Find the local source matching this specifier
+      const source = sources.find((source) =>
+        String(source.url()) === specifier
+      );
 
-    for (const module of modules) {
-      const rootUrl = removeSearchParams(new URL(module.specifier));
-      const specifier = String(rootUrl);
-
-      // Resolve local source
-      if (specifier.startsWith("file://")) {
-        // Find the local source matching this specifier
-        const source = sources.find((source) =>
-          source.url().href === specifier
+      if (source) {
+        imports.set(source.relativePath(), source.relativePath());
+      } else {
+        throw new Error(
+          sprintf("failed to find local source %s", specifier),
         );
-
-        if (source) {
-          imports.set(
-            source.relativeAlias() || source.relativePath(),
-            source.relativePath(),
-          );
-        } else {
-          throw new Error(
-            sprintf("failed to find local source %s", specifier),
-          );
-        }
-      } else {
-        pushScopedImport(rootUrl);
       }
+    } else {
+      pushScopedImport(rootUrl);
+    }
+  }
+
+  for (const [bareSpecifier, resolvedSpecifier] of bareSpecifiers) {
+    let specifier = resolvedSpecifier;
+
+    try {
+      specifier = new URL(resolvedSpecifier).href;
+    } catch (_error) {
+      specifier = resolvedSpecifier;
     }
 
-    for (const [bareSpecifier, resolvedSpecifier] of bareSpecifiers) {
-      let specifier = resolvedSpecifier;
-
+    if (imports.has(bareSpecifier)) {
+      imports.set(specifier, imports.get(bareSpecifier)!);
+    } else {
       try {
-        specifier = new URL(resolvedSpecifier).href;
-      } catch (_error) {
-        specifier = resolvedSpecifier;
-      }
-
-      if (imports.has(bareSpecifier)) {
-        imports.set(specifier, imports.get(bareSpecifier)!);
-      } else {
-        try {
-          const module = moduleGraph.get(resolvedSpecifier);
-          if (module) {
-            const vendorPath = rootUrlToSafeLocalDirname(
-              new URL(module.specifier),
-              vendorUrlPrefix,
-            );
-            // react -> ./vendor/path/react.js
-            imports.set(bareSpecifier, vendorPath);
-          } else {
-            if (resolvedSpecifier.includes(".d.ts") === false) {
-              // no-op
-            }
-          }
-        } catch (error) {
-          throw new Error(
-            sprintf(
-              "Failed to resolve from module graph %s",
-              resolvedSpecifier,
-            ),
-            { cause: error },
+        const module = moduleGraph.get(resolvedSpecifier);
+        if (module) {
+          const vendorPath = rootUrlToSafeLocalDirname(
+            new URL(module.specifier),
+            vendorUrlPrefix,
           );
+          // react -> ./vendor/path/react.js
+          imports.set(bareSpecifier, vendorPath);
+        } else {
+          if (resolvedSpecifier.includes(".d.ts") === false) {
+            // no-op
+          }
         }
+      } catch (error) {
+        throw new Error(
+          sprintf(
+            "Failed to resolve from module graph %s",
+            resolvedSpecifier,
+          ),
+          { cause: error },
+        );
       }
     }
   }
@@ -177,6 +177,7 @@ function collapseRemoteSpecifiers(scopes: Map<string, string[]>) {
         const indexOfSlash = specifier.indexOf("/", 1);
         const end = indexOfSlash >= 0 ? indexOfSlash : undefined;
         const path = specifier.substring(1, end);
+
         return [`/${path}/`, scope + path + "/"];
       }),
     );
