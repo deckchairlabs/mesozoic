@@ -7,7 +7,6 @@ import {
 import { FileBag } from "../lib/sources/fileBag.ts";
 import { VirtualFile } from "../lib/sources/virtualFile.ts";
 import { createLoader } from "../lib/graph/load.ts";
-import { gatherSources } from "../lib/sources/gatherSources.ts";
 import { ensureTrailingSlash, getFixtureDir } from "./helpers.ts";
 import { createGraph } from "../lib/deps.ts";
 
@@ -38,7 +37,7 @@ Deno.test("it can create a module graph", async () => {
   const fixtureDir = getFixtureDir("graph");
   const fixtureUrl = toFileUrl(ensureTrailingSlash(fixtureDir));
 
-  const sources = await gatherSources(fixtureDir);
+  const sources = await FileBag.from(fixtureDir);
   const load = createLoader({ sources, target: "browser" });
   const resolve = createResolver({
     importMap,

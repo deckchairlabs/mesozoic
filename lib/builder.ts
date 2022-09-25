@@ -19,7 +19,6 @@ import type {
   Target,
 } from "./types.ts";
 import { vendorModuleGraph } from "./vendor.ts";
-import { gatherSources } from "./sources/gatherSources.ts";
 import { cssProcessor } from "./processor/css.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
 import { createLoader, wrapLoaderWithLogging } from "./graph/load.ts";
@@ -248,7 +247,8 @@ export class Builder {
 
         const graph = await createGraph(String(entrypoint.url()), {
           kind: "codeOnly",
-          defaultJsxImportSource: this.context.compiler?.jsxImportSource,
+          defaultJsxImportSource: this.context.compiler?.jsxImportSource ||
+            "react",
           resolve: resolver,
           load: loader,
         });

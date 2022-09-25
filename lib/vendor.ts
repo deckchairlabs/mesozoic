@@ -19,7 +19,7 @@ type VendorModuleGraphOptions = {
 export function vendorModuleGraph(
   graph: ModuleGraph,
   options: VendorModuleGraphOptions,
-) {
+): ImportMap {
   const {
     output,
     name,
@@ -48,12 +48,10 @@ export function vendorModuleGraph(
     }
   }
 
-  const importMap: ImportMap = createImportMapFromModuleGraph(
+  return createImportMapFromModuleGraph(
     graph,
     { sources, bareSpecifiers, pathPrefix: `./${vendorDir}/${name}` },
   );
-
-  return importMap;
 }
 
 type CreateImportMapFromModuleGraphOptions = {
