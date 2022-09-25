@@ -63,6 +63,7 @@ export function createImportMapResolver(
   baseURL: URL,
 ) {
   const parsedImportMap = parseImportMap(importMap, baseURL);
+
   return function importMapResolver(specifier: string, referrer: string) {
     const resolved = importMapResolve(
       specifier,
@@ -158,8 +159,6 @@ export function resolveBareSpecifierRedirects(
   for (const [specifier, resolved] of specifiers.entries()) {
     if (redirects[resolved]) {
       specifiers.set(specifier, redirects[resolved]);
-    } else {
-      specifiers.delete(specifier);
     }
   }
 

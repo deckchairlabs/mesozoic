@@ -11,3 +11,11 @@ export function wrapFn<T extends Array<any>, U>(
     return result;
   };
 }
+
+export function ensureLeadingSlash(path: string) {
+  return path.startsWith("/") ? path : `/${path}`;
+}
+
+export function ensureTrailingSlash(path: string) {
+  return path.endsWith("/") ? path : `${path}/`;
+}

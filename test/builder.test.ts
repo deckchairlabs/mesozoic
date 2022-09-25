@@ -20,12 +20,12 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
   const builder = await createBuilder();
 
   builder.setEntrypoints({
-    "./client.tsx": {
-      vendorOutputDir: "browser",
+    "browser": {
+      path: "./client.tsx",
       target: "browser",
     },
-    "./server.tsx": {
-      vendorOutputDir: "server",
+    "server": {
+      path: "./server.tsx",
       target: "deno",
     },
   });
@@ -53,6 +53,7 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
   const { entrypoints } = await builder.build(sources);
 
   for (const entrypoint of entrypoints) {
-    console.log(builder.getImportMap(entrypoint));
+    // assertSnapshot(t, builder.getImportMap(entrypoint.name))
+    console.log(builder.getImportMap(entrypoint.name));
   }
 });

@@ -69,11 +69,10 @@ export type BuildContext = {
 };
 
 /**
- * An object where the keys are a path of an entrypoint
- * relative to the {@link BuildContext.root}
+ * An object where the keys are the name of the entrypoint
  */
 export type BuilderEntrypoints = {
-  [path: string]: EntrypointConfig;
+  [name: string]: EntrypointConfig;
 };
 
 export type BuildResult = {
@@ -95,8 +94,8 @@ export class Builder {
   public hashed: RegExp[] = [];
   public compiled: RegExp[] = [];
 
-  public moduleGraphs: Map<Entrypoint, ModuleGraph> = new Map();
-  public importMaps: Map<Entrypoint, ImportMap> = new Map();
+  public moduleGraphs: Map<string, ModuleGraph> = new Map();
+  public importMaps: Map<string, ImportMap> = new Map();
 
   constructor(public readonly context: BuildContext) {
     this.log = new Logger(context?.logLevel || "INFO", context?.name);
@@ -116,43 +115,49 @@ export class Builder {
     );
   }
 
-  addEntrypoint(path: string, config: EntrypointConfig) {
-    this.entrypoints.set(path, new Entrypoint(path, this.context.root, config));
-  }
+  addEntrypoint(name: string, config: EntrypointConfig) {
+    if (this.entrypoints.has(name)) {
+      throw new Error(
+        sprintf('There is already an entrypoint named "%s"', name),
+      );
+    }
 
-  setEntrypoints(entrypoints: BuilderEntrypoints) {
-    this.entrypoints = new Map(
-      Object.entries(entrypoints).map((
-        [path, config],
-      ) => [path, new Entrypoint(path, this.context.root, config)]),
+    const { path } = config;
+
+    this.entrypoints.set(
+      name,
+      new Entrypoint(path, this.context.root, name, config),
     );
   }
 
-  getEntrypoint(path: string) {
-    return this.entrypoints.get(path);
+  setEntrypoints(entrypoints: BuilderEntrypoints) {
+    Object.entries(entrypoints).forEach(([name, config]) =>
+      this.addEntrypoint(name, config)
+    );
   }
 
-  isEntrypoint(source: IFile): boolean {
-    const alias = source.relativeAlias();
-    const path = alias ?? source.relativePath();
-
-    return this.entrypoints.has(path);
+  getEntrypoint(name: string) {
+    return this.entrypoints.get(name);
   }
 
-  getImportMap(entrypoint: Entrypoint): ImportMap {
-    if (!this.importMaps.has(entrypoint)) {
-      throw new Error("No importMap found for entrypoint.");
+  getImportMap(name: string): ImportMap {
+    if (!this.importMaps.has(name)) {
+      throw new Error(
+        sprintf('No importMap was found for entrypoint "%s".', name),
+      );
     }
 
-    return this.importMaps.get(entrypoint)!;
+    return this.importMaps.get(name)!;
   }
 
-  getModuleGraph(entrypoint: Entrypoint): ModuleGraph {
-    if (!this.moduleGraphs.has(entrypoint)) {
-      throw new Error("No moduleGraph found for entrypoint.");
+  getModuleGraph(name: string): ModuleGraph {
+    if (!this.moduleGraphs.has(name)) {
+      throw new Error(
+        sprintf('No moduleGraph was found for entrypoint "%s".', name),
+      );
     }
 
-    return this.moduleGraphs.get(entrypoint)!;
+    return this.moduleGraphs.get(name)!;
   }
 
   setCompiled(paths: string[]) {
@@ -202,14 +207,18 @@ export class Builder {
        * Create a module graph for each entrypoint and vendor the dependencies
        */
       for (const entrypoint of this.entrypoints.values()) {
-        const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
+        const path = entrypoint.relativePath();
+        const loggedPath = crayon.lightBlue(path);
+
         const bareSpecifiers: BareSpecifiersMap = new Map();
+        const entrypointName = entrypoint.name;
+        const entrypointTarget = entrypoint.config!.target;
+
         const vendorOutputDir = join(
           this.context.output,
           "vendor",
-          entrypoint.config?.vendorOutputDir || "",
+          entrypointName,
         );
-        const target = entrypoint.config!.target;
 
         const resolver = wrapResolverWithLogging(
           createResolver({
@@ -224,7 +233,7 @@ export class Builder {
         const loader = wrapLoaderWithLogging(
           createLoader({
             sources,
-            target,
+            target: entrypointTarget,
             dynamicImportIgnored: this.dynamicImportIgnored,
           }),
           this.log,
@@ -232,9 +241,8 @@ export class Builder {
 
         this.log.info(
           sprintf(
-            'Building "%s" module graph for entrypoint %s',
-            crayon.lightBlue(target),
-            path,
+            "Building module graph for entrypoint %s",
+            loggedPath,
           ),
         );
 
@@ -276,21 +284,23 @@ export class Builder {
         /**
          * Vendor modules for each entrypoint
          */
-        this.log.info(sprintf("Vendor modules for entrypoint %s", path));
+        this.log.info(
+          sprintf("Vendor modules for entrypoint %s", loggedPath),
+        );
 
         const importMap = vendorModuleGraph(graph, {
+          name: entrypointName,
           output: this.context.output,
           sources,
-          vendorPath: entrypoint.config.vendorOutputDir,
           bareSpecifiers,
         });
 
-        // this.moduleGraphs.set(entrypoint, graph);
-        this.importMaps.set(entrypoint, importMap);
+        // this.moduleGraphs.set(entrypointName, graph);
+        this.importMaps.set(entrypointName, importMap);
 
-        // this.log.success(
-        //   sprintf("Vendored modules for entrypoint %s", path),
-        // );
+        this.log.success(
+          sprintf("Vendored modules for entrypoint %s", loggedPath),
+        );
       }
 
       this.#cleanup();
@@ -342,21 +352,7 @@ export class Builder {
     const compiled = new FileBag();
 
     for (const source of sources.values()) {
-      const originalSource = source.clone();
       const compiledSource = await this.compileSource(source, target);
-
-      /**
-       * If we compiled an entrypoint, we update that entrypoint
-       * to point to the new compiled relative path.
-       */
-      if (this.isEntrypoint(originalSource)) {
-        const path = originalSource.relativePath();
-        const config = this.entrypoints.get(originalSource.relativePath());
-
-        this.entrypoints.delete(path);
-        this.entrypoints.set(source.relativePath(), config!);
-      }
-
       compiled.add(compiledSource);
     }
 

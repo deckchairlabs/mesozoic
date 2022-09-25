@@ -7,21 +7,22 @@ import {
 import { FileBag } from "./sources/fileBag.ts";
 import { VirtualFile } from "./sources/virtualFile.ts";
 import type { ImportMap, ModuleGraph } from "./types.ts";
+import { ensureLeadingSlash, ensureTrailingSlash } from "./utils.ts";
 
 type VendorModuleGraphOptions = {
+  name: string;
   output: string;
-  vendorPath: string;
   sources: FileBag;
   bareSpecifiers: BareSpecifiersMap;
 };
 
 export function vendorModuleGraph(
-  moduleGraph: ModuleGraph,
+  graph: ModuleGraph,
   options: VendorModuleGraphOptions,
 ) {
   const {
     output,
-    vendorPath,
+    name,
     sources,
     bareSpecifiers,
   } = options;
@@ -29,30 +30,27 @@ export function vendorModuleGraph(
   const vendorSources = new FileBag();
   const vendorDir = "vendor";
 
-  if (moduleGraph) {
-    const graph = moduleGraph;
-    const modules = graph.modules.values();
+  const modules = graph.modules.values();
 
-    for (const module of modules) {
-      if (module.specifier.startsWith("file://") === false) {
-        const resolved = graph.get(module.specifier);
+  for (const module of modules) {
+    if (module.specifier.startsWith("file://") === false) {
+      const resolved = graph.get(module.specifier);
 
-        if (resolved) {
-          const path = rootUrlToSafeLocalDirname(
-            new URL(module.specifier),
-            join(output, vendorDir, vendorPath),
-          );
+      if (resolved) {
+        const path = rootUrlToSafeLocalDirname(
+          new URL(module.specifier),
+          join(output, vendorDir, name),
+        );
 
-          const file = new VirtualFile(path, output, resolved.source);
-          vendorSources.add(file);
-        }
+        const file = new VirtualFile(path, output, resolved.source);
+        vendorSources.add(file);
       }
     }
   }
 
   const importMap: ImportMap = createImportMapFromModuleGraph(
-    moduleGraph,
-    { sources, bareSpecifiers, vendorPath, vendorDir },
+    graph,
+    { sources, bareSpecifiers, pathPrefix: `./${vendorDir}/${name}` },
   );
 
   return importMap;
@@ -61,23 +59,23 @@ export function vendorModuleGraph(
 type CreateImportMapFromModuleGraphOptions = {
   sources: FileBag;
   bareSpecifiers: BareSpecifiersMap;
-  vendorPath: string;
-  vendorDir: string;
+  pathPrefix: string;
 };
 
 function createImportMapFromModuleGraph(
-  moduleGraph: ModuleGraph,
+  graph: ModuleGraph,
   options: CreateImportMapFromModuleGraphOptions,
 ) {
-  const { sources, vendorPath, vendorDir } = options;
+  const { sources, pathPrefix } = options;
   const imports = new Map<string, string>();
   const scopes = new Map<string, string[]>();
-  const vendorUrlPrefix = `./${vendorDir}/${vendorPath}`;
 
-  const graph = moduleGraph.toJSON();
-  const modules = moduleGraph.modules.values();
-  const redirects = graph.redirects;
+  // const graph = graph.toJSON();
+  const modules = graph.modules.values();
+  const redirects = graph.toJSON().redirects;
+  // console.log(redirects);
 
+  // const bareSpecifiers = options.bareSpecifiers;
   const bareSpecifiers = resolveBareSpecifierRedirects(
     options.bareSpecifiers,
     redirects,
@@ -86,8 +84,9 @@ function createImportMapFromModuleGraph(
   function pushScopedImport(specifier: URL) {
     const scopeUrl = new URL("/", specifier);
 
-    const scopedPath = rootUrlToSafeLocalDirname(scopeUrl, vendorUrlPrefix) +
-      "/";
+    const scopedPath = ensureTrailingSlash(
+      rootUrlToSafeLocalDirname(scopeUrl, pathPrefix),
+    );
 
     if (!scopes.has(scopedPath)) {
       scopes.set(scopedPath, []);
@@ -113,7 +112,8 @@ function createImportMapFromModuleGraph(
       );
 
       if (source) {
-        imports.set(source.relativePath(), source.relativePath());
+        const relativePath = source.relativePath();
+        imports.set(relativePath, relativePath);
       } else {
         throw new Error(
           sprintf("failed to find local source %s", specifier),
@@ -137,14 +137,14 @@ function createImportMapFromModuleGraph(
       imports.set(specifier, imports.get(bareSpecifier)!);
     } else {
       try {
-        const module = moduleGraph.get(resolvedSpecifier);
+        const module = graph.get(resolvedSpecifier);
         if (module) {
-          const vendorPath = rootUrlToSafeLocalDirname(
+          const path = rootUrlToSafeLocalDirname(
             new URL(module.specifier),
-            vendorUrlPrefix,
+            pathPrefix,
           );
           // react -> ./vendor/path/react.js
-          imports.set(bareSpecifier, vendorPath);
+          imports.set(bareSpecifier, path);
         } else {
           if (resolvedSpecifier.includes(".d.ts") === false) {
             // no-op
@@ -174,11 +174,14 @@ function collapseRemoteSpecifiers(scopes: Map<string, string[]>) {
   for (const [scope, imports] of scopes) {
     const paths = new Map(
       imports.map((specifier) => {
-        const indexOfSlash = specifier.indexOf("/", 1);
+        const indexOfSlash = ensureLeadingSlash(specifier).indexOf("/", 1);
         const end = indexOfSlash >= 0 ? indexOfSlash : undefined;
-        const path = specifier.substring(1, end);
+        const path = ensureTrailingSlash(specifier.substring(1, end));
 
-        return [`/${path}/`, scope + path + "/"];
+        return [
+          ensureLeadingSlash(path),
+          ensureTrailingSlash(scope) + path,
+        ];
       }),
     );
 
