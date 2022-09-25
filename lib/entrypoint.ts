@@ -9,10 +9,10 @@ export type EntrypointConfig = {
 
 export class Entrypoint extends SourceFile implements IFile {
   constructor(
-    filePath: string,
-    rootPath: string,
     public name: string,
     public config: EntrypointConfig,
+    filePath: string,
+    rootPath: string,
   ) {
     super(filePath, rootPath);
   }

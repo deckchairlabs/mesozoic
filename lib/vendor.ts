@@ -19,7 +19,7 @@ type VendorModuleGraphOptions = {
 export function vendorModuleGraph(
   graph: ModuleGraph,
   options: VendorModuleGraphOptions,
-): ImportMap {
+): [FileBag, ImportMap] {
   const {
     output,
     name,
@@ -48,10 +48,12 @@ export function vendorModuleGraph(
     }
   }
 
-  return createImportMapFromModuleGraph(
+  const importMap: ImportMap = createImportMapFromModuleGraph(
     graph,
     { sources, bareSpecifiers, pathPrefix: `./${vendorDir}/${name}` },
   );
+
+  return [vendorSources, importMap];
 }
 
 type CreateImportMapFromModuleGraphOptions = {
@@ -68,12 +70,9 @@ function createImportMapFromModuleGraph(
   const imports = new Map<string, string>();
   const scopes = new Map<string, string[]>();
 
-  // const graph = graph.toJSON();
   const modules = graph.modules.values();
   const redirects = graph.toJSON().redirects;
-  // console.log(redirects);
 
-  // const bareSpecifiers = options.bareSpecifiers;
   const bareSpecifiers = resolveBareSpecifierRedirects(
     options.bareSpecifiers,
     redirects,
@@ -162,11 +161,11 @@ function createImportMapFromModuleGraph(
 
   return {
     imports: Object.fromEntries(imports),
-    scopes: Object.fromEntries(collapseRemoteSpecifiers(scopes)),
+    scopes: Object.fromEntries(collapseScopes(scopes)),
   };
 }
 
-function collapseRemoteSpecifiers(scopes: Map<string, string[]>) {
+function collapseScopes(scopes: Map<string, string[]>) {
   const collapsed: Map<string, Record<string, string>> = new Map();
 
   for (const [scope, imports] of scopes) {

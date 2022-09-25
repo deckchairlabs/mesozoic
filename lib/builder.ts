@@ -12,13 +12,9 @@ import { IFile } from "./sources/file.ts";
 import { FileBag } from "./sources/fileBag.ts";
 import { Logger } from "./logger.ts";
 import { Entrypoint, EntrypointConfig } from "./entrypoint.ts";
-import type {
-  GlobToRegExpOptions,
-  ImportMap,
-  ModuleGraph,
-  Target,
-} from "./types.ts";
+import type { GlobToRegExpOptions, ImportMap, Target } from "./types.ts";
 import { vendorModuleGraph } from "./vendor.ts";
+import { compile } from "./compiler.ts";
 import { cssProcessor } from "./processor/css.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
 import { createLoader, wrapLoaderWithLogging } from "./graph/load.ts";
@@ -93,7 +89,7 @@ export class Builder {
   public hashed: RegExp[] = [];
   public compiled: RegExp[] = [];
 
-  public moduleGraphs: Map<string, ModuleGraph> = new Map();
+  // public moduleGraphs: Map<string, ModuleGraph> = new Map();
   public importMaps: Map<string, ImportMap> = new Map();
 
   constructor(public readonly context: BuildContext) {
@@ -125,7 +121,7 @@ export class Builder {
 
     this.entrypoints.set(
       name,
-      new Entrypoint(path, this.context.root, name, config),
+      new Entrypoint(name, config, path, this.context.root),
     );
   }
 
@@ -149,15 +145,15 @@ export class Builder {
     return this.importMaps.get(name)!;
   }
 
-  getModuleGraph(name: string): ModuleGraph {
-    if (!this.moduleGraphs.has(name)) {
-      throw new Error(
-        sprintf('No moduleGraph was found for entrypoint "%s".', name),
-      );
-    }
+  // getModuleGraph(name: string): ModuleGraph {
+  //   if (!this.moduleGraphs.has(name)) {
+  //     throw new Error(
+  //       sprintf('No moduleGraph was found for entrypoint "%s".', name),
+  //     );
+  //   }
 
-    return this.moduleGraphs.get(name)!;
-  }
+  //   return this.moduleGraphs.get(name)!;
+  // }
 
   setCompiled(paths: string[]) {
     this.compiled = this.#buildPatterns(paths);
@@ -200,18 +196,43 @@ export class Builder {
     return this.dynamicImportIgnored.some((pattern) => pattern.test(specifier));
   }
 
-  async build(sources: FileBag) {
+  async build(buildSources: FileBag) {
+    performance.mark("build");
+
     try {
+      /**
+       * Copy source files to the output directory
+       */
+
+      const sources = await buildSources.filter((source) =>
+        !this.isIgnored(source)
+      ).copyTo(
+        this.context.output,
+      );
+
       /**
        * Create a module graph for each entrypoint and vendor the dependencies
        */
-      for (const entrypoint of this.entrypoints.values()) {
+      for (const sourceEntrypoint of this.entrypoints.values()) {
+        const entrypoint = sources.find((source) =>
+          source.relativePath() === sourceEntrypoint.relativePath()
+        );
+
+        if (!entrypoint) {
+          throw new Error(
+            sprintf(
+              'Could not find entrypoint "%s" in output directory',
+              sourceEntrypoint.name,
+            ),
+          );
+        }
+
         const path = entrypoint.relativePath();
         const loggedPath = crayon.lightBlue(path);
 
         const bareSpecifiers: BareSpecifiersMap = new Map();
-        const entrypointName = entrypoint.name;
-        const entrypointTarget = entrypoint.config!.target;
+        const entrypointName = sourceEntrypoint.name;
+        const entrypointTarget = sourceEntrypoint.config!.target;
 
         const vendorOutputDir = join(
           this.context.output,
@@ -268,7 +289,7 @@ export class Builder {
 
         const localSources = FileBag.fromModules(
           localModules,
-          this.context.root,
+          this.context.output,
         );
 
         this.log.debug(
@@ -288,19 +309,43 @@ export class Builder {
           sprintf("Vendor modules for entrypoint %s", loggedPath),
         );
 
-        const importMap = vendorModuleGraph(graph, {
+        const [vendorSources, importMap] = vendorModuleGraph(graph, {
           name: entrypointName,
           output: this.context.output,
           sources,
           bareSpecifiers,
         });
 
-        // this.moduleGraphs.set(entrypointName, graph);
+        const vendored = await vendorSources.copyTo(this.context.output);
+
         this.importMaps.set(entrypointName, importMap);
 
         this.log.success(
-          sprintf("Vendored modules for entrypoint %s", loggedPath),
+          sprintf(
+            "Vendored %d modules for entrypoint %s",
+            vendored.size,
+            loggedPath,
+          ),
         );
+
+        /**
+         * Compile local sources
+         */
+        if (entrypointTarget === "browser") {
+          const compilable = localSources.filter((source) =>
+            this.isCompilable(source)
+          );
+
+          this.log.info(
+            sprintf(
+              "Compiling %d modules for entrypoint %s",
+              compilable.size,
+              loggedPath,
+            ),
+          );
+
+          await this.compileSources(compilable, "browser");
+        }
       }
 
       this.#cleanup();
@@ -349,22 +394,20 @@ export class Builder {
   }
 
   async compileSources(sources: FileBag, target: Target | undefined) {
-    const compiled = new FileBag();
+    const items: IFile[] = [];
 
     for (const source of sources.values()) {
       const compiledSource = await this.compileSource(source, target);
-      compiled.add(compiledSource);
+      items.push(compiledSource);
     }
 
-    return compiled;
+    return new FileBag(items);
   }
 
   async compileSource(
     source: IFile,
     target: Target | undefined,
   ): Promise<IFile> {
-    const { compile } = await import("./compiler.ts");
-
     if (!this.isCompilable(source)) {
       return source;
     }
@@ -383,7 +426,6 @@ export class Builder {
     const extension = source.extension();
     const filename = source.filename().replace(extension, ".js");
     await source.rename(filename);
-
     await source.write(compiled.code);
 
     return source;

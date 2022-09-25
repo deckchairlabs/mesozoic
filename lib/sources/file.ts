@@ -28,7 +28,6 @@ export interface IFile {
   // deno-lint-ignore no-explicit-any
   writeJson(value: any, pretty?: boolean): Promise<void>;
   copyTo(to: string, filePath?: string): Promise<IFile>;
-  copyToHashed(to: string): Promise<IFile>;
   remove(): Promise<boolean>;
   rename(newFilename: string): Promise<string>;
   clone(): IFile;
@@ -176,21 +175,6 @@ export abstract class File implements IFile {
 
   clone(): IFile {
     throw new Error("Not implemented");
-  }
-
-  async copyToHashed(to: string): Promise<IFile> {
-    const contentHash = await this.contentHash();
-    const extension = this.extension();
-
-    const path = this.relativePath().replace(
-      extension,
-      `.${contentHash}${extension}`,
-    );
-
-    const copied = await this.copyTo(to, path);
-    copied.setAlias(join(to, this.relativePath()));
-
-    return copied;
   }
 
   /**
