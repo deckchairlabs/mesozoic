@@ -58,14 +58,6 @@ Deno.test("copyTo", async () => {
   assertEquals(await copied.remove(), true);
 });
 
-Deno.test("copyToHashed", async () => {
-  const sourceFile = createSourceFile(join("src", "app.tsx"));
-
-  const copied = await sourceFile.copyToHashed(outputDir);
-  assertEquals(copied.root(), outputDir);
-  assertEquals(copied.path(), join(outputDir, copied.relativePath()));
-});
-
 Deno.test("remove a locked file", () => {
   const sourceFile = createSourceFile(join("src", "app.tsx"));
   assertRejects(() => sourceFile.remove());
