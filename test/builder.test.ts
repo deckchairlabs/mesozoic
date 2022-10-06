@@ -1,3 +1,4 @@
+import { assertEquals } from "https://deno.land/std@0.153.0/testing/asserts.ts";
 import { Builder } from "../mod.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
 
@@ -53,8 +54,11 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
   const sources = await builder.gatherSources();
   const result = await builder.build(sources);
 
-  for (const [name, { importMap }] of result.entries()) {
-    // assertSnapshot(t, builder.getImportMap(entrypoint.name))
-    console.log(name, importMap);
-  }
+  const vendored = result.outputSources.filter((source) =>
+    source.relativePath().startsWith("./vendor")
+  );
+
+  assertEquals(result.outputSources.size > 0, true);
+  assertEquals(vendored.size > 0, true);
+  assertEquals(result.importMaps.size, 2);
 });

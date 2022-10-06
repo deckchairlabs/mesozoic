@@ -72,8 +72,8 @@ export type BuilderEntrypoints = {
 };
 
 export type BuildResult = {
-  // importMap: IFile;
-  vendored: FileBag;
+  outputSources: FileBag;
+  importMaps: Map<string, ImportMap>;
 };
 
 export class Builder {
@@ -174,7 +174,7 @@ export class Builder {
     return this.dynamicImportIgnored.some((pattern) => pattern.test(specifier));
   }
 
-  async build(buildSources: FileBag): Promise<BuildResult[]> {
+  async build(buildSources: FileBag): Promise<BuildResult> {
     try {
       /**
        * Copy source files to the output directory
@@ -185,7 +185,6 @@ export class Builder {
         this.context.output,
       );
 
-      const buildResults: Array<BuildResult> = [];
       const importMaps: Map<string, ImportMap> = new Map();
 
       /**
@@ -287,19 +286,19 @@ export class Builder {
           sprintf("Vendor modules for entrypoint %s", loggedPath),
         );
 
-        const [outputSources, importMap] = vendorModuleGraph(graph, {
+        const [vendoredSources, importMap] = vendorModuleGraph(graph, {
           name: entrypointName,
           output: this.context.output,
           sources,
           bareSpecifiers,
         });
 
-        const vendored = await outputSources.copyTo(this.context.output);
+        await vendoredSources.copyTo(this.context.output);
 
         this.log.success(
           sprintf(
             "Vendored %d modules for entrypoint %s",
-            vendored.size,
+            vendoredSources.size,
             loggedPath,
           ),
         );
@@ -340,7 +339,9 @@ export class Builder {
           JSON.stringify(remappedImportMap, null, 2),
         );
 
-        importMapFile.copyTo(this.context.output);
+        await importMapFile.copyTo(this.context.output);
+
+        importMaps.set(entrypointName, remappedImportMap);
       }
 
       /**
@@ -352,7 +353,10 @@ export class Builder {
 
       this.#cleanup();
 
-      return buildResults;
+      return {
+        outputSources,
+        importMaps,
+      };
     } catch (error) {
       throw error;
     }
