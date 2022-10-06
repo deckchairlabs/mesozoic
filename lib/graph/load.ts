@@ -180,9 +180,12 @@ export function resolveUniqueRemoteSpecifiers(
   /**
    * Resolve relative imports like "export * from '/-/graphql-type-json/...'";
    */
-  namedImports = namedImports.map((specifier) =>
-    String(new URL(specifier, referrer))
-  );
+  namedImports = namedImports.map((specifier) => {
+    if (specifier.startsWith("/") && referrer.startsWith("http")) {
+      return new URL(specifier, referrer).href;
+    }
+    return specifier;
+  });
 
   // Resolve unique remote imports
   return Array.from(
