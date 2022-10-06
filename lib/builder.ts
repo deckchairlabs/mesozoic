@@ -458,12 +458,14 @@ export class Builder {
     const ignored = this.#buildPatterns(ignore);
 
     for (const source of sources.values()) {
+      const originalPath = source.relativePath(source.originalPath());
       const relativePath = source.relativePath();
       const isIgnored = ignored.some((pattern) => pattern.test(relativePath));
-      if (!isIgnored) {
+
+      if (!isIgnored && (relativePath !== originalPath)) {
         json.push([
-          relativePath,
-          prefix ? resolve(prefix, relativePath) : source.path(),
+          originalPath,
+          prefix ? resolve(prefix, relativePath) : relativePath,
         ]);
       }
     }
