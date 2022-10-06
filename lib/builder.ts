@@ -1,14 +1,29 @@
-import { crayon, globToRegExp, join, log, resolve, sprintf } from "./deps.ts";
+import { compile } from "./compiler.ts";
+import {
+  crayon,
+  createGraph,
+  globToRegExp,
+  join,
+  log,
+  resolve,
+  sprintf,
+  toFileUrl,
+} from "./deps.ts";
+import { Entrypoint, EntrypointConfig } from "./entrypoint.ts";
+import { createLoader, wrapLoaderWithLogging } from "./graph/load.ts";
+import {
+  BareSpecifiersMap,
+  createResolver,
+  resolverCache,
+  wrapResolverWithLogging,
+} from "./graph/resolve.ts";
+import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
+import { Logger } from "./logger.ts";
+import { cssProcessor } from "./processor/css.ts";
 import { IFile } from "./sources/file.ts";
 import { FileBag } from "./sources/fileBag.ts";
-import { buildModuleGraph } from "./graph.ts";
-import { Logger } from "./logger.ts";
-import { Entrypoint, EntrypointConfig } from "./entrypoint.ts";
 import type { GlobToRegExpOptions, ImportMap } from "./types.ts";
-import { isRemoteSpecifier } from "./graph/specifiers.ts";
-import { vendorEntrypoint } from "./vendor.ts";
-import { gatherSources } from "./sources/gatherSources.ts";
-import { cssProcessor } from "./processor/css.ts";
+import { vendorModuleGraph } from "./vendor.ts";
 
 export type BuildContext = {
   /**
@@ -35,6 +50,7 @@ export type BuildContext = {
     sourceMaps?: boolean;
     jsxImportSource?: string;
   };
+
   /**
    * Give your build system a custom name. Used as logging prefix.
    * @default "mesozoic"
@@ -48,30 +64,25 @@ export type BuildContext = {
 };
 
 /**
- * An object where the keys are a path of an entrypoint
- * relative to the {@link BuildContext.root}
+ * An object where the keys are the name of the entrypoint
  */
 export type BuilderEntrypoints = {
-  [path: string]: EntrypointConfig;
+  [name: string]: EntrypointConfig;
 };
 
 export type BuildResult = {
-  sources: FileBag;
-  compiled: FileBag;
-  entrypoints: Entrypoint[];
+  outputSources: FileBag;
+  importMaps: Map<string, ImportMap>;
 };
 
 export class Builder {
-  private hasCopied = false;
-  private isValid = false;
-
   public importMap: ImportMap = {
     imports: {},
     scopes: {},
   };
 
   public log: Logger;
-  public entrypoints: Map<string, EntrypointConfig> = new Map();
+  public entrypoints: Map<string, Entrypoint> = new Map();
 
   public ignored: RegExp[] = [];
   public dynamicImportIgnored: RegExp[] = [];
@@ -84,6 +95,7 @@ export class Builder {
     if (this.context.root.startsWith(".")) {
       throw new Error("root must be an absolute path");
     }
+
     if (this.context.output.startsWith(".")) {
       throw new Error("output must be an absolute path");
     }
@@ -95,19 +107,29 @@ export class Builder {
     );
   }
 
+  addEntrypoint(name: string, config: EntrypointConfig) {
+    if (this.entrypoints.has(name)) {
+      throw new Error(
+        sprintf('There is already an entrypoint named "%s"', name),
+      );
+    }
+
+    const { path } = config;
+
+    this.entrypoints.set(
+      name,
+      new Entrypoint(name, config, path, this.context.root),
+    );
+  }
+
   setEntrypoints(entrypoints: BuilderEntrypoints) {
-    this.entrypoints = new Map(Object.entries(entrypoints));
+    Object.entries(entrypoints).forEach(([name, config]) =>
+      this.addEntrypoint(name, config)
+    );
   }
 
-  getEntrypoint(path: string) {
-    return this.entrypoints.get(path);
-  }
-
-  isEntrypoint(source: IFile): boolean {
-    const alias = source.relativeAlias();
-    const path = alias ?? source.relativePath();
-
-    return this.entrypoints.has(path);
+  getEntrypoint(name: string) {
+    return this.entrypoints.get(name);
   }
 
   setCompiled(paths: string[]) {
@@ -151,111 +173,195 @@ export class Builder {
     return this.dynamicImportIgnored.some((pattern) => pattern.test(specifier));
   }
 
-  async build(sources: FileBag): Promise<BuildResult> {
-    this.#valid();
-
-    /**
-     * Gather compilable sources and compile them
-     */
+  async build(buildSources: FileBag): Promise<BuildResult> {
     try {
-      const compilable = sources.filter((source) => this.isCompilable(source));
-      const compiled = await this.compileSources(compilable);
-
       /**
-       * Process css files
+       * Copy source files to the output directory
        */
-      await cssProcessor(sources);
-
-      /**
-       * Get the entrypoint source files
-       */
-      const entrypoints = Array.from(
-        compiled.filter((source) => this.isEntrypoint(source)),
-      ).map((source) => {
-        const config = this.getEntrypoint(
-          source.relativeAlias() ||
-            source.relativePath(),
-        );
-        return new Entrypoint(
-          source.path(),
-          source.root(),
-          config,
-        );
-      });
-
-      /**
-       * Get all the local sources
-       */
-      const localSources = sources.filter((source) =>
-        !isRemoteSpecifier(String(source.url()))
+      const sources = await buildSources.filter((source) =>
+        !this.isIgnored(source)
+      ).copyTo(
+        this.context.output,
       );
 
+      const importMaps: Map<string, ImportMap> = new Map();
+
       /**
-       * Create the module graph for each entrypoint
+       * Create a module graph for each entrypoint and vendor the dependencies
        */
-      for (const entrypoint of entrypoints.values()) {
-        const path = entrypoint.relativeAlias() ?? entrypoint.relativePath();
+      for (const sourceEntrypoint of this.entrypoints.values()) {
+        const entrypoint = sources.find((source) =>
+          source.relativePath() === sourceEntrypoint.relativePath()
+        );
+
+        if (!entrypoint) {
+          throw new Error(
+            sprintf(
+              'Could not find entrypoint "%s" in output directory',
+              sourceEntrypoint.name,
+            ),
+          );
+        }
+
+        const path = entrypoint.relativePath();
+        const loggedPath = crayon.lightBlue(path);
+
+        const bareSpecifiers: BareSpecifiersMap = new Map();
+        const entrypointName = sourceEntrypoint.name;
+        const entrypointTarget = sourceEntrypoint.config!.target;
+
+        const vendorOutputDir = join(
+          this.context.output,
+          "vendor",
+          entrypointName,
+        );
+
+        const resolver = wrapResolverWithLogging(
+          createResolver({
+            importMap: this.importMap,
+            sources,
+            bareSpecifiers,
+            baseURL: toFileUrl(this.context.root),
+          }),
+          this.log,
+        );
+
+        const loader = wrapLoaderWithLogging(
+          createLoader({
+            sources,
+            target: entrypointTarget,
+            dynamicImportIgnored: this.dynamicImportIgnored,
+          }),
+          this.log,
+        );
+
         this.log.info(
           sprintf(
-            'Building "%s" module graph for entrypoint %s',
-            crayon.lightBlue(entrypoint.config!.target),
-            path,
+            "Building module graph for entrypoint %s",
+            loggedPath,
           ),
         );
 
-        const graph = await buildModuleGraph(
-          this,
-          localSources,
-          entrypoint,
+        const graph = await createGraph(String(entrypoint.url()), {
+          kind: "codeOnly",
+          defaultJsxImportSource: this.context.compiler?.jsxImportSource ||
+            "react",
+          resolve: resolver,
+          load: loader,
+        });
+
+        const remoteModules = graph.modules.filter((module) =>
+          isRemoteSpecifier(module.specifier)
         );
 
-        entrypoint.setModuleGraph(graph);
+        const localModules = graph.modules.filter((module) =>
+          isLocalSpecifier(module.specifier)
+        );
+
+        const remoteSources = FileBag.fromModules(
+          remoteModules,
+          vendorOutputDir,
+        );
+
+        const localSources = FileBag.fromModules(
+          localModules,
+          this.context.output,
+        );
+
+        this.log.debug(
+          sprintf(
+            `Total modules: local %d, remote %d`,
+            localSources.size,
+            remoteSources.size,
+          ),
+        );
 
         this.log.success("Module graph built");
 
         /**
          * Vendor modules for each entrypoint
          */
-        this.log.info(sprintf("Vendor modules for entrypoint %s", path));
-
-        await vendorEntrypoint(
-          this,
-          entrypoint,
-          localSources,
+        this.log.info(
+          sprintf("Vendor modules for entrypoint %s", loggedPath),
         );
+
+        const [vendoredSources, importMap] = vendorModuleGraph(graph, {
+          name: entrypointName,
+          output: this.context.output,
+          sources,
+          bareSpecifiers,
+        });
+
+        await vendoredSources.copyTo(this.context.output);
 
         this.log.success(
-          sprintf("Vendored modules for entrypoint %s", path),
+          sprintf(
+            "Vendored %d modules for entrypoint %s",
+            vendoredSources.size,
+            loggedPath,
+          ),
         );
+
+        importMaps.set(entrypointName, importMap);
       }
 
+      const outputSources = await FileBag.from(this.context.output);
+
+      /**
+       * Compile the output sources
+       */
+      await this.compileSources(outputSources);
+
+      /**
+       * Content-hash the output sources
+       */
+      await this.hashSources(
+        outputSources.filter((
+          source,
+        ) => this.isHashable(source)),
+      );
+
+      const remappedPaths = outputSources.remappedPaths();
+
+      /**
+       * Re-map the importMap resolved specifiers
+       */
+      for (const [entrypointName, importMap] of importMaps.entries()) {
+        const remappedImportMap = this.#remapImportMapImports(
+          importMap,
+          remappedPaths,
+        );
+
+        importMaps.set(entrypointName, remappedImportMap);
+      }
+
+      /**
+       * Process sources
+       */
+      this.log.info(`Optimizing CSS sources`);
+      const cssSources = await cssProcessor(outputSources);
+      this.log.success(sprintf(`Optimized %d CSS sources`, cssSources.size));
+
+      this.#cleanup();
+
       return {
-        sources,
-        compiled,
-        entrypoints,
+        outputSources,
+        importMaps,
       };
     } catch (error) {
       throw error;
     }
   }
 
-  #valid() {
-    if (this.isValid) {
-      return;
-    }
-
-    if (!this.hasCopied) {
-      throw new Error("must copy sources before performing a build.");
-    }
-
-    this.isValid = true;
+  #cleanup() {
+    resolverCache.clear();
   }
 
   /**
    * Walk the root for SourceFiles obeying exclusion patterns
    */
   gatherSources(from: string = this.context.root) {
-    return gatherSources(from);
+    return FileBag.from(from);
   }
 
   async cleanOutput() {
@@ -266,80 +372,44 @@ export class Builder {
     }
   }
 
-  async copySources(
+  copySources(
     sources: FileBag,
     destination: string = this.context.output,
   ) {
-    const result: FileBag = new FileBag();
-
-    for (const source of sources.values()) {
-      try {
-        const copied = await this.copySource(source, destination);
-        if (copied) {
-          result.add(copied);
-        }
-      } catch (error) {
-        throw error;
-      }
-    }
-
-    this.hasCopied = true;
+    const sourcesToCopy = sources.filter((source) => !this.isIgnored(source));
+    const result = sourcesToCopy.copyTo(destination);
 
     return result;
   }
 
-  async copySource(source: IFile, destination: string = this.context.output) {
+  copySource(source: IFile, destination: string = this.context.output) {
     if (!this.isIgnored(source)) {
-      let copied: IFile;
-      if (this.isHashable(source)) {
-        copied = await source.copyToHashed(destination);
-      } else {
-        copied = await source.copyTo(destination);
-      }
-
-      return copied;
+      return source.copyTo(destination);
     }
   }
 
-  async compileSources(sources: FileBag) {
-    this.#valid();
-
+  async compileSources(
+    sources: FileBag,
+  ) {
     const compiled = new FileBag();
 
     for (const source of sources.values()) {
-      const originalSource = source.clone();
-      const compiledSource = await this.compileSource(source);
-
-      /**
-       * If we compiled an entrypoint, we update that entrypoint
-       * to point to the new compiled relative path.
-       */
-      if (this.isEntrypoint(originalSource)) {
-        const path = originalSource.relativePath();
-        const config = this.entrypoints.get(originalSource.relativePath());
-
-        this.entrypoints.delete(path);
-        this.entrypoints.set(source.relativePath(), config!);
-      }
-      compiled.add(compiledSource);
+      const output = await this.compileSource(source);
+      compiled.add(output);
     }
 
     return compiled;
   }
 
-  async compileSource(source: IFile): Promise<IFile> {
-    const { compile } = await import("./compiler.ts");
-
+  async compileSource(
+    source: IFile,
+  ): Promise<IFile> {
     if (!this.isCompilable(source)) {
-      throw new Error(
-        sprintf(
-          "source is not compilable: %s",
-          source.relativePath(),
-        ),
-      );
+      return source;
     }
 
     const content = await source.read();
+
     const compiled = await compile(content, {
       filename: source.path(),
       development: false,
@@ -350,11 +420,32 @@ export class Builder {
 
     const extension = source.extension();
     const filename = source.filename().replace(extension, ".js");
-
     await source.rename(filename);
-    await source.write(compiled.code);
+    await source.write(compiled.code, true);
 
     return source;
+  }
+
+  /**
+   * Returns a Map with the key being the original relative path
+   * and the value being the content hashed relative path.
+   */
+  async hashSources(sources: FileBag) {
+    const items: IFile[] = [];
+
+    for (const source of sources.values()) {
+      const contentHash = await source.contentHash();
+      const extension = source.extension();
+      const filename = source.filename().replace(
+        extension,
+        `.${contentHash}${extension}`,
+      );
+
+      await source.rename(filename);
+      items.push(source);
+    }
+
+    return new FileBag(items);
   }
 
   toManifest(
@@ -364,17 +455,15 @@ export class Builder {
       | undefined = {},
   ) {
     const json = [];
-
     const ignored = this.#buildPatterns(ignore);
 
     for (const source of sources.values()) {
-      const isIgnored = ignored.some((pattern) =>
-        pattern.test(source.relativePath())
-      );
+      const relativePath = source.relativePath();
+      const isIgnored = ignored.some((pattern) => pattern.test(relativePath));
       if (!isIgnored) {
         json.push([
-          source.relativeAlias() ?? source.relativePath(),
-          prefix ? resolve(prefix, source.relativePath()) : source.path(),
+          relativePath,
+          prefix ? resolve(prefix, relativePath) : source.path(),
         ]);
       }
     }
@@ -396,5 +485,26 @@ export class Builder {
     }
 
     return patterns.map((pattern) => this.globToRegExp(pattern));
+  }
+
+  #remapImportMapImports(
+    importMap: ImportMap,
+    remappedImports: Map<string, string>,
+  ): ImportMap {
+    const remappedImportMap: ImportMap = {
+      imports: importMap.imports,
+      scopes: importMap.scopes,
+    };
+
+    if (remappedImportMap.imports) {
+      for (
+        const [specifier, resolved] of Object.entries(remappedImportMap.imports)
+      ) {
+        remappedImportMap.imports[specifier] = remappedImports.get(specifier) ||
+          resolved;
+      }
+    }
+
+    return remappedImportMap;
   }
 }

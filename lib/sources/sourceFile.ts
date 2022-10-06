@@ -3,7 +3,7 @@ import { File, IFile } from "./file.ts";
 
 export class SourceFile extends File implements IFile {
   /**
-   * @param filePath The absolute filepath to the file.
+   * @param filePath The absolute or relative filepath to the file.
    * @param rootPath The absolute filepath to the root of this file.
    */
   constructor(filePath: string, rootPath: string) {

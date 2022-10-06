@@ -1,9 +1,10 @@
-import type { Types } from "./swc.ts";
 import { transform } from "./swc.ts";
 
 export type CompilerOptions = {
   filename?: string;
-  target?: Types.JscTarget;
+  globals?: {
+    [key: string]: string;
+  };
   useBuiltins?: boolean;
   externalHelpers?: boolean;
   dynamicImport?: boolean;
@@ -17,28 +18,34 @@ export type CompilerOptions = {
 export async function compile(source: string, options: CompilerOptions) {
   const {
     filename,
-    target = "es2022",
     useBuiltins = true,
-    externalHelpers = true,
+    externalHelpers = false,
     dynamicImport = true,
     jsxImportSource = "react",
     runtime = "automatic",
     development,
     sourceMaps,
-    minify,
+    minify = true,
+    globals = undefined,
   } = options;
 
   const transformed = await transform(source, {
-    // @ts-ignore This exists in the Rust API, but isn't exposed on the config type for some reason
     filename,
+    minify,
     jsc: {
-      target,
+      target: "es2022",
       parser: {
         syntax: "typescript",
         dynamicImport,
         tsx: true,
       },
       externalHelpers,
+      minify: minify
+        ? {
+          mangle: true,
+          compress: true,
+        }
+        : undefined,
       transform: {
         react: {
           useBuiltins,
@@ -46,11 +53,20 @@ export async function compile(source: string, options: CompilerOptions) {
           runtime,
           development,
         },
+        optimizer: {
+          simplify: true,
+          globals: {
+            vars: globals,
+            // @ts-ignore missing type in GlobalPassOption
+            // typeofs: {
+            //   "Deno": target === "browser" ? "undefined" : "object",
+            // },
+          },
+        },
       },
     },
     sourceMaps: sourceMaps ? true : undefined,
     inlineSourcesContent: true,
-    minify,
   });
 
   return transformed;

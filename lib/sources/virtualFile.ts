@@ -1,6 +1,8 @@
-import { dirname, ensureDir, fromFileUrl, join, toFileUrl } from "../deps.ts";
+import { dirname, ensureDir, join } from "../deps.ts";
 import { File, IFile } from "./file.ts";
 import { SourceFile } from "./sourceFile.ts";
+
+const encoder = new TextEncoder();
 
 export class VirtualFile extends File implements IFile {
   private content: string | Uint8Array;
@@ -12,20 +14,13 @@ export class VirtualFile extends File implements IFile {
   ) {
     super(filePath, rootPath);
     this.content = content;
-  }
-
-  url() {
-    const rootPath = this.rootPath.startsWith("file://")
-      ? fromFileUrl(this.rootPath)
-      : this.rootPath;
-
-    return toFileUrl(join(rootPath, this.filePath));
+    this.unlock();
   }
 
   readBytes(): Promise<Uint8Array> {
     return Promise.resolve(
       typeof this.content === "string"
-        ? new TextEncoder().encode(this.content)
+        ? encoder.encode(this.content)
         : this.content,
     );
   }
@@ -42,10 +37,6 @@ export class VirtualFile extends File implements IFile {
     source.unlock();
 
     return source;
-  }
-
-  copyToHashed(_to: string): Promise<IFile> {
-    throw new Error("Method not implemented.");
   }
 
   remove(): Promise<boolean> {

@@ -1,7 +1,16 @@
-import { ImportSpecifier, initModuleLexer } from "../deps.ts";
+import {
+  cache,
+  crayon,
+  ImportSpecifier,
+  initModuleLexer,
+  sprintf,
+  toFileUrl,
+} from "../deps.ts";
 import { parseModule } from "../deps.ts";
+import { Logger } from "../logger.ts";
 import { FileBag } from "../sources/fileBag.ts";
-import { LoadResponse } from "../types.ts";
+import { LoadResponse, LoadResponseModule, Policy, Target } from "../types.ts";
+import { wrapFn } from "../utils.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./specifiers.ts";
 
 await initModuleLexer;
@@ -11,22 +20,27 @@ export type Loader = (
   isDynamic?: boolean,
 ) => Promise<LoadResponse | undefined>;
 
-export function createLoader(
-  sources: FileBag,
-  target: "browser" | "deno" = "browser",
-  dynamicImportIgnored: RegExp[] = [],
-): Loader {
+type CreateLoaderOptions = {
+  sources: FileBag;
+  target: Target;
+  dynamicImportIgnored?: RegExp[];
+};
+
+export function createLoader(options: CreateLoaderOptions): Loader {
+  const { sources, target, dynamicImportIgnored } = options;
+
   return function loader(specifier: string, isDynamic?: boolean) {
     try {
       if (isRemoteSpecifier(specifier)) {
         if (
-          isDynamic && dynamicImportIgnored.some((skip) => skip.test(specifier))
+          isDynamic &&
+          dynamicImportIgnored?.some((skip) => skip.test(specifier))
         ) {
           return Promise.resolve(undefined);
         }
-        return loadRemote(specifier, target);
+        return loadRemoteSpecifier(specifier, target);
       } else {
-        return loadLocal(specifier, sources);
+        return loadLocalSpecifier(specifier, sources);
       }
     } catch {
       return Promise.resolve(undefined);
@@ -34,25 +48,42 @@ export function createLoader(
   };
 }
 
-const loadRemote = async (
+export function wrapLoaderWithLogging(
+  loader: Loader,
+  logger: Logger,
+): Loader {
+  return wrapFn(
+    loader,
+    (specifier) =>
+      logger.debug(sprintf("%s %s", crayon.red("Load"), specifier)),
+  );
+}
+
+export function createLoadRequest(specifier: string, target: Target) {
+  const url = prepareRequestUrl(new URL(specifier), target);
+  const requestHeaders = new Headers();
+
+  if (target === "browser") {
+    requestHeaders.set("User-Agent", "mesozoic");
+  }
+
+  return new Request(String(url), {
+    redirect: "follow",
+    headers: requestHeaders,
+  });
+}
+
+export async function loadRemoteSpecifier(
   specifier: string,
   target: "browser" | "deno",
-): Promise<LoadResponse | undefined> => {
+  policy?: Policy,
+): Promise<LoadResponse | undefined> {
   try {
-    const url = prepareUrl(new URL(specifier), target);
-    const requestHeaders = new Headers();
+    const request = createLoadRequest(specifier, target);
+    const cached = await cache(request.url, policy);
 
-    if (target === "browser") {
-      requestHeaders.set("User-Agent", "mesozoic");
-    }
-
-    const request = new Request(String(url), {
-      redirect: "follow",
-      headers: requestHeaders,
-    });
-
-    const response = await fetch(request);
-    const responseUrl = new URL(response.url);
+    const response = await fetch(toFileUrl(cached.path));
+    const responseUrl = cached.url;
 
     if (response.status !== 200) {
       // ensure the body is read as to not leak resources
@@ -67,20 +98,13 @@ const loadRemote = async (
       headers[key.toLowerCase()] = value;
     }
 
-    /**
-     * If we detect a "facade" and there is only 1 import OR 1 export
-     */
-    const [imports, exports, facade] = await parseModule(content);
+    const facadeRedirect = await resolveFacadeModuleRedirect(
+      specifier,
+      content,
+    );
 
-    if (facade && (exports.length === 1 || imports.length === 1)) {
-      const uniqueSpecifiers = resolveUniqueRemoteSpecifiers(
-        imports,
-        specifier,
-      );
-      if (uniqueSpecifiers[0]) {
-        const specifier = new URL(uniqueSpecifiers[0]);
-        return loadRemote(specifier.href, target);
-      }
+    if (facadeRedirect) {
+      return loadRemoteSpecifier(facadeRedirect.href, target, policy);
     }
 
     return {
@@ -93,9 +117,9 @@ const loadRemote = async (
     console.error(error);
     return undefined;
   }
-};
+}
 
-export async function loadLocal(
+export async function loadLocalSpecifier(
   specifier: string,
   sources: FileBag,
 ): Promise<LoadResponse | undefined> {
@@ -112,9 +136,35 @@ export async function loadLocal(
       kind: "module",
       specifier: isLocalSpecifier(specifier)
         ? String(source.url())
-        : source.path(),
+        : String(toFileUrl(source.path())),
       content,
     };
+  }
+}
+
+export function isModuleResponse(
+  response: LoadResponse | undefined,
+): response is LoadResponseModule {
+  return response?.kind === "module";
+}
+
+export async function resolveFacadeModuleRedirect(
+  specifier: string,
+  content: string,
+): Promise<URL | undefined> {
+  const [imports, exports, facade] = await parseModule(content);
+  /**
+   * If we detect a "facade" and there is only 1 import OR 1 export
+   */
+  if (facade && (exports.length === 1 || imports.length === 1)) {
+    const uniqueSpecifiers = resolveUniqueRemoteSpecifiers(
+      imports,
+      specifier,
+    );
+
+    if (uniqueSpecifiers[0]) {
+      return new URL(uniqueSpecifiers[0]);
+    }
   }
 }
 
@@ -130,22 +180,22 @@ export function resolveUniqueRemoteSpecifiers(
   /**
    * Resolve relative imports like "export * from '/-/graphql-type-json/...'";
    */
-  namedImports = namedImports.map((specifier) => {
-    if (specifier.startsWith("/") && referrer.startsWith("http")) {
-      return new URL(specifier, referrer).href;
-    }
-    return specifier;
-  });
+  namedImports = namedImports.map((specifier) =>
+    String(new URL(specifier, referrer))
+  );
 
   // Resolve unique remote imports
   return Array.from(
     new Set(
-      namedImports.filter((specifier) => specifier?.startsWith("http")),
+      namedImports.filter((specifier) => isRemoteSpecifier(specifier)),
     ).values(),
   );
 }
 
-export function prepareUrl(url: URL, target: "browser" | "deno" = "browser") {
+export function prepareRequestUrl(
+  url: URL,
+  target: "browser" | "deno" = "browser",
+) {
   switch (url.host) {
     case "esm.sh":
       /**

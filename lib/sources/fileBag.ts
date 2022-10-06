@@ -1,24 +1,69 @@
-import { sprintf } from "../deps.ts";
+import { fromFileUrl, normalize, sprintf, walk } from "../deps.ts";
+import { rootUrlToSafeLocalDirname } from "../fs.ts";
+import { isRemoteSpecifier } from "../graph/specifiers.ts";
+import { Module } from "../types.ts";
 import { IFile } from "./file.ts";
+import { SourceFile } from "./sourceFile.ts";
+import { VirtualFile } from "./virtualFile.ts";
 
 /**
  * A FileBag holds and manages implementations of IFile
  */
 export class FileBag extends Set<IFile> {
-  private static create(items: IFile[]): FileBag {
-    const fileBag = new FileBag();
-    if (items) {
-      for (const item of items) {
-        fileBag.add(item);
+  static async from(path: string) {
+    const items: IFile[] = [];
+
+    for await (const entry of walk(path)) {
+      if (entry.isFile) {
+        const sourceFile = new SourceFile(normalize(entry.path), path);
+        items.push(sourceFile);
       }
     }
-    return fileBag;
+
+    return new FileBag(items);
+  }
+
+  static fromModules(
+    modules: Module[],
+    path: string,
+  ) {
+    const items: IFile[] = [];
+
+    for (const module of modules) {
+      if (isRemoteSpecifier(module.specifier)) {
+        const safePath = rootUrlToSafeLocalDirname(
+          new URL(module.specifier),
+          ".",
+        );
+
+        const file = new VirtualFile(safePath, path, module.source);
+        items.push(file);
+      } else {
+        const file = new VirtualFile(
+          fromFileUrl(module.specifier),
+          path,
+          module.source,
+        );
+        items.push(file);
+      }
+    }
+
+    return new FileBag(items);
+  }
+
+  remappedPaths(): Map<string, string> {
+    const remappedPaths = new Map<string, string>();
+    for (const source of this.values()) {
+      remappedPaths.set(
+        source.relativePath(source.originalPath()),
+        source.relativePath(),
+      );
+    }
+    return remappedPaths;
   }
 
   get(path: string): Promise<IFile> {
-    const source = this.find((source) =>
-      source.relativePath() === path || source.relativeAlias() === path
-    );
+    const source = this.find((source) => source.relativePath() === path);
     if (source) {
       return Promise.resolve(source);
     } else {
@@ -26,6 +71,23 @@ export class FileBag extends Set<IFile> {
         new Error(sprintf("source does not exist at %s", path)),
       );
     }
+  }
+
+  async copyTo(destination: string) {
+    const items: IFile[] = [];
+
+    for (const source of this.values()) {
+      try {
+        const copied = await source.copyTo(destination);
+        if (copied) {
+          items.push(copied);
+        }
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    return new FileBag(items);
   }
 
   /**
@@ -57,13 +119,14 @@ export class FileBag extends Set<IFile> {
 
   filter(predicate: (file: IFile) => boolean) {
     const items: IFile[] = [];
+
     for (const source of this.values()) {
       if (predicate(source)) {
         items.push(source);
       }
     }
 
-    return FileBag.create(items);
+    return new FileBag(items);
   }
 
   toArray() {

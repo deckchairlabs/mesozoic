@@ -2,6 +2,8 @@ import {
   basename,
   dirname,
   extname,
+  fromFileUrl,
+  isAbsolute,
   join,
   sprintf,
   toFileUrl,
@@ -11,32 +13,39 @@ export interface IFile {
   filename(): string;
   dirname(): string;
   path(): string;
-  relativePath(): string;
+  originalPath(): string;
+  relativePath(path?: string): string;
   url(): URL;
-  alias(): string | undefined;
-  aliasUrl(): URL | undefined;
-  setAlias(alias: string): IFile;
-  relativeAlias(): string | undefined;
   root(): string;
   extension(): string;
   read(): Promise<string>;
   readAsJson<T = unknown>(): Promise<T>;
   readBytes(): Promise<Uint8Array>;
-  write(content: string | Uint8Array): Promise<void>;
+  write(content: string | Uint8Array, overwrite?: boolean): Promise<void>;
   // deno-lint-ignore no-explicit-any
   writeJson(value: any, pretty?: boolean): Promise<void>;
   copyTo(to: string, filePath?: string): Promise<IFile>;
-  copyToHashed(to: string): Promise<IFile>;
   remove(): Promise<boolean>;
   rename(newFilename: string): Promise<string>;
   clone(): IFile;
+  contentHash(): Promise<string>;
 }
 
 export abstract class File implements IFile {
-  private aliasPath?: string;
   private locked = true;
+  private originalFilePaths: Set<string> = new Set();
 
-  constructor(public filePath: string, public rootPath: string) {}
+  constructor(public filePath: string, public rootPath: string) {
+    if (rootPath.startsWith("file://")) {
+      this.rootPath = fromFileUrl(rootPath);
+    }
+
+    if (!isAbsolute(filePath)) {
+      this.filePath = join(this.rootPath, filePath);
+    }
+
+    this.originalFilePaths.add(this.filePath);
+  }
 
   isLocked() {
     return this.locked;
@@ -59,6 +68,11 @@ export abstract class File implements IFile {
     return this.filePath;
   }
 
+  originalPath() {
+    const [originalPath] = this.originalFilePaths;
+    return originalPath;
+  }
+
   url() {
     return toFileUrl(this.filePath);
   }
@@ -66,25 +80,8 @@ export abstract class File implements IFile {
   /**
    * @returns The relative path of this file to its root.
    */
-  relativePath() {
-    return this.path().replace(this.rootPath, ".");
-  }
-
-  alias() {
-    return this.aliasPath;
-  }
-
-  aliasUrl() {
-    return this.aliasPath ? toFileUrl(this.aliasPath) : undefined;
-  }
-
-  setAlias(alias: string) {
-    this.aliasPath = alias;
-    return this;
-  }
-
-  relativeAlias() {
-    return this.alias()?.replace(this.rootPath, ".");
+  relativePath(path = this.path()) {
+    return path.replace(this.rootPath, ".");
   }
 
   root() {
@@ -114,8 +111,8 @@ export abstract class File implements IFile {
     return Deno.readFile(this.path());
   }
 
-  write(content: string | Uint8Array) {
-    if (this.isLocked()) {
+  write(content: string | Uint8Array, overwrite = false) {
+    if (this.isLocked() && !overwrite) {
       throw new Error(
         sprintf("cannot write file because it is locked: %s", this.path()),
       );
@@ -157,6 +154,7 @@ export abstract class File implements IFile {
       await Deno.rename(path, path.replace(filename, newFilename));
 
       this.filePath = path.replace(filename, newFilename);
+      this.originalFilePaths.add(path);
 
       return newFilename;
     } catch (error) {
@@ -166,21 +164,6 @@ export abstract class File implements IFile {
 
   clone(): IFile {
     throw new Error("Not implemented");
-  }
-
-  async copyToHashed(to: string): Promise<IFile> {
-    const contentHash = await this.contentHash();
-    const extension = this.extension();
-
-    const path = this.relativePath().replace(
-      extension,
-      `.${contentHash}${extension}`,
-    );
-
-    const copied = await this.copyTo(to, path);
-    copied.setAlias(join(to, this.relativePath()));
-
-    return copied;
   }
 
   /**

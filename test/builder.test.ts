@@ -1,4 +1,4 @@
-import { assertSnapshot } from "https://deno.land/std@0.153.0/testing/snapshot.ts";
+import { assertEquals } from "https://deno.land/std@0.153.0/testing/asserts.ts";
 import { Builder } from "../mod.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
 
@@ -20,12 +20,12 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
   const builder = await createBuilder();
 
   builder.setEntrypoints({
-    "./client.tsx": {
-      vendorOutputDir: "browser",
+    "browser": {
+      path: "./client.tsx",
       target: "browser",
     },
-    "./server.tsx": {
-      vendorOutputDir: "server",
+    "server": {
+      path: "./server.tsx",
       target: "deno",
     },
   });
@@ -42,18 +42,23 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
   ]);
 
   builder.setDynamicImportIgnored([
-    "https://deno.land/x/ultra@v2.0.0-beta.1/lib/middleware/compiler.ts",
+    "https://deno.land/x/ultra@v2.0.0-beta.7/lib/middleware/compiler.ts",
   ]);
 
   builder.setCompiled([
-    "./**/*.+(ts|tsx|js|jsx)",
+    "./src/**/*.+(ts|tsx|js|jsx)",
+    "./vendor/browser/**/*.+(ts|tsx|js|jsx)",
+    "./+(client|server).+(ts|tsx|js|jsx)",
   ]);
 
   const sources = await builder.gatherSources();
-  const buildSources = await builder.copySources(sources);
-  const { entrypoints } = await builder.build(buildSources);
+  const result = await builder.build(sources);
 
-  for (const entrypoint of entrypoints.values()) {
-    assertSnapshot(t, entrypoint.importMap);
-  }
+  const vendored = result.outputSources.filter((source) =>
+    source.relativePath().startsWith("./vendor")
+  );
+
+  assertEquals(result.outputSources.size > 0, true);
+  assertEquals(vendored.size > 0, true);
+  assertEquals(result.importMaps.size, 2);
 });

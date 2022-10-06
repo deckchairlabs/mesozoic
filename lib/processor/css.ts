@@ -1,12 +1,12 @@
 import init, {
   browserslistToTargets,
   transform,
-} from "https://esm.sh/lightningcss-wasm@1.14.0/index.js";
+} from "https://esm.sh/lightningcss-wasm@1.16.0/index.js";
 import { cache, join, SEP, toFileUrl } from "../deps.ts";
 import { SourceProcessor } from "../types.ts";
 
 const file = await cache(
-  "https://esm.sh/lightningcss-wasm@1.14.0/lightningcss_node_bg.wasm",
+  "https://esm.sh/lightningcss-wasm@1.16.0/lightningcss_node_bg.wasm",
 );
 
 await init(toFileUrl(file.path));
@@ -34,7 +34,7 @@ export const cssProcessor: SourceProcessor = async (sources) => {
       analyzeDependencies: true,
     });
 
-    let transformed = decoder.decode(result.code);
+    let transformedCode = decoder.decode(result.code);
 
     if (result.dependencies) {
       /**
@@ -45,25 +45,23 @@ export const cssProcessor: SourceProcessor = async (sources) => {
         if (dependency.type === "url") {
           const relativeRoot = source.dirname().replace(source.root(), ".");
           const lookupPath = `.${SEP}${join(relativeRoot, dependency.url)}`;
-          const dependencySource = await sources.get(lookupPath);
+          const dependencySource = await sources.find((file) =>
+            file.relativePath(file.originalPath()) === lookupPath
+          );
 
           if (dependencySource) {
-            const path = dependencySource.relativePath() ||
-              dependencySource.relativeAlias();
-
-            if (path) {
-              transformed = transformed.replaceAll(
-                dependency.placeholder,
-                path.replace(relativeRoot, "."),
-              );
-            }
+            const path = dependencySource.relativePath();
+            transformedCode = transformedCode.replaceAll(
+              dependency.placeholder,
+              path.replace(relativeRoot, "."),
+            );
           }
         }
       }
     }
 
-    await source.write(transformed);
+    await source.write(transformedCode, true);
   }
 
-  return sources;
+  return cssSources;
 };
