@@ -16,7 +16,7 @@ async function createBuilder() {
   return builder;
 }
 
-Deno.test("it can copy, compile and vendor entrypoints producing valid import maps", async (t) => {
+Deno.test("it can copy, compile and vendor entrypoints producing valid import maps", async () => {
   const builder = await createBuilder();
 
   builder.setEntrypoints({
