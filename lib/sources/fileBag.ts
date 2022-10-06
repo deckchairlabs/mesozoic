@@ -52,9 +52,7 @@ export class FileBag extends Set<IFile> {
   }
 
   get(path: string): Promise<IFile> {
-    const source = this.find((source) =>
-      source.relativePath() === path || source.relativeAlias() === path
-    );
+    const source = this.find((source) => source.relativePath() === path);
     if (source) {
       return Promise.resolve(source);
     } else {

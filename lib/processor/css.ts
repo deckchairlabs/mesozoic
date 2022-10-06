@@ -48,9 +48,7 @@ export const cssProcessor: SourceProcessor = async (sources) => {
           const dependencySource = await sources.get(lookupPath);
 
           if (dependencySource) {
-            const path = dependencySource.relativePath() ||
-              dependencySource.relativeAlias();
-
+            const path = dependencySource.relativePath();
             if (path) {
               transformed = transformed.replaceAll(
                 dependency.placeholder,

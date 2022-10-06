@@ -15,7 +15,7 @@ import { Entrypoint, EntrypointConfig } from "./entrypoint.ts";
 import type { GlobToRegExpOptions, ImportMap, Target } from "./types.ts";
 import { vendorModuleGraph } from "./vendor.ts";
 import { compile } from "./compiler.ts";
-import { cssProcessor } from "./processor/css.ts";
+// import { cssProcessor } from "./processor/css.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
 import { createLoader, wrapLoaderWithLogging } from "./graph/load.ts";
 import {
@@ -71,8 +71,8 @@ export type BuilderEntrypoints = {
 };
 
 export type BuildResult = {
-  sources: FileBag;
-  entrypoints: Entrypoint[];
+  importMap: ImportMap;
+  vendored: FileBag;
 };
 
 export class Builder {
@@ -197,18 +197,17 @@ export class Builder {
   }
 
   async build(buildSources: FileBag) {
-    performance.mark("build");
-
     try {
       /**
        * Copy source files to the output directory
        */
-
       const sources = await buildSources.filter((source) =>
         !this.isIgnored(source)
       ).copyTo(
         this.context.output,
       );
+
+      const buildResults: Map<string, BuildResult> = new Map();
 
       /**
        * Create a module graph for each entrypoint and vendor the dependencies
@@ -328,31 +327,36 @@ export class Builder {
           ),
         );
 
-        /**
-         * Compile local sources
-         */
-        if (entrypointTarget === "browser") {
-          const compilable = localSources.filter((source) =>
-            this.isCompilable(source)
-          );
-
-          this.log.info(
-            sprintf(
-              "Compiling %d modules for entrypoint %s",
-              compilable.size,
-              loggedPath,
-            ),
-          );
-
-          await this.compileSources(compilable, "browser");
-        }
+        buildResults.set(entrypointName, {
+          importMap,
+          vendored,
+        });
       }
+
+      const outputSources = await FileBag.from(this.context.output);
+
+      /**
+       * Compile the output sources
+       */
+      const compiledSources = await this.compileSources(
+        outputSources.filter((source) => this.isCompilable(source)),
+        "browser",
+      );
+
+      /**
+       * Content-hash the output sources
+       */
+      const contentHashedSources = await this.hashSources(
+        (await FileBag.from(this.context.output)).filter((
+          source,
+        ) => this.isHashable(source)),
+      );
+
+      console.log(contentHashedSources);
 
       this.#cleanup();
 
-      return {
-        entrypoints: this.entrypoints.values(),
-      };
+      return buildResults;
     } catch (error) {
       throw error;
     }
@@ -393,9 +397,11 @@ export class Builder {
     }
   }
 
-  async compileSources(sources: FileBag, target: Target | undefined) {
+  async compileSources(
+    sources: FileBag,
+    target: Target | undefined,
+  ) {
     const items: IFile[] = [];
-
     for (const source of sources.values()) {
       const compiledSource = await this.compileSource(source, target);
       items.push(compiledSource);
@@ -426,9 +432,34 @@ export class Builder {
     const extension = source.extension();
     const filename = source.filename().replace(extension, ".js");
     await source.rename(filename);
-    await source.write(compiled.code);
+    await source.write(compiled.code, true);
 
     return source;
+  }
+
+  /**
+   * Returns a Map with the key being the original relative path
+   * and the value being the content hashed relative path.
+   */
+  async hashSources(sources: FileBag, mappings?: Map<string, string>) {
+    const items: IFile[] = [];
+
+    for (const source of sources.values()) {
+      const contentHash = await source.contentHash();
+      const extension = source.extension();
+
+      const originalPath = source.relativePath();
+      const filename = source.filename().replace(
+        extension,
+        `.${contentHash}${extension}`,
+      );
+
+      await source.rename(filename);
+      mappings?.set(originalPath, source.relativePath());
+      items.push(source);
+    }
+
+    return new FileBag(items);
   }
 
   toManifest(
@@ -438,17 +469,15 @@ export class Builder {
       | undefined = {},
   ) {
     const json = [];
-
     const ignored = this.#buildPatterns(ignore);
 
     for (const source of sources.values()) {
-      const isIgnored = ignored.some((pattern) =>
-        pattern.test(source.relativePath())
-      );
+      const relativePath = source.relativePath();
+      const isIgnored = ignored.some((pattern) => pattern.test(relativePath));
       if (!isIgnored) {
         json.push([
-          source.relativeAlias() ?? source.relativePath(),
-          prefix ? resolve(prefix, source.relativePath()) : source.path(),
+          relativePath,
+          prefix ? resolve(prefix, relativePath) : source.path(),
         ]);
       }
     }

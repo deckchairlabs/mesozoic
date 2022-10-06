@@ -15,26 +15,22 @@ export interface IFile {
   path(): string;
   relativePath(): string;
   url(): URL;
-  alias(): string | undefined;
-  aliasUrl(): URL | undefined;
-  setAlias(alias: string): IFile;
-  relativeAlias(): string | undefined;
   root(): string;
   extension(): string;
   read(): Promise<string>;
   readAsJson<T = unknown>(): Promise<T>;
   readBytes(): Promise<Uint8Array>;
-  write(content: string | Uint8Array): Promise<void>;
+  write(content: string | Uint8Array, overwrite?: boolean): Promise<void>;
   // deno-lint-ignore no-explicit-any
   writeJson(value: any, pretty?: boolean): Promise<void>;
   copyTo(to: string, filePath?: string): Promise<IFile>;
   remove(): Promise<boolean>;
   rename(newFilename: string): Promise<string>;
   clone(): IFile;
+  contentHash(): Promise<string>;
 }
 
 export abstract class File implements IFile {
-  private aliasPath?: string;
   private locked = true;
 
   constructor(public filePath: string, public rootPath: string) {
@@ -79,23 +75,6 @@ export abstract class File implements IFile {
     return this.path().replace(this.rootPath, ".");
   }
 
-  alias() {
-    return this.aliasPath;
-  }
-
-  aliasUrl() {
-    return this.aliasPath ? toFileUrl(this.aliasPath) : undefined;
-  }
-
-  setAlias(alias: string) {
-    this.aliasPath = alias;
-    return this;
-  }
-
-  relativeAlias() {
-    return this.alias()?.replace(this.rootPath, ".");
-  }
-
   root() {
     return this.rootPath;
   }
@@ -123,8 +102,8 @@ export abstract class File implements IFile {
     return Deno.readFile(this.path());
   }
 
-  write(content: string | Uint8Array) {
-    if (this.isLocked()) {
+  write(content: string | Uint8Array, overwrite = false) {
+    if (this.isLocked() && !overwrite) {
       throw new Error(
         sprintf("cannot write file because it is locked: %s", this.path()),
       );
