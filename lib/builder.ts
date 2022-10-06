@@ -49,6 +49,9 @@ export type BuildContext = {
     minify?: boolean;
     sourceMaps?: boolean;
     jsxImportSource?: string;
+    globals?: {
+      [x: string]: string;
+    };
   };
 
   /**
@@ -408,6 +411,7 @@ export class Builder {
     const compiled = await compile(content, {
       filename: source.path(),
       development: false,
+      globals: this.context?.compiler?.globals,
       minify: this.context?.compiler?.minify,
       sourceMaps: this.context?.compiler?.sourceMaps,
       jsxImportSource: this.context?.compiler?.jsxImportSource,
