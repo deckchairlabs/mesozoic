@@ -22,7 +22,6 @@ import { Logger } from "./logger.ts";
 import { cssProcessor } from "./processor/css.ts";
 import { IFile } from "./sources/file.ts";
 import { FileBag } from "./sources/fileBag.ts";
-import { VirtualFile } from "./sources/virtualFile.ts";
 import type { GlobToRegExpOptions, ImportMap } from "./types.ts";
 import { vendorModuleGraph } from "./vendor.ts";
 
@@ -332,14 +331,6 @@ export class Builder {
           importMap,
           remappedPaths,
         );
-
-        const importMapFile = new VirtualFile(
-          `./importMap.${entrypointName}.json`,
-          this.context.output,
-          JSON.stringify(remappedImportMap, null, 2),
-        );
-
-        await importMapFile.copyTo(this.context.output);
 
         importMaps.set(entrypointName, remappedImportMap);
       }
