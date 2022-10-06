@@ -303,6 +303,7 @@ export class Builder {
         );
 
         importMaps.set(entrypointName, importMap);
+        resolverCache.clear();
       }
 
       const outputSources = await FileBag.from(this.context.output);
@@ -342,8 +343,6 @@ export class Builder {
       const cssSources = await cssProcessor(outputSources);
       this.log.success(sprintf(`Optimized %d CSS sources`, cssSources.size));
 
-      this.#cleanup();
-
       return {
         outputSources,
         importMaps,
@@ -351,10 +350,6 @@ export class Builder {
     } catch (error) {
       throw error;
     }
-  }
-
-  #cleanup() {
-    resolverCache.clear();
   }
 
   /**
