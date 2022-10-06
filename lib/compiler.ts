@@ -1,12 +1,10 @@
 import { transform } from "./swc.ts";
-import { Target } from "./types.ts";
 
 export type CompilerOptions = {
-  target?: Target;
+  filename?: string;
   globals?: {
     [key: string]: string;
   };
-  filename?: string;
   useBuiltins?: boolean;
   externalHelpers?: boolean;
   dynamicImport?: boolean;
@@ -20,7 +18,6 @@ export type CompilerOptions = {
 export async function compile(source: string, options: CompilerOptions) {
   const {
     filename,
-    target = "browser",
     useBuiltins = true,
     externalHelpers = false,
     dynamicImport = true,
@@ -61,9 +58,9 @@ export async function compile(source: string, options: CompilerOptions) {
           globals: {
             vars: globals,
             // @ts-ignore missing type in GlobalPassOption
-            typeofs: {
-              "Deno": target === "browser" ? "undefined" : "object",
-            },
+            // typeofs: {
+            //   "Deno": target === "browser" ? "undefined" : "object",
+            // },
           },
         },
       },
