@@ -13,7 +13,8 @@ export interface IFile {
   filename(): string;
   dirname(): string;
   path(): string;
-  relativePath(): string;
+  originalPath(): string;
+  relativePath(path?: string): string;
   url(): URL;
   root(): string;
   extension(): string;
@@ -32,6 +33,7 @@ export interface IFile {
 
 export abstract class File implements IFile {
   private locked = true;
+  private originalFilePaths: Set<string> = new Set();
 
   constructor(public filePath: string, public rootPath: string) {
     if (rootPath.startsWith("file://")) {
@@ -41,6 +43,8 @@ export abstract class File implements IFile {
     if (!isAbsolute(filePath)) {
       this.filePath = join(this.rootPath, filePath);
     }
+
+    this.originalFilePaths.add(this.filePath);
   }
 
   isLocked() {
@@ -64,6 +68,11 @@ export abstract class File implements IFile {
     return this.filePath;
   }
 
+  originalPath() {
+    const [originalPath] = this.originalFilePaths;
+    return originalPath;
+  }
+
   url() {
     return toFileUrl(this.filePath);
   }
@@ -71,8 +80,8 @@ export abstract class File implements IFile {
   /**
    * @returns The relative path of this file to its root.
    */
-  relativePath() {
-    return this.path().replace(this.rootPath, ".");
+  relativePath(path = this.path()) {
+    return path.replace(this.rootPath, ".");
   }
 
   root() {
@@ -145,6 +154,7 @@ export abstract class File implements IFile {
       await Deno.rename(path, path.replace(filename, newFilename));
 
       this.filePath = path.replace(filename, newFilename);
+      this.originalFilePaths.add(path);
 
       return newFilename;
     } catch (error) {

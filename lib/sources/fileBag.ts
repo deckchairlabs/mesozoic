@@ -51,6 +51,17 @@ export class FileBag extends Set<IFile> {
     return new FileBag(items);
   }
 
+  remappedPaths(): Map<string, string> {
+    const remappedPaths = new Map<string, string>();
+    for (const source of this.values()) {
+      remappedPaths.set(
+        source.relativePath(source.originalPath()),
+        source.relativePath(),
+      );
+    }
+    return remappedPaths;
+  }
+
   get(path: string): Promise<IFile> {
     const source = this.find((source) => source.relativePath() === path);
     if (source) {

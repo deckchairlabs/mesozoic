@@ -1,3 +1,4 @@
+import { compile } from "./compiler.ts";
 import {
   crayon,
   createGraph,
@@ -8,15 +9,7 @@ import {
   sprintf,
   toFileUrl,
 } from "./deps.ts";
-import { IFile } from "./sources/file.ts";
-import { FileBag } from "./sources/fileBag.ts";
-import { Logger } from "./logger.ts";
 import { Entrypoint, EntrypointConfig } from "./entrypoint.ts";
-import type { GlobToRegExpOptions, ImportMap, Target } from "./types.ts";
-import { vendorModuleGraph } from "./vendor.ts";
-import { compile } from "./compiler.ts";
-// import { cssProcessor } from "./processor/css.ts";
-import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
 import { createLoader, wrapLoaderWithLogging } from "./graph/load.ts";
 import {
   BareSpecifiersMap,
@@ -24,6 +17,14 @@ import {
   resolverCache,
   wrapResolverWithLogging,
 } from "./graph/resolve.ts";
+import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
+import { Logger } from "./logger.ts";
+import { cssProcessor } from "./processor/css.ts";
+import { IFile } from "./sources/file.ts";
+import { FileBag } from "./sources/fileBag.ts";
+import { VirtualFile } from "./sources/virtualFile.ts";
+import type { GlobToRegExpOptions, ImportMap } from "./types.ts";
+import { vendorModuleGraph } from "./vendor.ts";
 
 export type BuildContext = {
   /**
@@ -71,7 +72,7 @@ export type BuilderEntrypoints = {
 };
 
 export type BuildResult = {
-  importMap: ImportMap;
+  // importMap: IFile;
   vendored: FileBag;
 };
 
@@ -88,9 +89,6 @@ export class Builder {
   public dynamicImportIgnored: RegExp[] = [];
   public hashed: RegExp[] = [];
   public compiled: RegExp[] = [];
-
-  // public moduleGraphs: Map<string, ModuleGraph> = new Map();
-  public importMaps: Map<string, ImportMap> = new Map();
 
   constructor(public readonly context: BuildContext) {
     this.log = new Logger(context?.logLevel || "INFO", context?.name);
@@ -135,26 +133,6 @@ export class Builder {
     return this.entrypoints.get(name);
   }
 
-  getImportMap(name: string): ImportMap {
-    if (!this.importMaps.has(name)) {
-      throw new Error(
-        sprintf('No importMap was found for entrypoint "%s".', name),
-      );
-    }
-
-    return this.importMaps.get(name)!;
-  }
-
-  // getModuleGraph(name: string): ModuleGraph {
-  //   if (!this.moduleGraphs.has(name)) {
-  //     throw new Error(
-  //       sprintf('No moduleGraph was found for entrypoint "%s".', name),
-  //     );
-  //   }
-
-  //   return this.moduleGraphs.get(name)!;
-  // }
-
   setCompiled(paths: string[]) {
     this.compiled = this.#buildPatterns(paths);
   }
@@ -196,7 +174,7 @@ export class Builder {
     return this.dynamicImportIgnored.some((pattern) => pattern.test(specifier));
   }
 
-  async build(buildSources: FileBag) {
+  async build(buildSources: FileBag): Promise<BuildResult[]> {
     try {
       /**
        * Copy source files to the output directory
@@ -207,7 +185,8 @@ export class Builder {
         this.context.output,
       );
 
-      const buildResults: Map<string, BuildResult> = new Map();
+      const buildResults: Array<BuildResult> = [];
+      const importMaps: Map<string, ImportMap> = new Map();
 
       /**
        * Create a module graph for each entrypoint and vendor the dependencies
@@ -308,16 +287,14 @@ export class Builder {
           sprintf("Vendor modules for entrypoint %s", loggedPath),
         );
 
-        const [vendorSources, importMap] = vendorModuleGraph(graph, {
+        const [outputSources, importMap] = vendorModuleGraph(graph, {
           name: entrypointName,
           output: this.context.output,
           sources,
           bareSpecifiers,
         });
 
-        const vendored = await vendorSources.copyTo(this.context.output);
-
-        this.importMaps.set(entrypointName, importMap);
+        const vendored = await outputSources.copyTo(this.context.output);
 
         this.log.success(
           sprintf(
@@ -327,10 +304,7 @@ export class Builder {
           ),
         );
 
-        buildResults.set(entrypointName, {
-          importMap,
-          vendored,
-        });
+        importMaps.set(entrypointName, importMap);
       }
 
       const outputSources = await FileBag.from(this.context.output);
@@ -338,21 +312,43 @@ export class Builder {
       /**
        * Compile the output sources
        */
-      const compiledSources = await this.compileSources(
-        outputSources.filter((source) => this.isCompilable(source)),
-        "browser",
-      );
+      await this.compileSources(outputSources);
 
       /**
        * Content-hash the output sources
        */
-      const contentHashedSources = await this.hashSources(
-        (await FileBag.from(this.context.output)).filter((
+      await this.hashSources(
+        outputSources.filter((
           source,
         ) => this.isHashable(source)),
       );
 
-      console.log(contentHashedSources);
+      const remappedPaths = outputSources.remappedPaths();
+
+      /**
+       * Re-map the importMap resolved specifiers
+       */
+      for (const [entrypointName, importMap] of importMaps.entries()) {
+        const remappedImportMap = this.#remapImportMapImports(
+          importMap,
+          remappedPaths,
+        );
+
+        const importMapFile = new VirtualFile(
+          `./importMap.${entrypointName}.json`,
+          this.context.output,
+          JSON.stringify(remappedImportMap, null, 2),
+        );
+
+        importMapFile.copyTo(this.context.output);
+      }
+
+      /**
+       * Process sources
+       */
+      this.log.info(`Optimizing CSS sources`);
+      const cssSources = await cssProcessor(outputSources);
+      this.log.success(sprintf(`Optimized %d CSS sources`, cssSources.size));
 
       this.#cleanup();
 
@@ -399,20 +395,19 @@ export class Builder {
 
   async compileSources(
     sources: FileBag,
-    target: Target | undefined,
   ) {
-    const items: IFile[] = [];
+    const compiled = new FileBag();
+
     for (const source of sources.values()) {
-      const compiledSource = await this.compileSource(source, target);
-      items.push(compiledSource);
+      const output = await this.compileSource(source);
+      compiled.add(output);
     }
 
-    return new FileBag(items);
+    return compiled;
   }
 
   async compileSource(
     source: IFile,
-    target: Target | undefined,
   ): Promise<IFile> {
     if (!this.isCompilable(source)) {
       return source;
@@ -422,7 +417,6 @@ export class Builder {
 
     const compiled = await compile(content, {
       filename: source.path(),
-      target,
       development: false,
       minify: this.context?.compiler?.minify,
       sourceMaps: this.context?.compiler?.sourceMaps,
@@ -441,21 +435,18 @@ export class Builder {
    * Returns a Map with the key being the original relative path
    * and the value being the content hashed relative path.
    */
-  async hashSources(sources: FileBag, mappings?: Map<string, string>) {
+  async hashSources(sources: FileBag) {
     const items: IFile[] = [];
 
     for (const source of sources.values()) {
       const contentHash = await source.contentHash();
       const extension = source.extension();
-
-      const originalPath = source.relativePath();
       const filename = source.filename().replace(
         extension,
         `.${contentHash}${extension}`,
       );
 
       await source.rename(filename);
-      mappings?.set(originalPath, source.relativePath());
       items.push(source);
     }
 
@@ -499,5 +490,26 @@ export class Builder {
     }
 
     return patterns.map((pattern) => this.globToRegExp(pattern));
+  }
+
+  #remapImportMapImports(
+    importMap: ImportMap,
+    remappedImports: Map<string, string>,
+  ): ImportMap {
+    const remappedImportMap: ImportMap = {
+      imports: importMap.imports,
+      scopes: importMap.scopes,
+    };
+
+    if (remappedImportMap.imports) {
+      for (
+        const [specifier, resolved] of Object.entries(remappedImportMap.imports)
+      ) {
+        remappedImportMap.imports[specifier] = remappedImports.get(specifier) ||
+          resolved;
+      }
+    }
+
+    return remappedImportMap;
   }
 }
