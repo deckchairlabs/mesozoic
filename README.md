@@ -23,7 +23,7 @@ You can build your own bespoke build system on top of Mesozoic, which
 import {
   BuildContextBuilder,
   Builder,
-} from "https://deno.land/x/mesozoic@v1.0.0-alpha.47/mod.ts";
+} from "https://deno.land/x/mesozoic@v1.0.0-beta.1/mod.ts";
 
 const context = new BuildContextBuilder()
   /**
