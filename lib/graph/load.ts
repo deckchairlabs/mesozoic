@@ -8,6 +8,7 @@ import {
 } from "../deps.ts";
 import { parseModule } from "../deps.ts";
 import { Logger } from "../logger.ts";
+import { Patterns } from "../patterns.ts";
 import { FileBag } from "../sources/fileBag.ts";
 import { LoadResponse, LoadResponseModule, Policy, Target } from "../types.ts";
 import { wrapFn } from "../utils.ts";
@@ -23,7 +24,7 @@ export type Loader = (
 type CreateLoaderOptions = {
   sources: FileBag;
   target: Target;
-  dynamicImportIgnored?: RegExp[];
+  dynamicImportIgnored?: Patterns;
 };
 
 export function createLoader(options: CreateLoaderOptions): Loader {
@@ -32,10 +33,7 @@ export function createLoader(options: CreateLoaderOptions): Loader {
   return function loader(specifier: string, isDynamic?: boolean) {
     try {
       if (isRemoteSpecifier(specifier)) {
-        if (
-          isDynamic &&
-          dynamicImportIgnored?.some((skip) => skip.test(specifier))
-        ) {
+        if (isDynamic && dynamicImportIgnored?.test(specifier)) {
           return Promise.resolve(undefined);
         }
         return loadRemoteSpecifier(specifier, target);

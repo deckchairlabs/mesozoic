@@ -1,8 +1,8 @@
-import { compile } from "./compiler.ts";
+import { compile, CompilerOptions } from "./compiler.ts";
+import { BuildContext } from "./context.ts";
 import {
   crayon,
   createGraph,
-  globToRegExp,
   join,
   log,
   resolve,
@@ -19,58 +19,24 @@ import {
 } from "./graph/resolve.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
 import { Logger } from "./logger.ts";
+import { Patterns } from "./patterns.ts";
 import { cssProcessor } from "./processor/css.ts";
 import { IFile } from "./sources/file.ts";
 import { FileBag } from "./sources/fileBag.ts";
-import type { GlobToRegExpOptions, ImportMap } from "./types.ts";
+import type { ImportMap } from "./types.ts";
 import { vendorModuleGraph } from "./vendor.ts";
-
-export type BuildContext = {
-  /**
-   * Absolute path to the project root directory.
-   */
-  root: string;
-  /**
-   * Absolute path to the ourput directory.
-   */
-  output: string;
-  /**
-   * Relative path to your importMap from root.
-   */
-  importMapPath: string;
-
-  /**
-   * The kind of module graph to build
-   * @default "codeOnly"
-   */
-  graphKind?: "codeOnly" | "all";
-
-  compiler?: {
-    minify?: boolean;
-    sourceMaps?: boolean;
-    jsxImportSource?: string;
-    globals?: {
-      [x: string]: string;
-    };
-  };
-
-  /**
-   * Give your build system a custom name. Used as logging prefix.
-   * @default "mesozoic"
-   */
-  name?: string;
-  /**
-   * Customise the logging level
-   * @default "INFO"
-   */
-  logLevel?: log.LevelName;
-};
 
 /**
  * An object where the keys are the name of the entrypoint
  */
 export type BuilderEntrypoints = {
   [name: string]: EntrypointConfig;
+};
+
+export type BuilderOptions = {
+  name?: string;
+  logLevel?: log.LevelName;
+  compilerOptions?: CompilerOptions;
 };
 
 export type BuildResult = {
@@ -87,13 +53,13 @@ export class Builder {
   public log: Logger;
   public entrypoints: Map<string, Entrypoint> = new Map();
 
-  public ignored: RegExp[] = [];
-  public dynamicImportIgnored: RegExp[] = [];
-  public hashed: RegExp[] = [];
-  public compiled: RegExp[] = [];
+  constructor(
+    public readonly context: BuildContext,
+    public readonly options: BuilderOptions = {},
+  ) {
+    const { name = "mesozoic", logLevel = "INFO" } = options;
 
-  constructor(public readonly context: BuildContext) {
-    this.log = new Logger(context?.logLevel || "INFO", context?.name);
+    this.log = new Logger(logLevel, name);
 
     if (this.context.root.startsWith(".")) {
       throw new Error("root must be an absolute path");
@@ -135,45 +101,20 @@ export class Builder {
     return this.entrypoints.get(name);
   }
 
-  setCompiled(paths: string[]) {
-    this.compiled = this.#buildPatterns(paths);
-  }
-
   isCompilable(source: IFile): boolean {
-    return this.compiled.some((pattern) => pattern.test(source.relativePath()));
-  }
-
-  setHashed(paths: string[]) {
-    this.hashed = this.#buildPatterns(paths);
+    return this.context.compiled.test(source.relativePath());
   }
 
   isHashable(source: IFile): boolean {
-    return this.hashed.some((pattern) => pattern.test(source.relativePath()));
-  }
-
-  /**
-   * Allows ignoring certain files from the build process, they won't be copied
-   * to the build output directory, so no further processing will occur on them.
-   *
-   * @param paths an array of relative paths to exclude from the build process.
-   */
-  setIgnored(paths: string[]) {
-    this.ignored = this.#buildPatterns([
-      ...paths,
-      this.context.output,
-    ]);
+    return this.context.hashed.test(source.relativePath());
   }
 
   isIgnored(source: IFile): boolean {
-    return this.ignored.some((pattern) => pattern.test(source.relativePath()));
-  }
-
-  setDynamicImportIgnored(paths: string[]) {
-    this.dynamicImportIgnored = this.#buildPatterns(paths);
+    return this.context.ignored.test(source.relativePath());
   }
 
   isDynamicImportSpecifierIgnored(specifier: string) {
-    return this.dynamicImportIgnored.some((pattern) => pattern.test(specifier));
+    return this.context.dynamicImportIgnored.test(specifier);
   }
 
   async build(buildSources: FileBag): Promise<BuildResult> {
@@ -233,7 +174,7 @@ export class Builder {
           createLoader({
             sources,
             target: entrypointTarget,
-            dynamicImportIgnored: this.dynamicImportIgnored,
+            dynamicImportIgnored: this.context.dynamicImportIgnored,
           }),
           this.log,
         );
@@ -247,7 +188,8 @@ export class Builder {
 
         const graph = await createGraph(String(entrypoint.url()), {
           kind: "codeOnly",
-          defaultJsxImportSource: this.context.compiler?.jsxImportSource ||
+          defaultJsxImportSource:
+            this.options.compilerOptions?.jsxImportSource ||
             "react",
           resolve: resolver,
           load: loader,
@@ -411,10 +353,7 @@ export class Builder {
     const compiled = await compile(content, {
       filename: source.path(),
       development: false,
-      globals: this.context?.compiler?.globals,
-      minify: this.context?.compiler?.minify,
-      sourceMaps: this.context?.compiler?.sourceMaps,
-      jsxImportSource: this.context?.compiler?.jsxImportSource,
+      ...this.options.compilerOptions,
     });
 
     const extension = source.extension();
@@ -454,12 +393,14 @@ export class Builder {
       | undefined = {},
   ) {
     const json = [];
-    const ignored = this.#buildPatterns(ignore);
+
+    const ignored = new Patterns(ignore);
+    ignored.build();
 
     for (const source of sources.values()) {
       const originalPath = source.relativePath(source.originalPath());
       const relativePath = source.relativePath();
-      const isIgnored = ignored.some((pattern) => pattern.test(relativePath));
+      const isIgnored = ignored.test(relativePath);
 
       if (!isIgnored && (relativePath !== originalPath)) {
         json.push([
@@ -470,22 +411,6 @@ export class Builder {
     }
 
     return json;
-  }
-
-  globToRegExp(pattern: string, options: GlobToRegExpOptions = {
-    extended: true,
-    globstar: true,
-    caseInsensitive: false,
-  }) {
-    return globToRegExp(pattern, options);
-  }
-
-  #buildPatterns(patterns?: string[]) {
-    if (!patterns) {
-      return [];
-    }
-
-    return patterns.map((pattern) => this.globToRegExp(pattern));
   }
 
   #remapImportMapImports(

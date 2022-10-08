@@ -37,7 +37,7 @@ export class Logger extends log.Logger {
    * @param levelName
    * @param name
    */
-  constructor(levelName: log.LevelName, name: string = "mesozoic") {
+  constructor(levelName: log.LevelName, name: string) {
     const loggerName = gradient(`[${name}]`);
 
     super(name, levelName, {

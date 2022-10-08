@@ -20,61 +20,80 @@ You can build your own bespoke build system on top of Mesozoic, which
 [Ultra.js](https://ultrajs.dev) is currently doing.
 
 ```ts
-import { Builder } from "https://deno.land/x/mesozoic@v1.0.0-alpha.47/mod.ts";
+import {
+  BuildContextBuilder,
+  Builder,
+} from "https://deno.land/x/mesozoic@v1.0.0-alpha.47/mod.ts";
 
-const builder = new Builder({
-  root: "/absolute/path/to/source",
-  output: "/absolute/path/to/output",
-  importMapPath: "./importMap.json",
-  compiler: {
+const context = new BuildContextBuilder()
+  /**
+   * The absolute path to the "root" of your project.
+   */
+  .setRoot(import.meta.resolve("./"))
+  /**
+   * The absolute path to where you would like the build to output to.
+   */
+  .setOutput(import.meta.resolve("./.output"))
+  /**
+   * Ignore files from the build, relative to "root".
+   * Any file that matches the provided patterns won't be copied to the build output directory.
+   */
+  .ignore(["./README.md"])
+  /**
+   * Files which should have their contents hashed and appended to the filename,
+   * great for long term caching (https://web.dev/use-long-term-caching/)
+   */
+  .contentHash([
+    "./src/**/*.+(ts|tsx|js|jsx|css)",
+    "./public/**/*.+(css|ico|jpg|png|svg|gif|otf|ttf|woff)",
+  ])
+  /**
+   * Files which should be compiled by SWC, usually TypeScript or files with JSX.
+   */
+  .compile([
+    "./**/*.+(ts|tsx|js|jsx)",
+    // We can negate a pattern by prefixing it with "!"
+    "!./vendor/server/**/*",
+  ])
+  /**
+   * Build and validate the context.
+   */
+  .build();
+
+/**
+ * Create a new builder with the context as defined above.
+ */
+const builder = new Builder(context, {
+  /**
+   * A custom name for your builder!
+   */
+  name: "mesozoic",
+  logLevel: "INFO",
+  compilerOptions: {
     minify: true,
     sourceMaps: false,
     jsxImportSource: "react",
   },
-  name: "mesozoic",
-  logLevel: "INFO",
 });
 
 /**
  * Setup your entrypoints, relative to "root".
  * A module graph will be built for each entry point defined.
- * Remote dependencies will also be independently fetched and output,
- * into each entry points "vendorOutputDir" at ./vendor
+ * Remote dependencies will also be independently fetched and output for each entrypoint.
+ *
+ * The key of the entrypoints config is the name of the entrypoint and also the output
+ * directory name within the vendor output directory.
  */
 builder.setEntrypoints({
-  "./client.tsx": {
-    vendorOutputDir: "browser",
+  "browser": {
+    path: "./client.tsx",
     target: "browser",
   },
-  "./server.tsx": {
-    vendorOutputDir: "server",
+  "server": {
+    path: "./server.tsx",
     target: "deno",
   },
 });
-
-/**
- * Ignore files from the build, relative to "root".
- * Any file that matches the provided patterns won't be copied to the build output directory.
- */
-builder.setIgnored([
-  "./README.md",
-]);
-
-/**
- * Files which should have their contents hashed and added to the filename,
- * great for long term caching (https://web.dev/use-long-term-caching/)
- */
-builder.setHashed([
-  "./src/**/*.+(ts|tsx|js|jsx|css)",
-  "./public/**/*.+(css|ico|jpg|png|svg|gif|otf|ttf|woff)",
-]);
-
-/**
- * Files which should be compiled by SWC, usually TypeScript or files with JSX.
- */
-builder.setCompiled([
-  "./**/*.+(ts|tsx|js|jsx)",
-]);
 
 /**
  * Clean the output directory
@@ -87,12 +106,7 @@ await builder.cleanOutput();
 const sources = await builder.gatherSources();
 
 /**
- * Copy the files to the output directory
- */
-const buildSources = await builder.copySources(sources);
-
-/**
  * Execute the build
  */
-const result = await builder.build(buildSources);
+const result = await builder.build(sources);
 ```
