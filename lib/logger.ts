@@ -1,5 +1,4 @@
-import { sprintf } from "https://deno.land/std@0.153.0/fmt/printf.ts";
-import { crayon, log } from "./deps.ts";
+import { crayon, log, sprintf } from "./deps.ts";
 
 function gradient(string: string) {
   const chars: string[] = string.split("");
