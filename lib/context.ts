@@ -26,14 +26,6 @@ export class BuildContextBuilder {
      */
     this.valid();
 
-    /**
-     * Build the patterns
-     */
-    this.#ignored.build();
-    this.#dynamicImportIgnored.build();
-    this.#compiled.build();
-    this.#hashed.build();
-
     return {
       root: this.#root!,
       output: this.#output!,

@@ -58,7 +58,6 @@ export class Builder {
     public readonly options: BuilderOptions = {},
   ) {
     const { name = "mesozoic", logLevel = "INFO" } = options;
-
     this.log = new Logger(logLevel, name);
 
     if (this.context.root.startsWith(".")) {
@@ -118,6 +117,14 @@ export class Builder {
   }
 
   async build(buildSources: FileBag): Promise<BuildResult> {
+    /**
+     * Build the patterns
+     */
+    this.context.ignored.build();
+    this.context.dynamicImportIgnored.build();
+    this.context.compiled.build();
+    this.context.hashed.build();
+
     try {
       /**
        * Copy source files to the output directory
