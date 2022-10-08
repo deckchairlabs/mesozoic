@@ -1,16 +1,12 @@
 import { assertEquals, assertSnapshot } from "./deps.ts";
 
-import { Builder } from "../mod.ts";
+import { BuildContext, BuildContextBuilder, Builder } from "../mod.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
 
 const outputDir = getOutputDir("app");
 
-async function createBuilder() {
-  const builder = new Builder({
-    root: getFixtureDir("app"),
-    output: outputDir,
-    importMapPath: "./importMap.json",
-  });
+async function createBuilder(context: BuildContext) {
+  const builder = new Builder(context);
 
   await builder.cleanOutput();
 
@@ -18,7 +14,27 @@ async function createBuilder() {
 }
 
 Deno.test("it can copy, compile and vendor entrypoints producing valid import maps", async (t) => {
-  const builder = await createBuilder();
+  const context = new BuildContextBuilder()
+    .setRoot(getFixtureDir("app"))
+    .setOutput(outputDir)
+    .setImportMapPath("./importMap.json")
+    .ignore([
+      "./README.md",
+      "./.private/**/*",
+      "./.git/**/*",
+    ])
+    .contentHash([
+      "./+(src|public)/**/*.+(ts|tsx|js|jsx|css|jpg)",
+      "./client.+(ts|tsx|js|jsx)",
+    ])
+    .compile([
+      "./src/**/*.+(ts|tsx|js|jsx)",
+      "./vendor/browser/**/*.+(ts|tsx|js|jsx)",
+      "./+(client|server).+(ts|tsx|js|jsx)",
+    ])
+    .build();
+
+  const builder = await createBuilder(context);
 
   builder.setEntrypoints({
     "browser": {
@@ -30,27 +46,6 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
       target: "deno",
     },
   });
-
-  builder.setIgnored([
-    "./README.md",
-    "./.private/**/*",
-    "./.git/**/*",
-  ]);
-
-  builder.setHashed([
-    "./+(src|public)/**/*.+(ts|tsx|js|jsx|css|jpg)",
-    "./client.+(ts|tsx|js|jsx)",
-  ]);
-
-  builder.setDynamicImportIgnored([
-    "https://deno.land/x/ultra@v2.0.0-beta.7/lib/middleware/compiler.ts",
-  ]);
-
-  builder.setCompiled([
-    "./src/**/*.+(ts|tsx|js|jsx)",
-    "./vendor/browser/**/*.+(ts|tsx|js|jsx)",
-    "./+(client|server).+(ts|tsx|js|jsx)",
-  ]);
 
   const sources = await builder.gatherSources();
   const result = await builder.build(sources);
