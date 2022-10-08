@@ -24,13 +24,13 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
       "./.git/**/*",
     ])
     .contentHash([
-      "./+(src|public)/**/*.+(ts|tsx|js|jsx|css|jpg)",
-      "./client.+(ts|tsx|js|jsx)",
+      "./**/*.+(ts|tsx|js|jsx|css|jpg)",
+      "!./vendor/**/*",
+      "!./server.+(ts|tsx|js|jsx)",
     ])
     .compile([
-      "./src/**/*.+(ts|tsx|js|jsx)",
-      "./vendor/browser/**/*.+(ts|tsx|js|jsx)",
-      "./+(client|server).+(ts|tsx|js|jsx)",
+      "./**/*.+(ts|tsx|js|jsx)",
+      "!./vendor/server/**/*",
     ])
     .build();
 
