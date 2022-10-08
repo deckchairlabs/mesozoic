@@ -305,7 +305,7 @@ export class Builder {
   }
 
   /**
-   * Walk the root for SourceFiles obeying exclusion patterns
+   * Walk the root for SourceFiles
    */
   gatherSources(from: string = this.context.root) {
     return FileBag.from(from);
