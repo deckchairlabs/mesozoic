@@ -12,6 +12,8 @@ Deno.test("it works", async () => {
 
     let exports;
 
+    const string: string = 'hello';
+
     if (typeof Deno === "undefined") {
       exports = await import('./module.browser.js');
     } else {
@@ -52,6 +54,7 @@ Deno.test("it works", async () => {
   const { code: result } = await compile(
     source,
     {
+      filename: "test.tsx",
       globals: {
         "__DEV__": "false",
         "__ULTRA_DEV__": "false",

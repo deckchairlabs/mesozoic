@@ -39,7 +39,7 @@ export type BuilderEntrypoints = {
 export type BuilderOptions = {
   name?: string;
   logLevel?: log.LevelName;
-  compilerOptions?: CompilerOptions;
+  compilerOptions?: Omit<CompilerOptions, "filename">;
   cssOptions?: CssProcessorOptions;
 };
 

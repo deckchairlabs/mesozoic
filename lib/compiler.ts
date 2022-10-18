@@ -1,13 +1,13 @@
-import { transform } from "./swc.ts";
+import { type JscTarget, type ParserConfig, transform } from "./swc.ts";
 
 export type CompilerOptions = {
-  filename?: string;
+  filename: string;
   globals?: {
     [key: string]: string;
   };
+  target?: JscTarget;
   useBuiltins?: boolean;
   externalHelpers?: boolean;
-  dynamicImport?: boolean;
   jsxImportSource?: string;
   runtime?: "automatic" | "classic" | undefined;
   development?: boolean;
@@ -15,12 +15,31 @@ export type CompilerOptions = {
   minify?: boolean;
 };
 
+const TS_REGEX = new RegExp(".(ts[x]?)$");
+const JSX_REGEX = new RegExp(".([jt]sx)$");
+
+export function resolveParserConfig(filename: string): ParserConfig {
+  const isTypescript = TS_REGEX.test(filename);
+  const isJsx = JSX_REGEX.test(filename);
+
+  return isTypescript
+    ? {
+      syntax: "typescript",
+      dynamicImport: true,
+      tsx: isJsx,
+    }
+    : {
+      syntax: "ecmascript",
+      jsx: isJsx,
+    };
+}
+
 export async function compile(source: string, options: CompilerOptions) {
   const {
     filename,
+    target = "es2022",
     useBuiltins = true,
     externalHelpers = false,
-    dynamicImport = true,
     jsxImportSource = "react",
     runtime = "automatic",
     development,
@@ -29,45 +48,43 @@ export async function compile(source: string, options: CompilerOptions) {
     globals = undefined,
   } = options;
 
-  const transformed = await transform(source, {
-    filename,
-    minify,
-    jsc: {
-      target: "es2022",
-      parser: {
-        syntax: "typescript",
-        dynamicImport,
-        tsx: true,
-      },
-      externalHelpers,
-      minify: minify
-        ? {
-          mangle: true,
-          compress: true,
-        }
-        : undefined,
-      transform: {
-        react: {
-          useBuiltins,
-          importSource: jsxImportSource,
-          runtime,
-          development,
-        },
-        optimizer: {
-          simplify: true,
-          globals: {
-            vars: globals,
-            // @ts-ignore missing type in GlobalPassOption
-            // typeofs: {
-            //   "Deno": target === "browser" ? "undefined" : "object",
-            // },
+  const parserConfig = resolveParserConfig(filename);
+
+  try {
+    const transformed = await transform(source, {
+      filename,
+      minify,
+      jsc: {
+        target,
+        parser: parserConfig,
+        externalHelpers,
+        minify: minify
+          ? {
+            mangle: true,
+            compress: true,
+          }
+          : undefined,
+        transform: {
+          react: {
+            useBuiltins,
+            importSource: jsxImportSource,
+            runtime,
+            development,
+          },
+          optimizer: {
+            simplify: true,
+            globals: {
+              vars: globals,
+            },
           },
         },
       },
-    },
-    sourceMaps: sourceMaps ? true : undefined,
-    inlineSourcesContent: true,
-  });
+      sourceMaps: sourceMaps ? true : undefined,
+      inlineSourcesContent: true,
+    });
 
-  return transformed;
+    return transformed;
+  } catch (error) {
+    throw new Error(String(error));
+  }
 }
