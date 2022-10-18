@@ -4,8 +4,8 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 {
   imports: {
     "./client.tsx": "./client.c2b17382.js",
-    "./src/app.tsx": "./src/app.2b52da8a.js",
-    "./src/components/Test.tsx": "./src/components/Test.15ad6d4b.js",
+    "./src/app.tsx": "./src/app.e2a2d2be.js",
+    "./src/components/Test.tsx": "./src/components/Test.656a36a9.js",
     "https://deno.land/": "./vendor/browser/deno.land/",
     "https://esm.sh/": "./vendor/browser/esm.sh/",
     react: "./vendor/browser/esm.sh/stable/react@18.2.0/es2022/react.js",
@@ -30,8 +30,8 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 {
   imports: {
     "./server.tsx": "./server.js",
-    "./src/app.tsx": "./src/app.2b52da8a.js",
-    "./src/components/Test.tsx": "./src/components/Test.15ad6d4b.js",
+    "./src/app.tsx": "./src/app.e2a2d2be.js",
+    "./src/components/Test.tsx": "./src/components/Test.656a36a9.js",
     "https://deno.land/": "./vendor/server/deno.land/",
     "https://esm.sh/": "./vendor/server/esm.sh/",
     react: "./vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
