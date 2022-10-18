@@ -10,7 +10,7 @@ export type BuildContext = {
   hashed: Patterns;
 };
 
-export class BuildContextBuilder {
+export class ContextBuilder {
   #root?: string;
   #output?: string;
   #importMapPath?: string;

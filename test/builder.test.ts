@@ -1,6 +1,5 @@
+import { BuildContext, Builder, ContextBuilder } from "../mod.ts";
 import { assertEquals, assertSnapshot } from "./deps.ts";
-
-import { BuildContext, BuildContextBuilder, Builder } from "../mod.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
 
 const outputDir = getOutputDir("app");
@@ -14,7 +13,7 @@ async function createBuilder(context: BuildContext) {
 }
 
 Deno.test("it can copy, compile and vendor entrypoints producing valid import maps", async (t) => {
-  const context = new BuildContextBuilder()
+  const context = new ContextBuilder()
     .setRoot(getFixtureDir("app"))
     .setOutput(outputDir)
     .setImportMapPath("./importMap.json")

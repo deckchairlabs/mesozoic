@@ -1,5 +1,5 @@
 export { Builder } from "./lib/builder.ts";
-export { BuildContextBuilder } from "./lib/context.ts";
+export { ContextBuilder } from "./lib/context.ts";
 export type { PatternLike } from "./lib/patterns.ts";
 export type { BuildResult } from "./lib/builder.ts";
 export type { BuildContext } from "./lib/context.ts";
