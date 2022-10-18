@@ -267,7 +267,9 @@ export class Builder {
       /**
        * Compile the output sources
        */
-      await this.compileSources(outputSources);
+      this.log.info("Compiling sources");
+      const compiled = await this.compileSources(outputSources);
+      this.log.success(sprintf("Compiled %d sources", compiled.size));
 
       /**
        * Content-hash the output sources
@@ -344,8 +346,9 @@ export class Builder {
     sources: FileBag,
   ) {
     const compiled = new FileBag();
+    const compileable = sources.filter((source) => this.isCompilable(source));
 
-    for (const source of sources.values()) {
+    for (const source of compileable.values()) {
       const output = await this.compileSource(source);
       compiled.add(output);
     }
@@ -356,10 +359,6 @@ export class Builder {
   async compileSource(
     source: IFile,
   ): Promise<IFile> {
-    if (!this.isCompilable(source)) {
-      return source;
-    }
-
     const content = await source.read();
 
     const compiled = await compile(content, {
