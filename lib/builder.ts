@@ -20,7 +20,10 @@ import {
 import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
 import { Logger } from "./logger.ts";
 import { Patterns } from "./patterns.ts";
-import { cssProcessor } from "./processor/css.ts";
+import {
+  createCssProcessor,
+  type CssProcessorOptions,
+} from "./processor/css.ts";
 import { IFile } from "./sources/file.ts";
 import { FileBag } from "./sources/fileBag.ts";
 import type { ImportMap } from "./types.ts";
@@ -37,6 +40,7 @@ export type BuilderOptions = {
   name?: string;
   logLevel?: log.LevelName;
   compilerOptions?: CompilerOptions;
+  cssOptions?: CssProcessorOptions;
 };
 
 export type BuildResult = {
@@ -292,6 +296,7 @@ export class Builder {
        * Process sources
        */
       this.log.info(`Optimizing CSS sources`);
+      const cssProcessor = await createCssProcessor(this.options.cssOptions);
       const cssSources = await cssProcessor(outputSources);
       this.log.success(sprintf(`Optimized %d CSS sources`, cssSources.size));
 
