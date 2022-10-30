@@ -1,20 +1,12 @@
-import {
-  basename,
-  dirname,
-  extname,
-  fromFileUrl,
-  isAbsolute,
-  join,
-  sprintf,
-  toFileUrl,
-} from "../deps.ts";
+import { basename, dirname, extname, sprintf } from "../deps.ts";
+import { Path } from "./path.ts";
 
 export interface IFile {
   filename(): string;
   dirname(): string;
   path(): string;
-  originalPath(): string;
-  relativePath(path?: string): string;
+  originalPath(): Path;
+  relativePath(): string;
   url(): URL;
   root(): string;
   extension(): string;
@@ -32,19 +24,13 @@ export interface IFile {
 }
 
 export abstract class File implements IFile {
+  #path: Path;
   private locked = true;
   private originalFilePaths: Set<string> = new Set();
 
-  constructor(public filePath: string, public rootPath: string) {
-    if (rootPath.startsWith("file:")) {
-      this.rootPath = fromFileUrl(rootPath);
-    }
-
-    if (!isAbsolute(filePath)) {
-      this.filePath = join(this.rootPath, filePath);
-    }
-
-    this.originalFilePaths.add(this.filePath);
+  constructor(filePath: string, rootPath: string) {
+    this.#path = new Path(filePath, rootPath);
+    this.originalFilePaths.add(this.#path.path());
   }
 
   isLocked() {
@@ -57,35 +43,35 @@ export abstract class File implements IFile {
   }
 
   filename() {
-    return basename(this.filePath);
+    return basename(this.path());
   }
 
   dirname() {
-    return dirname(this.filePath);
+    return dirname(this.path());
   }
 
   path() {
-    return this.filePath;
+    return this.#path.path();
   }
 
   originalPath() {
     const [originalPath] = this.originalFilePaths;
-    return originalPath;
+    return new Path(originalPath, this.root());
   }
 
   url() {
-    return toFileUrl(this.filePath);
+    return this.#path.url();
   }
 
   /**
    * @returns The relative path of this file to its root.
    */
-  relativePath(path = this.path()) {
-    return path.replace(this.rootPath, ".");
+  relativePath() {
+    return this.#path.relativePath();
   }
 
   root() {
-    return this.rootPath;
+    return this.#path.root();
   }
 
   extension() {
@@ -153,7 +139,7 @@ export abstract class File implements IFile {
       const filename = this.filename();
       await Deno.rename(path, path.replace(filename, newFilename));
 
-      this.filePath = path.replace(filename, newFilename);
+      this.#path = new Path(path.replace(filename, newFilename), this.root());
       this.originalFilePaths.add(path);
 
       return newFilename;

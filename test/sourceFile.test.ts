@@ -1,7 +1,6 @@
 import { SourceFile } from "../lib/sources/sourceFile.ts";
 import { assertEquals, assertRejects, assertSnapshot, join } from "./deps.ts";
 import {
-  crossPlatformPath,
   ensureRelativePath,
   getFixtureDir,
   getFixturePath,
@@ -11,13 +10,13 @@ const outputDir = await Deno.makeTempDir();
 
 function createSourceFile(path: string) {
   return new SourceFile(
-    getFixturePath("app", path),
-    getFixtureDir("app"),
+    getFixturePath("app", path).replaceAll("\\", "/"),
+    getFixtureDir("app").replaceAll("\\", "/"),
   );
 }
 
 Deno.test("constructor", async () => {
-  const path = join("src", "app.tsx");
+  const path = join("src", "app.tsx").replaceAll("\\", "/");
   const sourceFile = createSourceFile(path);
 
   assertEquals(sourceFile.isLocked(), true);
@@ -37,20 +36,25 @@ Deno.test("url", () => {
 
 Deno.test("path", () => {
   const file = new SourceFile("./client.tsx", "file:///app");
-  assertEquals(file.path(), crossPlatformPath("/app/client.tsx"));
+  assertEquals(file.path(), "/app/client.tsx");
 });
 
 Deno.test("relativePath", () => {
   const file = new SourceFile("./client.tsx", "file:///app");
-  assertEquals(file.relativePath(), crossPlatformPath("./client.tsx"));
+  assertEquals(file.relativePath(), "./client.tsx");
 });
 
 Deno.test("copyTo", async () => {
-  const sourceFile = createSourceFile(join("src", "app.tsx"));
+  const sourceFile = createSourceFile(
+    join("src", "app.tsx"),
+  );
 
   const copied = await sourceFile.copyTo(outputDir);
-  assertEquals(copied.root(), outputDir);
-  assertEquals(copied.path(), join(outputDir, copied.relativePath()));
+  assertEquals(copied.root(), outputDir.replaceAll("\\", "/"));
+  assertEquals(
+    copied.path(),
+    join(outputDir, copied.relativePath()).replaceAll("\\", "/"),
+  );
   assertEquals(copied.isLocked(), false);
   assertEquals(await copied.contentHash(), await sourceFile.contentHash());
   /**

@@ -9,7 +9,6 @@ import {
 } from "../lib/graph/load.ts";
 import { FileBag } from "../lib/sources/fileBag.ts";
 import { VirtualFile } from "../lib/sources/virtualFile.ts";
-import { crossPlatformPath } from "./helpers.ts";
 
 Deno.test("it can load a remote specifier", async () => {
   const response = await loadRemoteSpecifier(
@@ -38,7 +37,7 @@ Deno.test("it can load a local specifier", async () => {
   );
 
   const response = await loadLocalSpecifier(
-    crossPlatformPath("./client.tsx"),
+    "./client.tsx",
     sources,
   );
 

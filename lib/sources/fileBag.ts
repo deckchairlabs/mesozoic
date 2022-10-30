@@ -55,8 +55,8 @@ export class FileBag extends Set<IFile> {
     const remappedPaths = new Map<string, string>();
     for (const source of this.values()) {
       remappedPaths.set(
-        source.relativePath(source.originalPath()).replaceAll("\\", "/"),
-        source.relativePath().replaceAll("\\", "/"),
+        source.originalPath().relativePath(),
+        source.relativePath(),
       );
     }
     return remappedPaths;

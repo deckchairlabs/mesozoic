@@ -1,17 +1,16 @@
-import { SEP } from "../lib/deps.ts";
 import { join } from "./deps.ts";
 
 export function getFixtureDir(path: string) {
-  return join(Deno.cwd(), "test", "fixture", path);
+  return join(Deno.cwd(), "test", "fixture", path).replaceAll("\\", "/");
 }
 
 export function getOutputDir(path: string) {
-  return join(getFixtureDir(path), ".build");
+  return join(getFixtureDir(path), ".build").replaceAll("\\", "/");
 }
 
 export function getFixturePath(fixture: string, path: string) {
   const fixtureDir = getFixtureDir(fixture);
-  return join(fixtureDir, path);
+  return join(fixtureDir, path).replaceAll("\\", "/");
 }
 
 export function createRelativeUrl(
@@ -21,17 +20,8 @@ export function createRelativeUrl(
   return new URL(url, ensureTrailingSlash(base));
 }
 
-export function crossPlatformPath(path: string) {
-  switch (Deno.build.os) {
-    case "windows":
-      return path.replaceAll("/", "\\");
-    default:
-      return path;
-  }
-}
-
 export function ensureRelativePath(path: string) {
-  return path.startsWith(".") ? path : [".", path].join(SEP);
+  return path.startsWith(".") ? path : [".", path].join("/");
 }
 
 export function ensureTrailingSlash(string: string | URL) {

@@ -409,7 +409,7 @@ export class Builder {
     ignored.build();
 
     for (const source of sources.values()) {
-      const originalPath = source.relativePath(source.originalPath());
+      const originalPath = source.originalPath().relativePath();
       const relativePath = source.relativePath();
       const isIgnored = ignored.test(relativePath);
 

@@ -2,7 +2,7 @@ import init, {
   browserslistToTargets,
   transform,
 } from "https://esm.sh/lightningcss-wasm@1.16.0/index.js";
-import { cache, join, SEP, toFileUrl } from "../deps.ts";
+import { cache, join, toFileUrl } from "../deps.ts";
 import { SourceProcessor } from "../types.ts";
 
 export type CssProcessorOptions = {
@@ -70,9 +70,9 @@ export async function createCssProcessor(
         for (const dependency of result.dependencies) {
           if (dependency.type === "url") {
             const relativeRoot = source.dirname().replace(source.root(), ".");
-            const lookupPath = `.${SEP}${join(relativeRoot, dependency.url)}`;
+            const lookupPath = `./${join(relativeRoot, dependency.url)}`;
             const dependencySource = await sources.find((file) =>
-              file.relativePath(file.originalPath()) === lookupPath
+              file.originalPath().relativePath() === lookupPath
             );
 
             if (dependencySource) {
