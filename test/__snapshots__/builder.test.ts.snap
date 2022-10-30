@@ -1,6 +1,39 @@
 export const snapshot = {};
 
 snapshot[`it can copy, compile and vendor entrypoints producing valid import maps 1`] = `
+[
+  [
+    "./src/app.tsx",
+    "./src/app.e2a2d2be.js",
+  ],
+  [
+    "./src/components/Test.tsx",
+    "./src/components/Test.656a36a9.js",
+  ],
+  [
+    "./src/types.ts",
+    "./src/types.56e1b0c1.js",
+  ],
+  [
+    "./client.tsx",
+    "./client.c2b17382.js",
+  ],
+  [
+    "./server.tsx",
+    "./server.js",
+  ],
+  [
+    "./public/image.jpg",
+    "./public/image.9df55151.jpg",
+  ],
+  [
+    "./public/style.css",
+    "./public/style.efea7aaa.css",
+  ],
+]
+`;
+
+snapshot[`it can copy, compile and vendor entrypoints producing valid import maps 2`] = `
 {
   imports: {
     "./client.tsx": "./client.c2b17382.js",
@@ -26,7 +59,7 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 }
 `;
 
-snapshot[`it can copy, compile and vendor entrypoints producing valid import maps 2`] = `
+snapshot[`it can copy, compile and vendor entrypoints producing valid import maps 3`] = `
 {
   imports: {
     "./server.tsx": "./server.js",
