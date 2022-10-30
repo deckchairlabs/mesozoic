@@ -1,14 +1,6 @@
 import { compile, CompilerOptions } from "./compiler.ts";
 import { BuildContext } from "./context.ts";
-import {
-  crayon,
-  createGraph,
-  join,
-  log,
-  resolve,
-  sprintf,
-  toFileUrl,
-} from "./deps.ts";
+import { crayon, createGraph, join, log, sprintf, toFileUrl } from "./deps.ts";
 import { Entrypoint, EntrypointConfig } from "./entrypoint.ts";
 import { createLoader, wrapLoaderWithLogging } from "./graph/load.ts";
 import {
@@ -416,7 +408,7 @@ export class Builder {
       if (!isIgnored && (relativePath !== originalPath)) {
         json.push([
           originalPath,
-          prefix ? resolve(prefix, relativePath) : relativePath,
+          prefix ? relativePath.replace("./", prefix) : relativePath,
         ]);
       }
     }

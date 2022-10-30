@@ -56,7 +56,13 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
   assertEquals(result.outputSources.size > 0, true);
   assertEquals(vendored.size > 0, true);
   assertEquals(result.importMaps.size, 2);
-  await assertSnapshot(t, builder.toManifest(result.outputSources));
+
+  await assertSnapshot(
+    t,
+    builder.toManifest(result.outputSources, {
+      prefix: "/",
+    }),
+  );
 
   for (const [, importMap] of result.importMaps) {
     await assertSnapshot(t, importMap);

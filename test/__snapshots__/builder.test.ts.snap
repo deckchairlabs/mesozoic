@@ -4,31 +4,31 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 [
   [
     "./src/app.tsx",
-    "./src/app.e2a2d2be.js",
+    "/src/app.e2a2d2be.js",
   ],
   [
     "./src/components/Test.tsx",
-    "./src/components/Test.656a36a9.js",
+    "/src/components/Test.656a36a9.js",
   ],
   [
     "./src/types.ts",
-    "./src/types.56e1b0c1.js",
+    "/src/types.56e1b0c1.js",
   ],
   [
     "./client.tsx",
-    "./client.c2b17382.js",
+    "/client.c2b17382.js",
   ],
   [
     "./server.tsx",
-    "./server.js",
+    "/server.js",
   ],
   [
     "./public/image.jpg",
-    "./public/image.9df55151.jpg",
+    "/public/image.9df55151.jpg",
   ],
   [
     "./public/style.css",
-    "./public/style.efea7aaa.css",
+    "/public/style.efea7aaa.css",
   ],
 ]
 `;
