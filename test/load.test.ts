@@ -10,6 +10,15 @@ import {
 import { FileBag } from "../lib/sources/fileBag.ts";
 import { VirtualFile } from "../lib/sources/virtualFile.ts";
 
+function crossPlatformPath(path: string) {
+  switch (Deno.build.os) {
+    case "windows":
+      return path.replaceAll("/", "\\");
+    default:
+      return path;
+  }
+}
+
 Deno.test("it can load a remote specifier", async () => {
   const response = await loadRemoteSpecifier(
     "https://esm.sh/react@18.2.0",
@@ -32,11 +41,24 @@ Deno.test("it can load a remote specifier", async () => {
 
 Deno.test("it can load a local specifier", async () => {
   const sources = new FileBag();
-  sources.add(new VirtualFile("./client.tsx", "file:///app", "testing"));
+  sources.add(
+    new VirtualFile(
+      crossPlatformPath("./client.tsx"),
+      crossPlatformPath("file:///app"),
+      "testing",
+    ),
+  );
+  console.log(sources);
 
-  const response = await loadLocalSpecifier("./client.tsx", sources);
+  const response = await loadLocalSpecifier(
+    crossPlatformPath("./client.tsx"),
+    sources,
+  );
   assertEquals(response?.kind, "module");
-  assertEquals(response?.specifier, "file:///app/client.tsx");
+  assertEquals(
+    response?.specifier,
+    crossPlatformPath("file:///app/client.tsx"),
+  );
 
   if (isModuleResponse(response)) {
     assertEquals(response.content, "testing");
