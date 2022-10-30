@@ -61,6 +61,7 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
     t,
     builder.toManifest(result.outputSources, {
       prefix: "/",
+      ignore: ["./**/*", "!./public/**/*"],
     }),
   );
 
