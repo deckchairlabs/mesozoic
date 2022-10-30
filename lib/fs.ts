@@ -1,5 +1,3 @@
-import { join, SEP } from "./deps.ts";
-
 export function rootUrlToSafeLocalDirname(url: URL, prefix?: string): string {
   function sanitizeSegment(text: string): string {
     const chars = text.split("");
@@ -25,7 +23,7 @@ export function rootUrlToSafeLocalDirname(url: URL, prefix?: string): string {
     );
   }
 
-  return [prefix, join(...result)].join(SEP);
+  return [prefix, result.join("/")].join("/");
 }
 
 function isBannedSegmentChar(char: string) {

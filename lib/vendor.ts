@@ -102,14 +102,14 @@ function createImportMapFromModuleGraph(
     const specifier = String(rootUrl);
 
     // Resolve local source
-    if (specifier.startsWith("file://")) {
+    if (specifier.startsWith("file:")) {
       // Find the local source matching this specifier
       const source = sources.find((source) =>
         String(source.url()) === specifier
       );
 
       if (source) {
-        const relativePath = source.relativePath();
+        const relativePath = source.relativePath().replaceAll("\\", "/");
         imports.set(relativePath, relativePath);
       } else {
         throw new Error(

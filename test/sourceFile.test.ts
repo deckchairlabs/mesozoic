@@ -1,6 +1,7 @@
 import { SourceFile } from "../lib/sources/sourceFile.ts";
 import { assertEquals, assertRejects, assertSnapshot, join } from "./deps.ts";
 import {
+  crossPlatformPath,
   ensureRelativePath,
   getFixtureDir,
   getFixturePath,
@@ -36,12 +37,12 @@ Deno.test("url", () => {
 
 Deno.test("path", () => {
   const file = new SourceFile("./client.tsx", "file:///app");
-  assertEquals(file.path(), "/app/client.tsx");
+  assertEquals(file.path(), crossPlatformPath("/app/client.tsx"));
 });
 
 Deno.test("relativePath", () => {
   const file = new SourceFile("./client.tsx", "file:///app");
-  assertEquals(file.relativePath(), "./client.tsx");
+  assertEquals(file.relativePath(), crossPlatformPath("./client.tsx"));
 });
 
 Deno.test("copyTo", async () => {

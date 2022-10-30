@@ -36,7 +36,7 @@ export abstract class File implements IFile {
   private originalFilePaths: Set<string> = new Set();
 
   constructor(public filePath: string, public rootPath: string) {
-    if (rootPath.startsWith("file://")) {
+    if (rootPath.startsWith("file:")) {
       this.rootPath = fromFileUrl(rootPath);
     }
 

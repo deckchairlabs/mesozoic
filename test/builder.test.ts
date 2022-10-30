@@ -1,6 +1,6 @@
 import { BuildContext, Builder, ContextBuilder } from "../mod.ts";
 import { assertEquals, assertSnapshot } from "./deps.ts";
-import { getFixtureDir, getOutputDir } from "./helpers.ts";
+import { crossPlatformPath, getFixtureDir, getOutputDir } from "./helpers.ts";
 
 const outputDir = getOutputDir("app");
 
@@ -50,7 +50,7 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
   const result = await builder.build(sources);
 
   const vendored = result.outputSources.filter((source) =>
-    source.relativePath().startsWith("./vendor")
+    source.relativePath().startsWith(crossPlatformPath("./vendor"))
   );
 
   assertEquals(result.outputSources.size > 0, true);

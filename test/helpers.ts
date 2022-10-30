@@ -21,6 +21,15 @@ export function createRelativeUrl(
   return new URL(url, ensureTrailingSlash(base));
 }
 
+export function crossPlatformPath(path: string) {
+  switch (Deno.build.os) {
+    case "windows":
+      return path.replaceAll("/", "\\");
+    default:
+      return path;
+  }
+}
+
 export function ensureRelativePath(path: string) {
   return path.startsWith(".") ? path : [".", path].join(SEP);
 }
