@@ -60,7 +60,7 @@ export async function compile(source: string, options: CompilerOptions) {
         externalHelpers,
         minify: minify
           ? {
-            mangle: false,
+            mangle: true,
             compress: true,
           }
           : undefined,

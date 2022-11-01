@@ -1,8 +1,10 @@
 import useAsset from "ultra/hooks/use-asset.js";
 import Hello from "./components/Test.tsx";
 import type { Foo } from "./types.ts";
+import { create, type Sheet, ThemeConfiguration, type TW } from "twind";
 
 const foo: Foo = "bar";
+const tw = create({ preflight: false });
 
 export default function App() {
   console.log("Hello world!");
