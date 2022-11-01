@@ -21,12 +21,12 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
     "./src/components/Test.tsx": "./src/components/Test.656a36a9.js",
     "https://deno.land/": "./vendor/browser/deno.land/",
     "https://esm.sh/": "./vendor/browser/esm.sh/",
-    react: "./vendor/browser/esm.sh/stable/react@18.2.0/es2022/react.js",
-    "react-dom/client": "./vendor/browser/esm.sh/v93/react-dom@18.2.0/es2022/client.js",
-    "react/jsx-runtime": "./vendor/browser/esm.sh/stable/react@18.2.0/es2022/jsx-runtime.js",
-    twind: "./vendor/browser/esm.sh/v96/twind@0.16.17/es2022/twind.js",
-    "ultra/hooks/use-asset.js": "./vendor/browser/deno.land/x/ultra@v2.0.0-beta.8/hooks/use-asset.js",
-    "ultra/hydrate.js": "./vendor/browser/deno.land/x/ultra@v2.0.0-beta.8/hydrate.js",
+    react: "./vendor/browser/esm.sh/stable/react@18.2.0/es2022/react.24f3ee19.js",
+    "react-dom/client": "./vendor/browser/esm.sh/v93/react-dom@18.2.0/es2022/client.c9af7399.js",
+    "react/jsx-runtime": "./vendor/browser/esm.sh/stable/react@18.2.0/es2022/jsx-runtime.5dec4442.js",
+    twind: "./vendor/browser/esm.sh/v96/twind@0.16.17/es2022/twind.fad9a135.js",
+    "ultra/hooks/use-asset.js": "./vendor/browser/deno.land/x/ultra@v2.0.0-beta.8/hooks/use-asset.2c7829f6.js",
+    "ultra/hydrate.js": "./vendor/browser/deno.land/x/ultra@v2.0.0-beta.8/hydrate.18d8cce9.js",
   },
   scopes: {
     "./vendor/browser/deno.land/": {

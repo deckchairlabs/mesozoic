@@ -430,6 +430,7 @@ export class Builder {
         const [specifier, resolved] of Object.entries(remappedImportMap.imports)
       ) {
         remappedImportMap.imports[specifier] = remappedImports.get(specifier) ||
+          remappedImports.get(resolved) ||
           resolved;
       }
     }

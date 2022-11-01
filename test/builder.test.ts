@@ -24,7 +24,7 @@ Deno.test("it can copy, compile and vendor entrypoints producing valid import ma
     ])
     .contentHash([
       "./**/*.+(ts|tsx|js|jsx|css|jpg)",
-      "!./vendor/**/*",
+      "!./vendor/server/**/*",
       "!./server.+(ts|tsx|js|jsx)",
     ])
     .compile([
