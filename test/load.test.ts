@@ -32,16 +32,21 @@ Deno.test("it can load a remote specifier", async () => {
 
 Deno.test("it can load a local specifier", async () => {
   const sources = new FileBag();
-  sources.add(
-    new VirtualFile("./client.tsx", "file:///app", "testing"),
+  const clientSource = new VirtualFile(
+    "./client.tsx",
+    "file:///app",
+    "testing",
   );
 
-  const response = await loadLocalSpecifier(
+  sources.add(clientSource);
+
+  const [response, source] = await loadLocalSpecifier(
     "./client.tsx",
     sources,
   );
 
   assertEquals(response?.kind, "module");
+  assertEquals(source, clientSource);
   assertEquals(
     response?.specifier,
     "file:///app/client.tsx",

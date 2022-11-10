@@ -38,6 +38,7 @@ export type BuilderOptions = {
 
 export type BuildResult = {
   outputSources: FileBag;
+  dynamicImports: FileBag;
   importMaps: Map<string, ImportMap>;
 };
 
@@ -133,6 +134,7 @@ export class Builder {
       );
 
       const importMaps: Map<string, ImportMap> = new Map();
+      const dynamicImportSources = new FileBag();
 
       /**
        * Create a module graph for each entrypoint and vendor the dependencies
@@ -179,6 +181,7 @@ export class Builder {
             sources,
             target: entrypointTarget,
             dynamicImportIgnored: this.context.dynamicImportIgnored,
+            dynamicImports: dynamicImportSources,
           }),
           this.log,
         );
@@ -307,6 +310,7 @@ export class Builder {
 
       return {
         outputSources,
+        dynamicImports: dynamicImportSources,
         importMaps,
       };
     } catch (error) {
