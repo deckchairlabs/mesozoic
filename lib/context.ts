@@ -1,18 +1,12 @@
 import { PatternLike, Patterns } from "./patterns.ts";
 
-export type BuildContext = {
-  root: string;
-  output: string;
-  importMapPath: string;
-  ignored: Patterns;
-  dynamicImportIgnored: Patterns;
-  compiled: Patterns;
-  hashed: Patterns;
-};
+export type BuildContext = ReturnType<ContextBuilder["build"]>;
 
 export class ContextBuilder {
   #root?: string;
   #output?: string;
+  #vendorPath = "vendor";
+  #vendorDependencies = true;
   #importMapPath?: string;
 
   #ignored: Patterns = new Patterns();
@@ -20,7 +14,7 @@ export class ContextBuilder {
   #compiled: Patterns = new Patterns();
   #hashed: Patterns = new Patterns();
 
-  build(): BuildContext {
+  build() {
     /**
      * Validate
      */
@@ -29,7 +23,9 @@ export class ContextBuilder {
     return {
       root: this.#root!,
       output: this.#output!,
+      vendorPath: this.#vendorPath,
       importMapPath: this.#importMapPath!,
+      vendorDependencies: this.#vendorDependencies,
       ignored: this.#ignored,
       dynamicImportIgnored: this.#dynamicImportIgnored,
       compiled: this.#compiled,
@@ -71,8 +67,18 @@ export class ContextBuilder {
     return this;
   }
 
+  setVendorPath(value: string) {
+    this.#vendorPath = value;
+    return this;
+  }
+
   setImportMapPath(value: string) {
     this.#importMapPath = value;
+    return this;
+  }
+
+  setVendorDependencies(value: boolean) {
+    this.#vendorDependencies = value;
     return this;
   }
 

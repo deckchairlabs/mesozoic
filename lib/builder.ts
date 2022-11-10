@@ -20,6 +20,7 @@ import { IFile } from "./sources/file.ts";
 import { FileBag } from "./sources/fileBag.ts";
 import type { ImportMap } from "./types.ts";
 import { vendorModuleGraph } from "./vendor.ts";
+import { createImportMapFromModuleGraph } from "./importMap.ts";
 
 /**
  * An object where the keys are the name of the entrypoint
@@ -159,7 +160,7 @@ export class Builder {
 
         const vendorOutputDir = join(
           this.context.output,
-          "vendor",
+          this.context.vendorPath,
           entrypointName,
         );
 
@@ -229,25 +230,35 @@ export class Builder {
         /**
          * Vendor modules for each entrypoint
          */
-        this.log.info(
-          sprintf("Vendor modules for entrypoint %s", loggedPath),
-        );
+        if (this.context.vendorDependencies) {
+          this.log.info(
+            sprintf("Vendor modules for entrypoint %s", loggedPath),
+          );
 
-        const [vendoredSources, importMap] = vendorModuleGraph(graph, {
-          name: entrypointName,
-          output: this.context.output,
-          sources,
-          bareSpecifiers,
-        });
+          const vendoredSources = vendorModuleGraph(graph, {
+            name: entrypointName,
+            output: this.context.output,
+            vendorPath: this.context.vendorPath,
+          });
 
-        await vendoredSources.copyTo(this.context.output);
+          await vendoredSources.copyTo(this.context.output);
 
-        this.log.success(
-          sprintf(
-            "Vendored %d modules for entrypoint %s",
-            vendoredSources.size,
-            loggedPath,
-          ),
+          this.log.success(
+            sprintf(
+              "Vendored %d modules for entrypoint %s",
+              vendoredSources.size,
+              loggedPath,
+            ),
+          );
+        }
+
+        const vendorPathPrefix = this.context.vendorDependencies
+          ? `./${this.context.vendorPath}/${entrypointName}`
+          : null;
+
+        const importMap: ImportMap = createImportMapFromModuleGraph(
+          graph,
+          { sources, bareSpecifiers, vendorPathPrefix },
         );
 
         importMaps.set(entrypointName, importMap);
