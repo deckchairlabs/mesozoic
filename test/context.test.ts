@@ -7,6 +7,8 @@ Deno.test("it works", () => {
   const context: BuildContext = buildContext
     .setRoot(import.meta.resolve("./"))
     .setOutput(import.meta.resolve("./.build"))
+    .setVendorDependencies(false)
+    .setVendorPath("vendored")
     .setImportMapPath("./importMap.json")
     .ignore("./private.txt")
     .contentHash("./*.css")
@@ -17,6 +19,8 @@ Deno.test("it works", () => {
 
   assertEquals(context.root === undefined, false);
   assertEquals(context.output === undefined, false);
+  assertEquals(context.vendorPath, "vendored");
+  assertEquals(context.vendorDependencies, false);
   assertEquals(context.ignored.test("./private.txt"), true);
   assertEquals(context.hashed.test("./test.css"), true);
 });
