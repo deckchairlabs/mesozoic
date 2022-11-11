@@ -26,7 +26,7 @@ Deno.test("constructor", async () => {
     getFixturePath("app", sourceFile.relativePath()),
   );
   assertEquals(sourceFile.relativePath(), ensureRelativePath(path));
-  assertEquals(await sourceFile.contentHash(), "0ed7fa75");
+  assertEquals(await sourceFile.contentHash(), "8ffcf64b");
 });
 
 Deno.test("url", () => {

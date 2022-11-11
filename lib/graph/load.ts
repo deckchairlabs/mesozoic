@@ -9,6 +9,7 @@ import {
 import { parseModule } from "../deps.ts";
 import { Logger } from "../logger.ts";
 import { Patterns } from "../patterns.ts";
+import { IFile } from "../sources/file.ts";
 import { FileBag } from "../sources/fileBag.ts";
 import { LoadResponse, LoadResponseModule, Policy, Target } from "../types.ts";
 import { wrapFn } from "../utils.ts";
@@ -24,21 +25,29 @@ export type Loader = (
 type CreateLoaderOptions = {
   sources: FileBag;
   target: Target;
+  dynamicImports: FileBag;
   dynamicImportIgnored?: Patterns;
 };
 
 export function createLoader(options: CreateLoaderOptions): Loader {
-  const { sources, target, dynamicImportIgnored } = options;
+  const { sources, target, dynamicImportIgnored, dynamicImports } = options;
 
-  return function loader(specifier: string, isDynamic?: boolean) {
+  return async function loader(specifier: string, isDynamic?: boolean) {
     try {
       if (isRemoteSpecifier(specifier)) {
         if (isDynamic && dynamicImportIgnored?.test(specifier)) {
           return Promise.resolve(undefined);
         }
+
         return loadRemoteSpecifier(specifier, target);
       } else {
-        return loadLocalSpecifier(specifier, sources);
+        const [response, source] = await loadLocalSpecifier(specifier, sources);
+
+        if (isDynamic && source) {
+          dynamicImports.add(source);
+        }
+
+        return response;
       }
     } catch {
       return Promise.resolve(undefined);
@@ -120,7 +129,7 @@ export async function loadRemoteSpecifier(
 export async function loadLocalSpecifier(
   specifier: string,
   sources: FileBag,
-): Promise<LoadResponse | undefined> {
+): Promise<[LoadResponse, IFile] | []> {
   const source = sources.find((source) => {
     if (isLocalSpecifier(specifier)) {
       return String(source.url()) === specifier;
@@ -130,14 +139,18 @@ export async function loadLocalSpecifier(
 
   if (source) {
     const content = await source.read();
-    return {
+    const response: LoadResponse = {
       kind: "module",
       specifier: isLocalSpecifier(specifier)
         ? String(source.url())
         : String(toFileUrl(source.path())),
       content,
     };
+
+    return [response, source];
   }
+
+  return [];
 }
 
 export function isModuleResponse(

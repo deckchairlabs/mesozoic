@@ -10,6 +10,14 @@
     }
   },
   // This will install the vscode-deno extension
-  "extensions": ["denoland.vscode-deno", "eamodio.gitlens"],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "denoland.vscode-deno",
+        "eamodio.gitlens",
+        "GitHub.vscode-pull-request-github"
+      ]
+    }
+  },
   "remoteUser": "vscode"
 }

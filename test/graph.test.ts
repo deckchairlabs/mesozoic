@@ -33,12 +33,13 @@ const sources = new FileBag([
 
 Deno.test("it can create a module graph", async () => {
   const bareSpecifiers: BareSpecifiersMap = new Map();
+  const dynamicImports = new FileBag();
 
   const fixtureDir = getFixtureDir("graph");
   const fixtureUrl = toFileUrl(ensureTrailingSlash(fixtureDir));
 
   const sources = await FileBag.from(fixtureDir);
-  const load = createLoader({ sources, target: "browser" });
+  const load = createLoader({ sources, target: "browser", dynamicImports });
   const resolve = createResolver({
     importMap,
     sources,
@@ -74,8 +75,9 @@ Deno.test("it can create a module graph", async () => {
 
 Deno.test("it can resolve and load specifiers", async () => {
   const bareSpecifiers: BareSpecifiersMap = new Map();
+  const dynamicImports = new FileBag();
 
-  const load = createLoader({ sources, target: "browser" });
+  const load = createLoader({ sources, target: "browser", dynamicImports });
   const resolve = createResolver({
     importMap,
     sources,
@@ -176,8 +178,9 @@ Deno.test("it can resolve and load specifiers", async () => {
 
 Deno.test("it can resolve and load for a specific target", async () => {
   const bareSpecifiers: BareSpecifiersMap = new Map();
+  const dynamicImports = new FileBag();
 
-  const load = createLoader({ sources, target: "deno" });
+  const load = createLoader({ sources, target: "deno", dynamicImports });
   const resolve = createResolver({
     importMap,
     sources,
