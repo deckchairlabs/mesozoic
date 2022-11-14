@@ -28,9 +28,7 @@ export default function App() {
           </h1>
           <Hello />
           <p>
-            Welcome to{" "}
-            <strong>Ultra</strong>. This is a barebones starter for your web
-            app.
+            Welcome to <strong>Ultra</strong>. This is a barebones starter for your web app.
           </p>
           <p>
             Take{" "}
@@ -39,9 +37,8 @@ export default function App() {
               target="_blank"
             >
               this
-            </a>, you may need it where you are going. It will show you how to
-            customise your routing, data fetching, and styling with popular
-            libraries.
+            </a>, you may need it where you are going. It will show you how to customise your
+            routing, data fetching, and styling with popular libraries.
           </p>
         </main>
       </body>

@@ -1,11 +1,4 @@
-import {
-  cache,
-  crayon,
-  ImportSpecifier,
-  initModuleLexer,
-  sprintf,
-  toFileUrl,
-} from "../deps.ts";
+import { cache, crayon, ImportSpecifier, initModuleLexer, sprintf, toFileUrl } from "../deps.ts";
 import { parseModule } from "../deps.ts";
 import { type LoggerImpl } from "../logger.ts";
 import { Patterns } from "../patterns.ts";
@@ -61,8 +54,7 @@ export function wrapLoaderWithLogging(
 ): Loader {
   return wrapFn(
     loader,
-    (specifier) =>
-      logger.debug(sprintf("%s %s", crayon.red("Load"), specifier)),
+    (specifier) => logger.debug(sprintf("%s %s", crayon.red("Load"), specifier)),
   );
 }
 

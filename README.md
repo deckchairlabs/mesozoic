@@ -8,11 +8,10 @@
 
 ## What does it do?
 
-Mesozoic takes your source files from `root`, copies those source files to
-`output` (preserving your project directory structure), transforms your
-JavaScript/TypeScript with [swc](https://swc.rs/), transforms your stylesheets
-with [Lightning CSS](https://lightningcss.dev/) and writes those resulting
-transformations to your `output` directory.
+Mesozoic takes your source files from `root`, copies those source files to `output` (preserving your
+project directory structure), transforms your JavaScript/TypeScript with [swc](https://swc.rs/),
+transforms your stylesheets with [Lightning CSS](https://lightningcss.dev/) and writes those
+resulting transformations to your `output` directory.
 
 ## API
 
@@ -20,10 +19,7 @@ You can build your own bespoke build system on top of Mesozoic, which
 [Ultra.js](https://ultrajs.dev) is currently doing.
 
 ```ts
-import {
-  Builder,
-  ContextBuilder,
-} from "https://deno.land/x/mesozoic@v1.1.3/mod.ts";
+import { Builder, ContextBuilder } from "https://deno.land/x/mesozoic@v1.1.3/mod.ts";
 
 const context = new ContextBuilder()
   /**

@@ -1,9 +1,6 @@
 import { sprintf } from "./deps.ts";
 import { rootUrlToSafeLocalDirname } from "./fs.ts";
-import {
-  BareSpecifiersMap,
-  resolveBareSpecifierRedirects,
-} from "./graph/resolve.ts";
+import { BareSpecifiersMap, resolveBareSpecifierRedirects } from "./graph/resolve.ts";
 import { FileBag } from "./sources/fileBag.ts";
 import type { ModuleGraph } from "./types.ts";
 import { ensureLeadingSlash, ensureTrailingSlash } from "./utils.ts";
@@ -54,9 +51,7 @@ export function createImportMapFromModuleGraph(
     // Resolve local source
     if (specifier.startsWith("file:")) {
       // Find the local source matching this specifier
-      const source = sources.find((source) =>
-        String(source.url()) === specifier
-      );
+      const source = sources.find((source) => String(source.url()) === specifier);
 
       if (source) {
         const relativePath = source.relativePath().replaceAll("\\", "/");
