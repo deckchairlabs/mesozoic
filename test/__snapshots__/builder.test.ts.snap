@@ -24,7 +24,7 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
     react: "./vendor/browser/esm.sh/stable/react@18.2.0/es2022/react.24f3ee19.js",
     "react-dom/client": "./vendor/browser/esm.sh/v93/react-dom@18.2.0/es2022/client.c9af7399.js",
     "react/jsx-runtime": "./vendor/browser/esm.sh/stable/react@18.2.0/es2022/jsx-runtime.5dec4442.js",
-    twind: "./vendor/browser/esm.sh/v97/twind@0.16.17/es2022/twind.71caca50.js",
+    twind: "./vendor/browser/esm.sh/v98/twind@0.16.17/es2022/twind.bc31b545.js",
     "ultra/hooks/use-asset.js": "./vendor/browser/deno.land/x/ultra@v2.0.0-beta.8/hooks/use-asset.2c7829f6.js",
     "ultra/hydrate.js": "./vendor/browser/deno.land/x/ultra@v2.0.0-beta.8/hydrate.18d8cce9.js",
   },
@@ -35,7 +35,7 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
     "./vendor/browser/esm.sh/": {
       "/stable/": "./vendor/browser/esm.sh/stable/",
       "/v93/": "./vendor/browser/esm.sh/v93/",
-      "/v97/": "./vendor/browser/esm.sh/v97/",
+      "/v98/": "./vendor/browser/esm.sh/v98/",
     },
   },
 }
@@ -52,7 +52,7 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
     react: "./vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
     "react-dom/server": "./vendor/server/esm.sh/v93/react-dom@18.2.0/deno/server.js",
     "react/jsx-runtime": "./vendor/server/esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
-    twind: "./vendor/server/esm.sh/v97/twind@0.16.17/deno/twind.js",
+    twind: "./vendor/server/esm.sh/v98/twind@0.16.17/deno/twind.js",
     "ultra/hooks/use-asset.js": "./vendor/server/deno.land/x/ultra@v2.0.0-beta.8/hooks/use-asset.js",
     "ultra/server.ts": "./vendor/server/deno.land/x/ultra@v2.0.0-beta.8/server.ts",
   },
@@ -67,7 +67,7 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
     "./vendor/server/esm.sh/": {
       "/stable/": "./vendor/server/esm.sh/stable/",
       "/v93/": "./vendor/server/esm.sh/v93/",
-      "/v97/": "./vendor/server/esm.sh/v97/",
+      "/v98/": "./vendor/server/esm.sh/v98/",
     },
   },
 }
@@ -97,7 +97,7 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 2`] = 
     react: "https://esm.sh/stable/react@18.2.0/es2022/react.js",
     "react-dom/client": "https://esm.sh/v93/react-dom@18.2.0/es2022/client.js",
     "react/jsx-runtime": "https://esm.sh/stable/react@18.2.0/es2022/jsx-runtime.js",
-    twind: "https://esm.sh/v97/twind@0.16.17/es2022/twind.js",
+    twind: "https://esm.sh/v98/twind@0.16.17/es2022/twind.js",
     "ultra/hooks/use-asset.js": "https://deno.land/x/ultra@v2.0.0-beta.8/hooks/use-asset.js",
     "ultra/hydrate.js": "https://deno.land/x/ultra@v2.0.0-beta.8/hydrate.js",
   },
@@ -108,7 +108,7 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 2`] = 
     "https://esm.sh/": {
       "/stable/": "https://esm.sh/stable/",
       "/v93/": "https://esm.sh/v93/",
-      "/v97/": "https://esm.sh/v97/",
+      "/v98/": "https://esm.sh/v98/",
     },
   },
 }
@@ -125,7 +125,7 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 3`] = 
     react: "https://esm.sh/stable/react@18.2.0/deno/react.js",
     "react-dom/server": "https://esm.sh/v93/react-dom@18.2.0/deno/server.js",
     "react/jsx-runtime": "https://esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
-    twind: "https://esm.sh/v97/twind@0.16.17/deno/twind.js",
+    twind: "https://esm.sh/v98/twind@0.16.17/deno/twind.js",
     "ultra/hooks/use-asset.js": "https://deno.land/x/ultra@v2.0.0-beta.8/hooks/use-asset.js",
     "ultra/server.ts": "https://deno.land/x/ultra@v2.0.0-beta.8/server.ts",
   },
@@ -140,7 +140,7 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 3`] = 
     "https://esm.sh/": {
       "/stable/": "https://esm.sh/stable/",
       "/v93/": "https://esm.sh/v93/",
-      "/v97/": "https://esm.sh/v97/",
+      "/v98/": "https://esm.sh/v98/",
     },
   },
 }
