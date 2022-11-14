@@ -12,13 +12,10 @@ import {
 import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
 import { Logger, type LoggerImpl } from "./logger.ts";
 import { Patterns } from "./patterns.ts";
-import {
-  createCssProcessor,
-  type CssProcessorOptions,
-} from "./processor/css.ts";
+import { createCssProcessor, type CssProcessorOptions } from "./processor/css.ts";
 import { IFile } from "./sources/file.ts";
 import { FileBag } from "./sources/fileBag.ts";
-import type { ImportMap } from "./types.ts";
+import type { ImportMap, SpecifierMap, Target } from "./types.ts";
 import { vendorModuleGraph } from "./vendor.ts";
 import { createImportMapFromModuleGraph } from "./importMap.ts";
 
@@ -89,9 +86,7 @@ export class Builder {
   }
 
   setEntrypoints(entrypoints: BuilderEntrypoints) {
-    Object.entries(entrypoints).forEach(([name, config]) =>
-      this.addEntrypoint(name, config)
-    );
+    Object.entries(entrypoints).forEach(([name, config]) => this.addEntrypoint(name, config));
   }
 
   getEntrypoint(name: string) {
@@ -127,9 +122,7 @@ export class Builder {
       /**
        * Copy source files to the output directory
        */
-      const sources = await buildSources.filter((source) =>
-        !this.isIgnored(source)
-      ).copyTo(
+      const sources = await buildSources.filter((source) => !this.isIgnored(source)).copyTo(
         this.context.output,
       );
 
@@ -195,20 +188,15 @@ export class Builder {
 
         const graph = await createGraph(String(entrypoint.url()), {
           kind: "codeOnly",
-          defaultJsxImportSource:
-            this.options.compilerOptions?.jsxImportSource ||
+          defaultJsxImportSource: this.options.compilerOptions?.jsxImportSource ||
             "react",
           resolve: resolver,
           load: loader,
         });
 
-        const remoteModules = graph.modules.filter((module) =>
-          isRemoteSpecifier(module.specifier)
-        );
+        const remoteModules = graph.modules.filter((module) => isRemoteSpecifier(module.specifier));
 
-        const localModules = graph.modules.filter((module) =>
-          isLocalSpecifier(module.specifier)
-        );
+        const localModules = graph.modules.filter((module) => isLocalSpecifier(module.specifier));
 
         const remoteSources = FileBag.fromModules(
           remoteModules,
@@ -292,12 +280,16 @@ export class Builder {
        * Re-map the importMap resolved specifiers
        */
       for (const [entrypointName, importMap] of importMaps.entries()) {
-        const remappedImportMap = this.#remapImportMapImports(
-          importMap,
-          remappedPaths,
-        );
+        const entrypoint = this.getEntrypoint(entrypointName);
+        if (entrypoint) {
+          const remappedImportMap = this.#remapImportMapImports(
+            importMap,
+            remappedPaths,
+            entrypoint.config.target,
+          );
 
-        importMaps.set(entrypointName, remappedImportMap);
+          importMaps.set(entrypointName, remappedImportMap);
+        }
       }
 
       /**
@@ -434,6 +426,7 @@ export class Builder {
   #remapImportMapImports(
     importMap: ImportMap,
     remappedImports: Map<string, string>,
+    target: Target,
   ): ImportMap {
     const remappedImportMap: ImportMap = {
       imports: importMap.imports,
@@ -441,12 +434,31 @@ export class Builder {
     };
 
     if (remappedImportMap.imports) {
-      for (
-        const [specifier, resolved] of Object.entries(remappedImportMap.imports)
-      ) {
+      for (const [specifier, resolved] of Object.entries(remappedImportMap.imports)) {
         remappedImportMap.imports[specifier] = remappedImports.get(specifier) ||
           remappedImports.get(resolved) ||
           resolved;
+      }
+    }
+
+    function remapBrowserSpecifierMap(specifierMap: SpecifierMap) {
+      for (const [specifier, resolved] of Object.entries(specifierMap)) {
+        specifierMap[specifier] = resolved.replace("./", "/");
+      }
+      return specifierMap;
+    }
+
+    if (target === "browser") {
+      if (remappedImportMap.imports) {
+        remappedImportMap.imports = remapBrowserSpecifierMap(remappedImportMap.imports);
+      }
+
+      if (remappedImportMap.scopes) {
+        remappedImportMap.scopes = Object.fromEntries(
+          Object.entries(remappedImportMap.scopes).map(([scope, specifierMap]) => {
+            return [scope.replace("./", "/"), remapBrowserSpecifierMap(specifierMap)];
+          }),
+        );
       }
     }
 
