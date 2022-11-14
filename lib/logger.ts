@@ -32,7 +32,18 @@ function formatLevel(level: log.LevelName) {
   }
 }
 
-export class Logger extends log.Logger {
+export type LoggerImpl = {
+  info(message: string): string;
+  debug(message: string): string;
+  warning(message: string): string;
+  error(message: string): string;
+  critical(message: string): string;
+  success(message: string): string;
+};
+
+export class Logger implements LoggerImpl {
+  #logger: log.Logger;
+
   /**
    * @param levelName
    * @param name
@@ -40,7 +51,7 @@ export class Logger extends log.Logger {
   constructor(levelName: log.LevelName, name: string) {
     const loggerName = gradient(`[${name}]`);
 
-    super(name, levelName, {
+    this.#logger = new log.Logger(name, levelName, {
       handlers: [
         new log.handlers.ConsoleHandler("DEBUG", {
           formatter(record) {
@@ -55,6 +66,26 @@ export class Logger extends log.Logger {
         }),
       ],
     });
+  }
+
+  info(message: string): string {
+    return this.#logger.info(message);
+  }
+
+  debug(message: string): string {
+    return this.#logger.debug(message);
+  }
+
+  warning(message: string): string {
+    return this.#logger.warning(message);
+  }
+
+  error(message: string): string {
+    return this.#logger.error(message);
+  }
+
+  critical(message: string): string {
+    return this.#logger.critical(message);
   }
 
   success(message: string) {

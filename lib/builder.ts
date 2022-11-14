@@ -10,7 +10,7 @@ import {
   wrapResolverWithLogging,
 } from "./graph/resolve.ts";
 import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
-import { Logger } from "./logger.ts";
+import { Logger, type LoggerImpl } from "./logger.ts";
 import { Patterns } from "./patterns.ts";
 import {
   createCssProcessor,
@@ -48,7 +48,7 @@ export class Builder {
     scopes: {},
   };
 
-  public log: Logger;
+  public log: LoggerImpl;
   public entrypoints: Map<string, Entrypoint> = new Map();
 
   constructor(

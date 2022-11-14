@@ -7,7 +7,7 @@ import {
   toFileUrl,
 } from "../deps.ts";
 import { parseModule } from "../deps.ts";
-import { Logger } from "../logger.ts";
+import { type LoggerImpl } from "../logger.ts";
 import { Patterns } from "../patterns.ts";
 import { IFile } from "../sources/file.ts";
 import { FileBag } from "../sources/fileBag.ts";
@@ -57,7 +57,7 @@ export function createLoader(options: CreateLoaderOptions): Loader {
 
 export function wrapLoaderWithLogging(
   loader: Loader,
-  logger: Logger,
+  logger: LoggerImpl,
 ): Loader {
   return wrapFn(
     loader,

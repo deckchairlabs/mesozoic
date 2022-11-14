@@ -1,5 +1,5 @@
 import { crayon, importMapResolve, parseImportMap, sprintf } from "../deps.ts";
-import { Logger } from "../logger.ts";
+import { type LoggerImpl } from "../logger.ts";
 import { FileBag } from "../sources/fileBag.ts";
 import { ImportMap, ResolveResult } from "../types.ts";
 import { wrapFn } from "../utils.ts";
@@ -104,7 +104,7 @@ export function createLocalResolver(sources: FileBag) {
 
 export function wrapResolverWithLogging(
   resolver: Resolver,
-  logger: Logger,
+  logger: LoggerImpl,
 ): Resolver {
   const before = (specifier: string, referrer: string) =>
     logger.debug(
