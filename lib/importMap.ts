@@ -45,10 +45,6 @@ export function createImportMapFromModuleGraph(
 
     const scope = scopes.get(scopedPath);
     scope?.push(specifier.pathname);
-
-    if (!imports.has(String(scopeUrl))) {
-      imports.set(String(scopeUrl), scopedPath);
-    }
   }
 
   for (const module of modules) {
@@ -96,6 +92,7 @@ export function createImportMapFromModuleGraph(
               vendorPathPrefix,
             )
             : specifier;
+
           imports.set(bareSpecifier, path);
         } else {
           if (resolvedSpecifier.includes(".d.ts") === false) {
