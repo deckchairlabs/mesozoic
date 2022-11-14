@@ -104,9 +104,7 @@ export abstract class File implements IFile {
       );
     }
 
-    const bytes = typeof content === "string"
-      ? new TextEncoder().encode(content)
-      : content;
+    const bytes = typeof content === "string" ? new TextEncoder().encode(content) : content;
 
     return Deno.writeFile(this.path(), bytes);
   }

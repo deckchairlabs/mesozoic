@@ -1,10 +1,6 @@
 import { SourceFile } from "../lib/sources/sourceFile.ts";
 import { assertEquals, assertRejects, assertSnapshot, join } from "./deps.ts";
-import {
-  ensureRelativePath,
-  getFixtureDir,
-  getFixturePath,
-} from "./helpers.ts";
+import { ensureRelativePath, getFixtureDir, getFixturePath } from "./helpers.ts";
 
 const outputDir = await Deno.makeTempDir();
 

@@ -19,9 +19,7 @@ export class VirtualFile extends File implements IFile {
 
   readBytes(): Promise<Uint8Array> {
     return Promise.resolve(
-      typeof this.content === "string"
-        ? encoder.encode(this.content)
-        : this.content,
+      typeof this.content === "string" ? encoder.encode(this.content) : this.content,
     );
   }
 

@@ -18,8 +18,7 @@ const importMap = {
     "react/": "https://esm.sh/react@18.2.0&pin=v93/",
     "react-dom": "https://esm.sh/react-dom@18.2.0?pin=v93",
     "react-dom/": "https://esm.sh/react-dom@18.2.0&pin=v93/",
-    "@tanstack/react-query":
-      "https://esm.sh/@tanstack/react-query?external=react&pin=v93",
+    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query?external=react&pin=v93",
     "ultra/": "https://deno.land/x/ultra/",
     "graphql-type-json": "https://cdn.skypack.dev/graphql-type-json@0.3.2?dts",
   },
@@ -64,8 +63,7 @@ Deno.test("it can create a module graph", async () => {
   assertEquals(
     Object.fromEntries(resolvedBareSpecifiers),
     {
-      "react/jsx-runtime":
-        "https://esm.sh/stable/react@18.2.0/es2022/jsx-runtime.js",
+      "react/jsx-runtime": "https://esm.sh/stable/react@18.2.0/es2022/jsx-runtime.js",
       "react": "https://esm.sh/stable/react@18.2.0/es2022/react.js",
       "graphql-type-json":
         "https://cdn.skypack.dev/-/graphql-type-json@v0.3.2-DhOL463jxxvyflH53O4H/dist=es2019,mode=imports/optimized/graphql-type-json.js",
@@ -135,8 +133,7 @@ Deno.test("it can resolve and load specifiers", async () => {
   assertEquals(Object.fromEntries(bareSpecifiers), {
     "react": "https://esm.sh/react@18.2.0?pin=v93",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0&pin=v93/client",
-    "@tanstack/react-query":
-      "https://esm.sh/@tanstack/react-query?external=react&pin=v93",
+    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query?external=react&pin=v93",
     "ultra/server.ts": "https://deno.land/x/ultra/server.ts",
   });
 

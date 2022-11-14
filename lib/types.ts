@@ -14,6 +14,7 @@ export type { GlobToRegExpOptions } from "https://deno.land/std@0.164.0/path/glo
 export type {
   ImportMap,
   ParsedImportMap,
+  SpecifierMap,
 } from "https://esm.sh/@import-maps/resolve@1.0.1";
 
 export type SourceProcessor = (

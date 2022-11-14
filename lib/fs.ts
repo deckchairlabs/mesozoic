@@ -17,9 +17,7 @@ export function rootUrlToSafeLocalDirname(url: URL, prefix?: string): string {
 
   if (url.pathname) {
     result.push(
-      ...url.pathname.split("/").filter(Boolean).map((segment) =>
-        sanitizeSegment(segment)
-      ),
+      ...url.pathname.split("/").filter(Boolean).map((segment) => sanitizeSegment(segment)),
     );
   }
 

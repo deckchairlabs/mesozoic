@@ -38,9 +38,7 @@ export async function createCssProcessor(
   const decoder = new TextDecoder();
 
   return async function cssProcessor(sources) {
-    const cssSources = sources.filter((source) =>
-      source.extension() === ".css"
-    );
+    const cssSources = sources.filter((source) => source.extension() === ".css");
 
     for (const source of cssSources.values()) {
       const code = await source.readBytes();
