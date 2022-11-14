@@ -59,7 +59,7 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
   scopes: {
     "./vendor/server/deno.land/": {
       "/std@0.153.0/": "./vendor/server/deno.land/std@0.153.0/",
-      "/std@0.159.0/": "./vendor/server/deno.land/std@0.159.0/",
+      "/std@0.164.0/": "./vendor/server/deno.land/std@0.164.0/",
       "/std@0.85.0/": "./vendor/server/deno.land/std@0.85.0/",
       "/std@0.97.0/": "./vendor/server/deno.land/std@0.97.0/",
       "/x/": "./vendor/server/deno.land/x/",
@@ -132,7 +132,7 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 3`] = 
   scopes: {
     "https://deno.land/": {
       "/std@0.153.0/": "https://deno.land/std@0.153.0/",
-      "/std@0.159.0/": "https://deno.land/std@0.159.0/",
+      "/std@0.164.0/": "https://deno.land/std@0.164.0/",
       "/std@0.85.0/": "https://deno.land/std@0.85.0/",
       "/std@0.97.0/": "https://deno.land/std@0.97.0/",
       "/x/": "https://deno.land/x/",
