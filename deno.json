@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "test": "deno test --allow-all"
+    "test": "deno test --no-lock --allow-all"
   },
   "lint": {
     "files": {

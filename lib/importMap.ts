@@ -42,6 +42,10 @@ export function createImportMapFromModuleGraph(
 
     const scope = scopes.get(scopedPath);
     scope?.push(specifier.pathname);
+
+    if (!imports.has(String(scopeUrl))) {
+      imports.set(String(scopeUrl), scopedPath);
+    }
   }
 
   for (const module of modules) {
