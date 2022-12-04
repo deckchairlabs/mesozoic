@@ -58,7 +58,7 @@ export class Patterns {
 
   #build(patterns: Set<string>) {
     return Array.from(patterns).map((value) => {
-      value = value.endsWith("/") ? `${value}*` : value;
+      value = value.endsWith("/") ? `${value}**` : value;
       return this.#globToRegExp(value);
     });
   }
