@@ -19,7 +19,7 @@ You can build your own bespoke build system on top of Mesozoic, which
 [Ultra.js](https://ultrajs.dev) is currently doing.
 
 ```ts
-import { Builder, ContextBuilder } from "https://deno.land/x/mesozoic@v1.2.2/mod.ts";
+import { Builder, ContextBuilder } from "https://deno.land/x/mesozoic@v1.2.3/mod.ts";
 
 const context = new ContextBuilder()
   /**
