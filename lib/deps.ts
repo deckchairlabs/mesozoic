@@ -5,7 +5,7 @@ export * as log from "https://deno.land/std@0.164.0/log/mod.ts";
 export {
   createGraph,
   load as graphDefaultLoad,
-} from "https://deno.land/x/deno_graph@0.36.0/mod.ts";
+} from "https://deno.land/x/deno_graph@0.38.0/mod.ts";
 export { deepMerge } from "https://deno.land/std@0.164.0/collections/deep_merge.ts";
 export {
   init as initModuleLexer,
