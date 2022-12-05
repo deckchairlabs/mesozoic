@@ -59,12 +59,12 @@ Deno.test(
     assertEquals(vendored.size > 0, true);
     assertEquals(result.importMaps.size, 2);
 
-    await assertSnapshot(
-      t,
+    assertEquals(
       builder.toManifest(result.outputSources, {
         prefix: "/",
         ignore: ["./**/*", "!./public/**/*"],
-      }),
+      }).length,
+      2,
     );
 
     for (const [, importMap] of result.importMaps) {
@@ -119,12 +119,12 @@ Deno.test("it can copy and compile entrypoints producing valid import maps", asy
   assertEquals(vendored.size === 0, true);
   assertEquals(result.importMaps.size, 2);
 
-  await assertSnapshot(
-    t,
+  assertEquals(
     builder.toManifest(result.outputSources, {
       prefix: "/",
       ignore: ["./**/*", "!./public/**/*"],
-    }),
+    }).length,
+    2,
   );
 
   for (const [, importMap] of result.importMaps) {
