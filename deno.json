@@ -5,6 +5,7 @@
   "lint": {
     "files": {
       "exclude": [
+        ".deno-cache",
         "./test/fixture/app/.build/",
         "./test/fixture/importMap/vendor/",
         "./test/fixture/graph/",
@@ -13,6 +14,11 @@
     }
   },
   "fmt": {
+    "files": {
+      "exclude": [
+        ".deno-cache"
+      ]
+    },
     "options": {
       "lineWidth": 100
     }
