@@ -1,6 +1,7 @@
 import { fromFileUrl, normalize, sprintf, walk } from "../deps.ts";
 import { rootUrlToSafeLocalDirname } from "../fs.ts";
 import { isRemoteSpecifier } from "../graph/specifiers.ts";
+import { PatternLike, Patterns } from "../patterns.ts";
 import { Module } from "../types.ts";
 import { IFile } from "./file.ts";
 import { SourceFile } from "./sourceFile.ts";
@@ -127,6 +128,13 @@ export class FileBag extends Set<IFile> {
     }
 
     return new FileBag(items);
+  }
+
+  matches(patterns: PatternLike) {
+    const pattern = new Patterns(patterns);
+    pattern.build();
+
+    return this.filter((file) => pattern.test(file.relativePath()));
   }
 
   toArray() {
