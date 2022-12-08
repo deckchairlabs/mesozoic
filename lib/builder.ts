@@ -1,6 +1,7 @@
 import { compile, CompilerOptions } from "./compiler.ts";
 import { BuildContext } from "./context.ts";
-import { crayon, createGraph, join, log, sprintf, toFileUrl } from "./deps.ts";
+import { createGraph } from "./graph.ts";
+import { crayon, join, log, sprintf, toFileUrl } from "./deps.ts";
 import { Entrypoint, EntrypointConfig } from "./entrypoint.ts";
 import { createLoader, wrapLoaderWithLogging } from "./graph/load.ts";
 import {
