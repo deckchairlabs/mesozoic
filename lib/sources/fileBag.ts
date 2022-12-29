@@ -77,16 +77,14 @@ export class FileBag extends Set<IFile> {
   async copyTo(destination: string) {
     const items: IFile[] = [];
 
-    for (const source of this.values()) {
-      try {
+    await Promise.all(
+      Array.from(this.values()).map(async (source) => {
         const copied = await source.copyTo(destination);
         if (copied) {
           items.push(copied);
         }
-      } catch (error) {
-        throw error;
-      }
-    }
+      }),
+    );
 
     return new FileBag(items);
   }
