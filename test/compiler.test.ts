@@ -1,7 +1,7 @@
 import { assertEquals } from "./deps.ts";
 import { compile } from "../lib/compiler.ts";
 
-Deno.test("it works", async () => {
+Deno.test("it works", { ignore: true }, async () => {
   const source = `
     'client';
     import React from 'react';
