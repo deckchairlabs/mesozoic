@@ -39,6 +39,8 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
     react: "./vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
     "react-dom/server": "./vendor/server/esm.sh/v93/react-dom@18.2.0/deno/server.js",
     "react/jsx-runtime": "./vendor/server/esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
+    twind: "./vendor/server/esm.sh/v99/twind@0.16.17/deno/twind.js",
+    "ultra/hooks/use-asset.js": "./vendor/server/deno.land/x/ultra@v2.1.2/hooks/use-asset.js",
     "ultra/server.ts": "./vendor/server/deno.land/x/ultra@v2.1.2/server.ts",
   },
   scopes: {
@@ -96,6 +98,8 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 2`] = 
     react: "https://esm.sh/stable/react@18.2.0/deno/react.js",
     "react-dom/server": "https://esm.sh/v93/react-dom@18.2.0/deno/server.js",
     "react/jsx-runtime": "https://esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
+    twind: "https://esm.sh/v99/twind@0.16.17/deno/twind.js",
+    "ultra/hooks/use-asset.js": "https://deno.land/x/ultra@v2.1.2/hooks/use-asset.js",
     "ultra/server.ts": "https://deno.land/x/ultra@v2.1.2/server.ts",
   },
   scopes: {

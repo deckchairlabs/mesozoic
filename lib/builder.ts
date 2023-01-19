@@ -133,133 +133,129 @@ export class Builder {
       /**
        * Create a module graph for each entrypoint and vendor the dependencies
        */
-      await Promise.allSettled(
-        Array.from(this.entrypoints.values()).map(async (sourceEntrypoint) => {
-          const entrypoint = sources.find((source) =>
-            source.relativePath() === sourceEntrypoint.relativePath()
-          );
+      for (const sourceEntrypoint of this.entrypoints.values()) {
+        const entrypoint = sources.find((source) =>
+          source.relativePath() === sourceEntrypoint.relativePath()
+        );
 
-          if (!entrypoint) {
-            throw new Error(
-              sprintf(
-                'Could not find entrypoint "%s" in output directory',
-                sourceEntrypoint.name,
-              ),
-            );
-          }
-
-          const path = entrypoint.relativePath();
-          const loggedPath = crayon.lightBlue(path);
-
-          const bareSpecifiers: BareSpecifiersMap = new Map();
-          const entrypointName = sourceEntrypoint.name;
-          const entrypointTarget = sourceEntrypoint.config!.target;
-
-          const vendorOutputDir = join(
-            this.context.output,
-            this.context.vendorPath,
-            entrypointName,
-          );
-
-          const resolver = wrapResolverWithLogging(
-            createResolver({
-              importMap: this.importMap,
-              sources,
-              bareSpecifiers,
-              baseURL: toFileUrl(this.context.root),
-            }),
-            this.log,
-          );
-
-          const loader = wrapLoaderWithLogging(
-            createLoader({
-              sources,
-              target: entrypointTarget,
-              dynamicImportIgnored: this.context.dynamicImportIgnored,
-              dynamicImports: dynamicImportSources,
-            }),
-            this.log,
-          );
-
-          this.log.info(
+        if (!entrypoint) {
+          throw new Error(
             sprintf(
-              "Building module graph for entrypoint %s",
+              'Could not find entrypoint "%s" in output directory',
+              sourceEntrypoint.name,
+            ),
+          );
+        }
+
+        const path = entrypoint.relativePath();
+        const loggedPath = crayon.lightBlue(path);
+
+        const bareSpecifiers: BareSpecifiersMap = new Map();
+        const entrypointName = sourceEntrypoint.name;
+        const entrypointTarget = sourceEntrypoint.config!.target;
+
+        const vendorOutputDir = join(
+          this.context.output,
+          this.context.vendorPath,
+          entrypointName,
+        );
+
+        const resolver = wrapResolverWithLogging(
+          createResolver({
+            importMap: this.importMap,
+            sources,
+            bareSpecifiers,
+            baseURL: toFileUrl(this.context.root),
+          }),
+          this.log,
+        );
+
+        const loader = wrapLoaderWithLogging(
+          createLoader({
+            sources,
+            target: entrypointTarget,
+            dynamicImportIgnored: this.context.dynamicImportIgnored,
+            dynamicImports: dynamicImportSources,
+          }),
+          this.log,
+        );
+
+        this.log.info(
+          sprintf(
+            "Building module graph for entrypoint %s",
+            loggedPath,
+          ),
+        );
+
+        const graph = await createGraph(String(entrypoint.url()), {
+          kind: "codeOnly",
+          defaultJsxImportSource: this.options.compilerOptions?.jsxImportSource ||
+            "react",
+          resolve: resolver,
+          load: loader,
+        });
+
+        const remoteModules = graph.modules.filter((module) => isRemoteSpecifier(module.specifier));
+
+        const localModules = graph.modules.filter((module) => isLocalSpecifier(module.specifier));
+
+        const remoteSources = FileBag.fromModules(
+          remoteModules,
+          vendorOutputDir,
+        );
+
+        const localSources = FileBag.fromModules(
+          localModules,
+          this.context.output,
+        );
+
+        this.log.debug(
+          sprintf(
+            `Total modules: local %d, remote %d`,
+            localSources.size,
+            remoteSources.size,
+          ),
+        );
+
+        this.log.success("Module graph built");
+
+        /**
+         * Vendor modules for each entrypoint
+         */
+        if (this.context.vendorDependencies) {
+          this.log.info(
+            sprintf("Vendor modules for entrypoint %s", loggedPath),
+          );
+
+          const vendoredSources = vendorModuleGraph(graph, {
+            name: entrypointName,
+            output: this.context.output,
+            vendorPath: this.context.vendorPath,
+          });
+
+          await vendoredSources.copyTo(this.context.output);
+
+          this.log.success(
+            sprintf(
+              "Vendored %d modules for entrypoint %s",
+              vendoredSources.size,
               loggedPath,
             ),
           );
+        }
 
-          const graph = await createGraph(String(entrypoint.url()), {
-            kind: "codeOnly",
-            defaultJsxImportSource: this.options.compilerOptions?.jsxImportSource ||
-              "react",
-            resolve: resolver,
-            load: loader,
-          });
+        const vendorPathPrefix = this.context.vendorDependencies
+          ? `./${this.context.vendorPath}/${entrypointName}`
+          : null;
 
-          const remoteModules = graph.modules.filter((module) =>
-            isRemoteSpecifier(module.specifier)
-          );
+        const importMap: ImportMap = createImportMapFromModuleGraph(
+          graph,
+          { sources, bareSpecifiers, vendorPathPrefix },
+        );
 
-          const localModules = graph.modules.filter((module) => isLocalSpecifier(module.specifier));
-
-          const remoteSources = FileBag.fromModules(
-            remoteModules,
-            vendorOutputDir,
-          );
-
-          const localSources = FileBag.fromModules(
-            localModules,
-            this.context.output,
-          );
-
-          this.log.debug(
-            sprintf(
-              `Total modules: local %d, remote %d`,
-              localSources.size,
-              remoteSources.size,
-            ),
-          );
-
-          this.log.success("Module graph built");
-
-          /**
-           * Vendor modules for each entrypoint
-           */
-          if (this.context.vendorDependencies) {
-            this.log.info(
-              sprintf("Vendor modules for entrypoint %s", loggedPath),
-            );
-
-            const vendoredSources = vendorModuleGraph(graph, {
-              name: entrypointName,
-              output: this.context.output,
-              vendorPath: this.context.vendorPath,
-            });
-
-            await vendoredSources.copyTo(this.context.output);
-
-            this.log.success(
-              sprintf(
-                "Vendored %d modules for entrypoint %s",
-                vendoredSources.size,
-                loggedPath,
-              ),
-            );
-          }
-
-          const vendorPathPrefix = this.context.vendorDependencies
-            ? `./${this.context.vendorPath}/${entrypointName}`
-            : null;
-
-          const importMap: ImportMap = createImportMapFromModuleGraph(
-            graph,
-            { sources, bareSpecifiers, vendorPathPrefix },
-          );
-
-          importMaps.set(entrypointName, importMap);
-          resolverCache.clear();
-        }),
-      );
+        importMaps.set(entrypointName, importMap);
+        resolverCache.clear();
+      }
 
       const outputSources = await FileBag.from(this.context.output);
 
