@@ -1,15 +1,14 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
-// https://github.com/microsoft/vscode-dev-containers/tree/v0.205.1/containers/deno
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/rust
 {
   "name": "mesozoic-dev",
-  "build": {
-    "dockerfile": "Dockerfile",
-    // Update 'VARIANT' to pick an Debian OS version: bullseye, buster
-    "args": {
-      "VARIANT": "bullseye"
+  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+  "image": "mcr.microsoft.com/devcontainers/rust:0-1-bullseye",
+  "features": {
+    "ghcr.io/devcontainers-contrib/features/deno:1": {
+      "version": "1.29.4"
     }
   },
-  // This will install the vscode-deno extension
   "customizations": {
     "vscode": {
       "extensions": [
@@ -18,6 +17,5 @@
         "GitHub.vscode-pull-request-github"
       ]
     }
-  },
-  "remoteUser": "vscode"
+  }
 }

@@ -45,7 +45,7 @@ export async function compile(source: string, options: CompilerOptions) {
     development,
     sourceMaps,
     minify = true,
-    globals = undefined,
+    globals = {},
   } = options;
 
   const parserConfig = resolveParserConfig(filename);
@@ -81,7 +81,7 @@ export async function compile(source: string, options: CompilerOptions) {
       },
       sourceMaps: sourceMaps ? true : undefined,
       inlineSourcesContent: true,
-    });
+    }, undefined);
 
     return transformed;
   } catch (error) {
