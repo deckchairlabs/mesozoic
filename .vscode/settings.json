@@ -3,5 +3,8 @@
   "deno.lint": true,
   "deno.unstable": true,
   "deno.config": "./deno.json",
-  "editor.defaultFormatter": "denoland.vscode-deno"
+  "editor.defaultFormatter": "denoland.vscode-deno",
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  }
 }

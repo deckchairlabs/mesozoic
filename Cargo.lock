@@ -1215,6 +1215,7 @@ name = "swc_mesozoic"
 version = "0.1.0"
 dependencies = [
  "deno_ast",
+ "js-sys",
  "serde",
  "wasm-bindgen",
  "wasm-bindgen-futures",

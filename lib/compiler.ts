@@ -34,7 +34,7 @@ export function resolveParserConfig(filename: string): ParserConfig {
     };
 }
 
-export async function compile(source: string, options: CompilerOptions) {
+export function compile(source: string, options: CompilerOptions) {
   const {
     filename,
     target = "es2022",

@@ -7,4 +7,5 @@ members = [
 [profile.release]
 incremental = true
 lto = true
+opt-level = "z"
 strip = "symbols"
