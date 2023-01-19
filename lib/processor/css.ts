@@ -1,7 +1,7 @@
 import init, {
   browserslistToTargets,
   transform,
-} from "https://esm.sh/lightningcss-wasm@1.16.0/index.js";
+} from "https://esm.sh/v103/lightningcss-wasm@1.16.0/index.js";
 import { cache, join, toFileUrl } from "../deps.ts";
 import { SourceProcessor } from "../types.ts";
 

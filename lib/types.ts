@@ -15,7 +15,7 @@ export type {
   ImportMap,
   ParsedImportMap,
   SpecifierMap,
-} from "https://esm.sh/@import-maps/resolve@1.0.1";
+} from "https://esm.sh/v103/@import-maps/resolve@1.0.1";
 
 export type SourceProcessor = (
   sources: FileBag,
