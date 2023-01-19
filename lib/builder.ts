@@ -370,7 +370,7 @@ export class Builder {
     const extension = source.extension();
     const filename = source.filename().replace(extension, ".js");
     await source.rename(filename);
-    await source.write(compiled.code, true);
+    await source.write(compiled, true);
 
     return source;
   }

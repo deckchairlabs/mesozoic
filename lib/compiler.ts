@@ -51,40 +51,42 @@ export async function compile(source: string, options: CompilerOptions) {
   const parserConfig = resolveParserConfig(filename);
 
   try {
-    const transformed = await transform(source, {
-      filename,
-      minify,
-      jsc: {
-        target,
-        parser: parserConfig,
-        externalHelpers,
-        minify: minify
-          ? {
-            mangle: true,
-            compress: true,
-          }
-          : undefined,
-        transform: {
-          react: {
-            useBuiltins,
-            importSource: jsxImportSource,
-            runtime,
-            development,
-          },
-          optimizer: {
-            simplify: true,
-            globals: {
-              vars: globals,
-            },
-          },
-        },
-      },
-      sourceMaps: sourceMaps ? true : undefined,
-      inlineSourcesContent: true,
-    }, undefined);
+    return transform(source);
+    // const transformed = await transform(source, {
+    //   filename,
+    //   minify,
+    //   jsc: {
+    //     target,
+    //     parser: parserConfig,
+    //     externalHelpers,
+    //     minify: minify
+    //       ? {
+    //         mangle: true,
+    //         compress: true,
+    //       }
+    //       : undefined,
+    //     transform: {
+    //       react: {
+    //         useBuiltins,
+    //         importSource: jsxImportSource,
+    //         runtime,
+    //         development,
+    //       },
+    //       optimizer: {
+    //         simplify: true,
+    //         globals: {
+    //           vars: globals,
+    //         },
+    //       },
+    //     },
+    //   },
+    //   sourceMaps: sourceMaps ? true : undefined,
+    //   inlineSourcesContent: true,
+    // });
 
-    return transformed;
+    // return transformed;
   } catch (error) {
+    console.error(error);
     throw new Error(String(error));
   }
 }

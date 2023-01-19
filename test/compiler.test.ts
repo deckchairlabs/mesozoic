@@ -51,7 +51,7 @@ Deno.test("it works", async () => {
     export default exports;
   `;
 
-  const { code: result } = await compile(
+  const result = await compile(
     source,
     {
       filename: "test.tsx",

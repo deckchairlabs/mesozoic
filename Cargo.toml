@@ -1,0 +1,10 @@
+[workspace]
+
+members = [
+    "crates/*",
+]
+
+[profile.release]
+incremental = true
+lto = true
+strip = "symbols"
