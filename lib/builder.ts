@@ -362,8 +362,9 @@ export class Builder {
     const content = await source.read();
 
     const compiled = await compile(source.path(), content, {
-      development: false,
-      ...this.options.compilerOptions,
+      development: this.options.compilerOptions?.development,
+      minify: this.options.compilerOptions?.minify,
+      jsxImportSource: this.options.compilerOptions?.jsxImportSource,
     });
 
     const extension = source.extension();
