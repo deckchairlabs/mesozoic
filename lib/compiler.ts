@@ -21,7 +21,7 @@ export async function compile(filename: string, source: string, options: Compile
     return transform(
       filename,
       source,
-      options.jsxImportSource,
+      options.jsxImportSource || "react",
       options.development || false,
       options.minify || true,
     );
