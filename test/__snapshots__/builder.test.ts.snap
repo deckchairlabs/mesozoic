@@ -3,17 +3,17 @@ export const snapshot = {};
 snapshot[`it can copy, compile and vendor entrypoints producing valid import maps 1`] = `
 {
   imports: {
-    "./client.tsx": "/client.6e9c72a8.js",
-    "./src/app.tsx": "/src/app.a4f06539.js",
-    "./src/components/Test.tsx": "/src/components/Test.96b536df.js",
+    "./client.tsx": "/client.d18310e0.js",
+    "./src/app.tsx": "/src/app.d82ab43c.js",
+    "./src/components/Test.tsx": "/src/components/Test.4e662968.js",
     "https://deno.land/": "/vendor/browser/deno.land/",
     "https://esm.sh/": "/vendor/browser/esm.sh/",
-    react: "/vendor/browser/esm.sh/stable/react@18.2.0/es2022/react.19dc7a5f.js",
-    "react-dom/client": "/vendor/browser/esm.sh/v93/react-dom@18.2.0/es2022/client.82a65ea3.js",
-    "react/jsx-runtime": "/vendor/browser/esm.sh/stable/react@18.2.0/es2022/jsx-runtime.954fd244.js",
-    twind: "/vendor/browser/esm.sh/v103/twind@0.16.17/es2022/twind.c96e6bbb.js",
-    "ultra/hooks/use-asset.js": "/vendor/browser/deno.land/x/ultra@v2.1.2/hooks/use-asset.689e79d4.js",
-    "ultra/hydrate.js": "/vendor/browser/deno.land/x/ultra@v2.1.2/hydrate.34a580c8.js",
+    react: "/vendor/browser/esm.sh/stable/react@18.2.0/es2022/react.625c3f59.js",
+    "react-dom/client": "/vendor/browser/esm.sh/v93/react-dom@18.2.0/es2022/client.2652ccc5.js",
+    "react/jsx-runtime": "/vendor/browser/esm.sh/stable/react@18.2.0/es2022/jsx-runtime.9bacc56c.js",
+    twind: "/vendor/browser/esm.sh/v103/twind@0.16.17/es2022/twind.a56db6c9.js",
+    "ultra/hooks/use-asset.js": "/vendor/browser/deno.land/x/ultra@v2.1.7/hooks/use-asset.d43ee186.js",
+    "ultra/hydrate.js": "/vendor/browser/deno.land/x/ultra@v2.1.7/hydrate.c1c2367e.js",
   },
   scopes: {
     "/vendor/browser/deno.land/": {
@@ -32,21 +32,22 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 {
   imports: {
     "./server.tsx": "./server.js",
-    "./src/app.tsx": "./src/app.a4f06539.js",
-    "./src/components/Test.tsx": "./src/components/Test.96b536df.js",
+    "./src/app.tsx": "./src/app.d82ab43c.js",
+    "./src/components/Test.tsx": "./src/components/Test.4e662968.js",
     "https://deno.land/": "./vendor/server/deno.land/",
     "https://esm.sh/": "./vendor/server/esm.sh/",
     react: "./vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
     "react-dom/server": "./vendor/server/esm.sh/v93/react-dom@18.2.0/deno/server.js",
     "react/jsx-runtime": "./vendor/server/esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
     twind: "./vendor/server/esm.sh/v103/twind@0.16.17/deno/twind.js",
-    "ultra/hooks/use-asset.js": "./vendor/server/deno.land/x/ultra@v2.1.2/hooks/use-asset.js",
-    "ultra/server.ts": "./vendor/server/deno.land/x/ultra@v2.1.2/server.ts",
+    "ultra/hooks/use-asset.js": "./vendor/server/deno.land/x/ultra@v2.1.7/hooks/use-asset.js",
+    "ultra/server.ts": "./vendor/server/deno.land/x/ultra@v2.1.7/server.ts",
   },
   scopes: {
     "./vendor/server/deno.land/": {
       "/std@0.163.0/": "./vendor/server/deno.land/std@0.163.0/",
       "/std@0.164.0/": "./vendor/server/deno.land/std@0.164.0/",
+      "/std@0.173.0/": "./vendor/server/deno.land/std@0.173.0/",
       "/std@0.97.0/": "./vendor/server/deno.land/std@0.97.0/",
       "/x/": "./vendor/server/deno.land/x/",
     },
@@ -62,17 +63,17 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 snapshot[`it can copy and compile entrypoints producing valid import maps 1`] = `
 {
   imports: {
-    "./client.tsx": "/client.6e9c72a8.js",
-    "./src/app.tsx": "/src/app.a4f06539.js",
-    "./src/components/Test.tsx": "/src/components/Test.96b536df.js",
+    "./client.tsx": "/client.d18310e0.js",
+    "./src/app.tsx": "/src/app.d82ab43c.js",
+    "./src/components/Test.tsx": "/src/components/Test.4e662968.js",
     "https://deno.land/": "https://deno.land/",
     "https://esm.sh/": "https://esm.sh/",
     react: "https://esm.sh/stable/react@18.2.0/es2022/react.js",
     "react-dom/client": "https://esm.sh/v93/react-dom@18.2.0/es2022/client.js",
     "react/jsx-runtime": "https://esm.sh/stable/react@18.2.0/es2022/jsx-runtime.js",
     twind: "https://esm.sh/v103/twind@0.16.17/es2022/twind.js",
-    "ultra/hooks/use-asset.js": "https://deno.land/x/ultra@v2.1.2/hooks/use-asset.js",
-    "ultra/hydrate.js": "https://deno.land/x/ultra@v2.1.2/hydrate.js",
+    "ultra/hooks/use-asset.js": "https://deno.land/x/ultra@v2.1.7/hooks/use-asset.js",
+    "ultra/hydrate.js": "https://deno.land/x/ultra@v2.1.7/hydrate.js",
   },
   scopes: {
     "https://deno.land/": {
@@ -91,21 +92,22 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 2`] = 
 {
   imports: {
     "./server.tsx": "./server.js",
-    "./src/app.tsx": "./src/app.a4f06539.js",
-    "./src/components/Test.tsx": "./src/components/Test.96b536df.js",
+    "./src/app.tsx": "./src/app.d82ab43c.js",
+    "./src/components/Test.tsx": "./src/components/Test.4e662968.js",
     "https://deno.land/": "https://deno.land/",
     "https://esm.sh/": "https://esm.sh/",
     react: "https://esm.sh/stable/react@18.2.0/deno/react.js",
     "react-dom/server": "https://esm.sh/v93/react-dom@18.2.0/deno/server.js",
     "react/jsx-runtime": "https://esm.sh/stable/react@18.2.0/deno/jsx-runtime.js",
     twind: "https://esm.sh/v103/twind@0.16.17/deno/twind.js",
-    "ultra/hooks/use-asset.js": "https://deno.land/x/ultra@v2.1.2/hooks/use-asset.js",
-    "ultra/server.ts": "https://deno.land/x/ultra@v2.1.2/server.ts",
+    "ultra/hooks/use-asset.js": "https://deno.land/x/ultra@v2.1.7/hooks/use-asset.js",
+    "ultra/server.ts": "https://deno.land/x/ultra@v2.1.7/server.ts",
   },
   scopes: {
     "https://deno.land/": {
       "/std@0.163.0/": "https://deno.land/std@0.163.0/",
       "/std@0.164.0/": "https://deno.land/std@0.164.0/",
+      "/std@0.173.0/": "https://deno.land/std@0.173.0/",
       "/std@0.97.0/": "https://deno.land/std@0.97.0/",
       "/x/": "https://deno.land/x/",
     },

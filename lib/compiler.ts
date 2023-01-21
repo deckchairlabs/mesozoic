@@ -1,7 +1,5 @@
-import {
-  // type JscTarget, type ParserConfig,
-  transform,
-} from "./swc.ts";
+import { instantiate } from "./swc_mesozoic.generated.js";
+import { cache, toFileUrl } from "./deps.ts";
 
 export type CompilerOptions = {
   jsxImportSource?: string;
@@ -9,40 +7,16 @@ export type CompilerOptions = {
   minify?: boolean;
 };
 
-// const TS_REGEX = new RegExp(".(ts[x]?)$");
-// const JSX_REGEX = new RegExp(".([jt]sx)$");
+export async function createCompiler() {
+  const file = await cache(
+    new URL("./swc_mesozoic_bg.wasm", import.meta.url),
+  );
 
-// export function resolveParserConfig(filename: string): ParserConfig {
-//   const isTypescript = TS_REGEX.test(filename);
-//   const isJsx = JSX_REGEX.test(filename);
+  return instantiate({ url: toFileUrl(file.path) });
+}
 
-//   return isTypescript
-//     ? {
-//       syntax: "typescript",
-//       dynamicImport: true,
-//       tsx: isJsx,
-//     }
-//     : {
-//       syntax: "ecmascript",
-//       jsx: isJsx,
-//     };
-// }
-
-export function compile(filename: string, source: string, options: CompilerOptions) {
-  // const {
-  //   target = "es2022",
-  //   useBuiltins = true,
-  //   externalHelpers = false,
-  //   jsxImportSource = "react",
-  //   runtime = "automatic",
-  //   development,
-  //   sourceMaps,
-  //   minify = true,
-  //   globals = {},
-  // } = options;
-
-  // const parserConfig = resolveParserConfig(filename);
-
+export async function compile(filename: string, source: string, options: CompilerOptions) {
+  const { transform } = await createCompiler();
   try {
     return transform(
       filename,
@@ -51,39 +25,6 @@ export function compile(filename: string, source: string, options: CompilerOptio
       options.development || false,
       options.minify || true,
     );
-    // const transformed = await transform(source, {
-    //   filename,
-    //   minify,
-    //   jsc: {
-    //     target,
-    //     parser: parserConfig,
-    //     externalHelpers,
-    //     minify: minify
-    //       ? {
-    //         mangle: true,
-    //         compress: true,
-    //       }
-    //       : undefined,
-    //     transform: {
-    //       react: {
-    //         useBuiltins,
-    //         importSource: jsxImportSource,
-    //         runtime,
-    //         development,
-    //       },
-    //       optimizer: {
-    //         simplify: true,
-    //         globals: {
-    //           vars: globals,
-    //         },
-    //       },
-    //     },
-    //   },
-    //   sourceMaps: sourceMaps ? true : undefined,
-    //   inlineSourcesContent: true,
-    // });
-
-    // return transformed;
   } catch (error) {
     console.error(error);
     throw new Error(String(error));
