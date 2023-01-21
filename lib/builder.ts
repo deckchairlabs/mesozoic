@@ -361,8 +361,7 @@ export class Builder {
   ): Promise<IFile> {
     const content = await source.read();
 
-    const compiled = await compile(content, {
-      filename: source.path(),
+    const compiled = await compile(source.path(), content, {
       development: false,
       ...this.options.compilerOptions,
     });
@@ -370,7 +369,7 @@ export class Builder {
     const extension = source.extension();
     const filename = source.filename().replace(extension, ".js");
     await source.rename(filename);
-    await source.write(compiled.code, true);
+    await source.write(compiled, true);
 
     return source;
   }
