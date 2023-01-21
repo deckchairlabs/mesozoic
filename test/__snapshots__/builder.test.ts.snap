@@ -3,9 +3,9 @@ export const snapshot = {};
 snapshot[`it can copy, compile and vendor entrypoints producing valid import maps 1`] = `
 {
   imports: {
-    "./client.tsx": "/client.d18310e0.js",
-    "./src/app.tsx": "/src/app.d82ab43c.js",
-    "./src/components/Test.tsx": "/src/components/Test.4e662968.js",
+    "./client.tsx": "/client.0774b963.js",
+    "./src/app.tsx": "/src/app.375c911d.js",
+    "./src/components/Test.tsx": "/src/components/Test.d8e044d9.js",
     "https://deno.land/": "/vendor/browser/deno.land/",
     "https://esm.sh/": "/vendor/browser/esm.sh/",
     react: "/vendor/browser/esm.sh/stable/react@18.2.0/es2022/react.625c3f59.js",
@@ -32,8 +32,8 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 {
   imports: {
     "./server.tsx": "./server.js",
-    "./src/app.tsx": "./src/app.d82ab43c.js",
-    "./src/components/Test.tsx": "./src/components/Test.4e662968.js",
+    "./src/app.tsx": "./src/app.375c911d.js",
+    "./src/components/Test.tsx": "./src/components/Test.d8e044d9.js",
     "https://deno.land/": "./vendor/server/deno.land/",
     "https://esm.sh/": "./vendor/server/esm.sh/",
     react: "./vendor/server/esm.sh/stable/react@18.2.0/deno/react.js",
@@ -63,9 +63,9 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 snapshot[`it can copy and compile entrypoints producing valid import maps 1`] = `
 {
   imports: {
-    "./client.tsx": "/client.d18310e0.js",
-    "./src/app.tsx": "/src/app.d82ab43c.js",
-    "./src/components/Test.tsx": "/src/components/Test.4e662968.js",
+    "./client.tsx": "/client.0774b963.js",
+    "./src/app.tsx": "/src/app.375c911d.js",
+    "./src/components/Test.tsx": "/src/components/Test.d8e044d9.js",
     "https://deno.land/": "https://deno.land/",
     "https://esm.sh/": "https://esm.sh/",
     react: "https://esm.sh/stable/react@18.2.0/es2022/react.js",
@@ -92,8 +92,8 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 2`] = 
 {
   imports: {
     "./server.tsx": "./server.js",
-    "./src/app.tsx": "./src/app.d82ab43c.js",
-    "./src/components/Test.tsx": "./src/components/Test.4e662968.js",
+    "./src/app.tsx": "./src/app.375c911d.js",
+    "./src/components/Test.tsx": "./src/components/Test.d8e044d9.js",
     "https://deno.land/": "https://deno.land/",
     "https://esm.sh/": "https://esm.sh/",
     react: "https://esm.sh/stable/react@18.2.0/deno/react.js",
