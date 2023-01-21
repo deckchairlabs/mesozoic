@@ -7,3 +7,4 @@ export type { ImportMap } from "./lib/types.ts";
 export { FileBag } from "./lib/sources/fileBag.ts";
 export { SourceFile } from "./lib/sources/sourceFile.ts";
 export { VirtualFile } from "./lib/sources/virtualFile.ts";
+export { createCompiler } from "./lib/compiler.ts";
