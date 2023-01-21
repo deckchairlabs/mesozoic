@@ -83,7 +83,6 @@ export function createLocalResolver(sources: FileBag) {
      * This is a local source file, attempt to find it within the sources FileBag
      */
     const url = new URL(specifier, referrer);
-
     const source = sources.find((source) => String(source.url()) === String(url));
 
     if (source) {

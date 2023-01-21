@@ -361,8 +361,7 @@ export class Builder {
   ): Promise<IFile> {
     const content = await source.read();
 
-    const compiled = await compile(content, {
-      filename: source.path(),
+    const compiled = await compile(source.path(), content, {
       development: false,
       ...this.options.compilerOptions,
     });

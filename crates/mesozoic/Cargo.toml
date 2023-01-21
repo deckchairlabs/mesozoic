@@ -6,11 +6,9 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 js-sys = "0.3.60"
-deno_ast = { version = "0.23.2", features = ["codegen", "module_specifier", "proposal", "react", "sourcemap", "transforms", "typescript", "visit", "transpiling"] }
+deno_ast = { version = "0.23.2", features = ["transpiling"] }
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 wasm-bindgen = { version = "0.2.83", features = ["serde-serialize", "enable-interning"] }
 wasm-bindgen-futures = { version = "0.4.33" }
