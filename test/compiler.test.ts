@@ -1,9 +1,8 @@
 import { assertEquals } from "./deps.ts";
 import { compile } from "../lib/compiler.ts";
 
-Deno.test("it works", { ignore: true }, async () => {
+Deno.test("it works", async () => {
   const source = `
-    'client';
     import React from 'react';
 
     function Component() {
@@ -51,16 +50,16 @@ Deno.test("it works", { ignore: true }, async () => {
     export default exports;
   `;
 
-  const result = await compile("test.tsx", source, {});
+  const devResult = await compile("test.tsx", source, {
+    minify: false,
+    development: true,
+  });
 
-  assertEquals(result.includes("React"), false);
-  assertEquals(result.includes("__DEV__"), false);
-  assertEquals(result.includes("console.log('removed')"), false);
-  assertEquals(result.includes('console.log("Not Deno")'), true);
-  assertEquals(result.includes('import("./module.browser.js")'), true);
-  // assertEquals(
-  //   result.includes("compiler"),
-  //   false,
-  // );
-  assertEquals(result.includes('console.log("not removed")'), true);
+  const prodResult = await compile("test.tsx", source, {
+    minify: true,
+    development: false,
+  });
+
+  assertEquals(devResult.includes('"react/jsx-dev-runtime"'), true);
+  assertEquals(prodResult.includes('"react/jsx-runtime"'), true);
 });
