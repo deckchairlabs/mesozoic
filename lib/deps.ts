@@ -1,9 +1,4 @@
-export {
-  copy,
-  emptyDir,
-  ensureDir,
-  walk,
-} from "https://deno.land/std@0.173.0/fs/mod.ts";
+export { copy, emptyDir, ensureDir, walk } from "https://deno.land/std@0.173.0/fs/mod.ts";
 export { cache, RELOAD_POLICY } from "https://deno.land/x/cache@0.2.13/mod.ts";
 export { crayon } from "https://deno.land/x/crayon@3.3.2/mod.ts";
 export * as log from "https://deno.land/std@0.173.0/log/mod.ts";

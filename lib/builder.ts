@@ -13,10 +13,7 @@ import {
 import { isLocalSpecifier, isRemoteSpecifier } from "./graph/specifiers.ts";
 import { Logger, type LoggerImpl } from "./logger.ts";
 import { Patterns } from "./patterns.ts";
-import {
-  createCssProcessor,
-  type CssProcessorOptions,
-} from "./processor/css.ts";
+import { createCssProcessor, type CssProcessorOptions } from "./processor/css.ts";
 import { IFile } from "./sources/file.ts";
 import { FileBag } from "./sources/fileBag.ts";
 import type { ImportMap, SpecifierMap, Target } from "./types.ts";
@@ -90,9 +87,7 @@ export class Builder {
   }
 
   setEntrypoints(entrypoints: BuilderEntrypoints) {
-    Object.entries(entrypoints).forEach(([name, config]) =>
-      this.addEntrypoint(name, config)
-    );
+    Object.entries(entrypoints).forEach(([name, config]) => this.addEntrypoint(name, config));
   }
 
   getEntrypoint(name: string) {
@@ -128,9 +123,7 @@ export class Builder {
       /**
        * Copy source files to the output directory
        */
-      const sources = await buildSources.filter((source) =>
-        !this.isIgnored(source)
-      ).copyTo(
+      const sources = await buildSources.filter((source) => !this.isIgnored(source)).copyTo(
         this.context.output,
       );
 
@@ -196,20 +189,15 @@ export class Builder {
 
         const graph = await createGraph(String(entrypoint.url()), {
           kind: "codeOnly",
-          defaultJsxImportSource:
-            this.options.compilerOptions?.jsxImportSource ||
+          defaultJsxImportSource: this.options.compilerOptions?.jsxImportSource ||
             "react",
           resolve: resolver,
           load: loader,
         });
 
-        const remoteModules = graph.modules.filter((module) =>
-          isRemoteSpecifier(module.specifier)
-        );
+        const remoteModules = graph.modules.filter((module) => isRemoteSpecifier(module.specifier));
 
-        const localModules = graph.modules.filter((module) =>
-          isLocalSpecifier(module.specifier)
-        );
+        const localModules = graph.modules.filter((module) => isLocalSpecifier(module.specifier));
 
         const remoteSources = FileBag.fromModules(
           remoteModules,

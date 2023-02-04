@@ -11,9 +11,7 @@ export type CompilerOptions = {
 
 export async function createCompiler() {
   const url = new URL("./swc_mesozoic_bg.wasm", import.meta.url);
-  const policy: Policy | undefined = url.protocol === "file:"
-    ? RELOAD_POLICY
-    : undefined;
+  const policy: Policy | undefined = url.protocol === "file:" ? RELOAD_POLICY : undefined;
 
   const file = await cache(
     url,

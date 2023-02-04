@@ -8,6 +8,7 @@
     "files": {
       "exclude": [
         ".deno-cache",
+        "./target/",
         "./test/fixture/app/.build/",
         "./test/fixture/importMap/vendor/",
         "./test/fixture/graph/",
@@ -18,7 +19,9 @@
   "fmt": {
     "files": {
       "exclude": [
-        ".deno-cache"
+        ".deno-cache",
+        "./crates/",
+        "./target/"
       ]
     },
     "options": {
