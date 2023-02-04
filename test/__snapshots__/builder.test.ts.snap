@@ -53,7 +53,6 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
     "./vendor/server/esm.sh/": {
       "/stable/": "./vendor/server/esm.sh/stable/",
       "/v106/": "./vendor/server/esm.sh/v106/",
-      "/v93/": "./vendor/server/esm.sh/v93/",
     },
   },
 }
@@ -112,7 +111,6 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 2`] = 
     "https://esm.sh/": {
       "/stable/": "https://esm.sh/stable/",
       "/v106/": "https://esm.sh/v106/",
-      "/v93/": "https://esm.sh/v93/",
     },
   },
 }
