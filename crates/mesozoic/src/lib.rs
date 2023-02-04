@@ -5,6 +5,7 @@ use deno_ast::swc::common::FileName;
 use deno_ast::swc::common::Globals;
 use deno_ast::swc::common::Mark;
 use deno_ast::swc::common::SourceMap;
+use deno_ast::swc::parser::TsConfig;
 use deno_ast::EmitOptions;
 use deno_ast::MediaType;
 use deno_ast::ParseParams;
@@ -14,7 +15,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 
 #[wasm_bindgen]
-pub async fn transform(
+pub fn transform(
     specifier: String,
     source_text: String,
     maybe_jsx_import_source: Option<String>,
@@ -22,15 +23,22 @@ pub async fn transform(
     minify: bool,
 ) -> Result<String, JsValue> {
     let text_info = SourceTextInfo::from_string(source_text);
+    let media_type = MediaType::from(&specifier);
+
     let parsed_source = parse_module(ParseParams {
         specifier,
-        media_type: MediaType::Tsx,
+        media_type,
         text_info,
-        capture_tokens: false,
-        maybe_syntax: None,
+        capture_tokens: true,
+        maybe_syntax: Some(deno_ast::swc::parser::Syntax::Typescript(TsConfig {
+            tsx: true,
+            decorators: false,
+            dts: false,
+            no_early_errors: false,
+        })),
         scope_analysis: false,
     })
-    .expect("should parse");
+    .unwrap_or_else(|error| panic!("parse module: {error}"));
 
     let program = (*parsed_source.program()).clone();
     let source_map = Rc::new(SourceMap::default());
@@ -64,7 +72,7 @@ pub async fn transform(
                 top_level_mark,
                 parsed_source.diagnostics(),
             )
-            .expect("fold program");
+            .unwrap_or_else(|error| panic!("fold program: {error}"));
 
             let mut buf = vec![];
             let writer = Box::new(JsWriter::new(source_map.clone(), "\n", &mut buf, None));
@@ -83,11 +91,66 @@ pub async fn transform(
                 wr: writer,
             };
 
-            emitter.emit_program(&program).expect("failed to emit");
+            emitter
+                .emit_program(&program)
+                .unwrap_or_else(|error| panic!("emit program: {error}"));
 
             String::from_utf8(buf)
         })
         .map_err(|err| JsValue::from(js_sys::Error::new(&err.to_string())))?;
 
     Ok(transpiled)
+}
+
+#[cfg(test)]
+mod tests {
+    use wasm_bindgen::JsValue;
+
+    use crate::transform;
+
+    fn transform_test(
+        specifier: String,
+        source_text: String,
+        development: bool,
+    ) -> Result<String, JsValue> {
+        transform(
+            specifier,
+            source_text,
+            Some("react".into()),
+            development,
+            !development,
+        )
+    }
+
+    #[test]
+    fn it_can_transform_jsx() {
+        let specifier: String = "test.jsx".into();
+        let source_text: String = r#"
+        export default function App() {
+            return <div>Hello</div>;
+        }
+        "#
+        .into();
+
+        let result = transform_test(specifier, source_text, false);
+        assert!(!result.is_err());
+    }
+
+    #[test]
+    fn it_can_transform_tsx() {
+        let specifier: String = "test.tsx".into();
+        let source_text: String = r#"
+        import { PropsWithChildren } from 'react';
+    
+        export default function App({ children }: PropsWithChildren) {
+          return <div>{children}</div>;
+        }
+    
+        const result = () => <App><div>Hello</div></App>;
+        "#
+        .into();
+
+        let result = transform_test(specifier, source_text, false);
+        assert!(!result.is_err());
+    }
 }

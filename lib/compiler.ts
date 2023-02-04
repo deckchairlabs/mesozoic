@@ -1,5 +1,6 @@
 import { instantiate } from "./swc_mesozoic.generated.js";
-import { cache, toFileUrl } from "./deps.ts";
+import { cache, RELOAD_POLICY, toFileUrl } from "./deps.ts";
+import type { Policy } from "./types.ts";
 import { VERSION } from "../version.ts";
 
 export type CompilerOptions = {
@@ -9,16 +10,25 @@ export type CompilerOptions = {
 };
 
 export async function createCompiler() {
+  const url = new URL("./swc_mesozoic_bg.wasm", import.meta.url);
+  const policy: Policy | undefined = url.protocol === "file:"
+    ? RELOAD_POLICY
+    : undefined;
+
   const file = await cache(
-    new URL("./swc_mesozoic_bg.wasm", import.meta.url),
-    undefined,
+    url,
+    policy,
     `mesozoic-${VERSION}`,
   );
 
   return instantiate({ url: toFileUrl(file.path) });
 }
 
-export async function compile(filename: string, source: string, options: CompilerOptions) {
+export async function compile(
+  filename: string,
+  source: string,
+  options: CompilerOptions,
+) {
   const { transform } = await createCompiler();
   try {
     return transform(

@@ -1,8 +1,8 @@
 {
   "tasks": {
     "test": "deno test --no-lock --allow-all",
-    "build": "deno run -A https://deno.land/x/wasmbuild@0.10.3/main.ts",
-    "build:debug": "deno run -A https://deno.land/x/wasmbuild@0.10.3/main.ts --debug"
+    "build": "deno run --no-lock -A https://deno.land/x/wasmbuild@0.10.3/main.ts",
+    "build:debug": "deno run --no-lock -A https://deno.land/x/wasmbuild@0.10.3/main.ts --debug --skip-opt"
   },
   "lint": {
     "files": {
