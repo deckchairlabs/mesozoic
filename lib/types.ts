@@ -9,7 +9,7 @@ export type {
 } from "https://deno.land/x/deno_graph@0.41.0/lib/types.d.ts";
 
 export type { Policy } from "https://deno.land/x/cache@0.2.13/mod.ts";
-export type { GlobToRegExpOptions } from "https://deno.land/std@0.173.0/path/glob.ts";
+export type { GlobToRegExpOptions } from "https://deno.land/std@0.176.0/path/glob.ts";
 
 export type {
   ImportMap,
