@@ -1,3 +1,4 @@
+import { log } from "../lib/deps.ts";
 import { BuildContext, Builder, ContextBuilder } from "../mod.ts";
 import { assertEquals, assertSnapshot } from "./deps.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
@@ -5,7 +6,10 @@ import { getFixtureDir, getOutputDir } from "./helpers.ts";
 const outputDir = getOutputDir("app");
 
 async function createBuilder(context: BuildContext) {
-  const builder = new Builder(context);
+  const logLevel = Deno.env.get("MESOZOIC_LOG");
+  const builder = new Builder(context, {
+    logLevel: logLevel as log.LevelName,
+  });
 
   await builder.cleanOutput();
 
