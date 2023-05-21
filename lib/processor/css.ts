@@ -1,7 +1,7 @@
 import init, {
   browserslistToTargets,
   transform,
-} from "https://esm.sh/v103/lightningcss-wasm@1.16.0/index.js";
+} from "https://esm.sh/v122/lightningcss-wasm@1.20.0/index.js";
 import { cache, join, toFileUrl } from "../deps.ts";
 import { SourceProcessor } from "../types.ts";
 
@@ -24,7 +24,7 @@ export async function createCssProcessor(
   options: CssProcessorOptions = {},
 ): Promise<SourceProcessor> {
   const file = await cache(
-    "https://esm.sh/lightningcss-wasm@1.16.0/lightningcss_node_bg.wasm",
+    "https://esm.sh/v122/lightningcss-wasm@1.20.0/lightningcss_node_bg.wasm",
   );
 
   await init(toFileUrl(file.path));
@@ -78,6 +78,13 @@ export async function createCssProcessor(
               transformedCode = transformedCode.replaceAll(
                 dependency.placeholder,
                 path.replace(relativeRoot, "."),
+              );
+            } else {
+              // If no source is found for the dependency, we assume it's a
+              // remote URL and replace the placeholder with the original URL
+              transformedCode = transformedCode.replaceAll(
+                dependency.placeholder,
+                dependency.url,
               );
             }
           }

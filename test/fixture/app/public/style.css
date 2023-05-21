@@ -2,6 +2,11 @@
     --color: red;
 }
 
+@font-face {
+    font-family: test;
+    src: url(https://example.com/test.woff2);
+}
+
 body {
     background-color: black;
     background-image: url('./image.jpg');
