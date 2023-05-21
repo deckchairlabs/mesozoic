@@ -113,6 +113,7 @@ export async function loadRemoteSpecifier(
       content,
     };
   } catch (error) {
+    console.debug({ specifier, target });
     console.error(error);
     return undefined;
   }

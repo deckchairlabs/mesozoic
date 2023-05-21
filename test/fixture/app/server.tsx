@@ -1,6 +1,6 @@
-import { serve } from "https://deno.land/std@0.176.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.188.0/http/server.ts";
 import { createServer } from "ultra/server.ts";
-import rehypeHighlight from "https://esm.sh/v106/rehype-highlight@5.0.2/rehype-highlight.js";
+import rehypeHighlight from "https://esm.sh/v122/rehype-highlight@5.0.2/index.mjs";
 import App from "./src/app.tsx";
 
 const server = await createServer({

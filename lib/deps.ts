@@ -1,19 +1,19 @@
-export { copy, emptyDir, ensureDir, walk } from "https://deno.land/std@0.176.0/fs/mod.ts";
+export { copy, emptyDir, ensureDir, walk } from "https://deno.land/std@0.188.0/fs/mod.ts";
 export { cache, RELOAD_POLICY } from "https://deno.land/x/cache@0.2.13/mod.ts";
 export { crayon } from "https://deno.land/x/crayon@3.3.2/mod.ts";
-export * as log from "https://deno.land/std@0.176.0/log/mod.ts";
-export { deepMerge } from "https://deno.land/std@0.176.0/collections/deep_merge.ts";
+export * as log from "https://deno.land/std@0.188.0/log/mod.ts";
+export { deepMerge } from "https://deno.land/std@0.188.0/collections/deep_merge.ts";
 export {
   init as initModuleLexer,
   parse as parseModule,
-} from "https://esm.sh/v106/es-module-lexer@1.1.0/es2022/es-module-lexer.js";
-export type { ImportSpecifier } from "https://esm.sh/v106/es-module-lexer@1.1.0/types/lexer.d.ts";
+} from "https://esm.sh/v122/es-module-lexer@1.2.1";
+export type { ImportSpecifier } from "https://esm.sh/v122/es-module-lexer@1.2.1/types/lexer.d.ts";
 export {
   parse as parseImportMap,
   resolve as importMapResolve,
-} from "https://esm.sh/v106/@import-maps/resolve@1.0.1/resolve.js";
+} from "https://esm.sh/v122/@import-maps/resolve@1.0.1";
 
-export { sprintf } from "https://deno.land/std@0.176.0/fmt/printf.ts";
+export { sprintf } from "https://deno.land/std@0.188.0/fmt/printf.ts";
 
 export {
   basename,
@@ -28,4 +28,4 @@ export {
   resolve,
   SEP,
   toFileUrl,
-} from "https://deno.land/std@0.176.0/path/mod.ts";
+} from "https://deno.land/std@0.188.0/path/mod.ts";

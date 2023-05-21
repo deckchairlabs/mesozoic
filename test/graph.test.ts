@@ -14,11 +14,11 @@ const baseUrl = "file:///app/";
 
 const importMap = {
   imports: {
-    "react": "https://esm.sh/react@18.2.0?pin=v93",
-    "react/": "https://esm.sh/react@18.2.0&pin=v93/",
-    "react-dom": "https://esm.sh/react-dom@18.2.0?pin=v93",
-    "react-dom/": "https://esm.sh/react-dom@18.2.0&pin=v93/",
-    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query?external=react&pin=v93",
+    "react": "https://esm.sh/v122/react@18.2.0",
+    "react/": "https://esm.sh/v122/react@18.2.0/",
+    "react-dom": "https://esm.sh/v122/react-dom@18.2.0",
+    "react-dom/": "https://esm.sh/v122/react-dom@18.2.0/",
+    "@tanstack/react-query": "https://esm.sh/v122/@tanstack/react-query?external=react",
     "ultra/": "https://deno.land/x/ultra/",
     "graphql-type-json": "https://cdn.skypack.dev/graphql-type-json@0.3.2?dts",
   },
@@ -64,7 +64,7 @@ Deno.test("it can create a module graph", async () => {
     Object.fromEntries(resolvedBareSpecifiers),
     {
       "react/jsx-runtime": "https://esm.sh/stable/react@18.2.0/es2022/jsx-runtime.js",
-      "react": "https://esm.sh/stable/react@18.2.0/es2022/react.js",
+      "react": "https://esm.sh/stable/react@18.2.0/es2022/react.mjs",
       "graphql-type-json":
         "https://cdn.skypack.dev/-/graphql-type-json@v0.3.2-DhOL463jxxvyflH53O4H/dist=es2019,mode=imports/optimized/graphql-type-json.js",
     },
@@ -88,17 +88,17 @@ Deno.test("it can resolve and load specifiers", async () => {
    */
   assertEquals(
     resolve("react", baseUrl),
-    "https://esm.sh/react@18.2.0?pin=v93",
+    "https://esm.sh/v122/react@18.2.0",
   );
 
   assertEquals(
     resolve("react-dom/client", baseUrl),
-    "https://esm.sh/react-dom@18.2.0&pin=v93/client",
+    "https://esm.sh/v122/react-dom@18.2.0/client",
   );
 
   assertEquals(
     resolve("@tanstack/react-query", baseUrl),
-    "https://esm.sh/@tanstack/react-query?external=react&pin=v93",
+    "https://esm.sh/v122/@tanstack/react-query?external=react",
   );
 
   assertEquals(
@@ -131,9 +131,9 @@ Deno.test("it can resolve and load specifiers", async () => {
   );
 
   assertEquals(Object.fromEntries(bareSpecifiers), {
-    "react": "https://esm.sh/react@18.2.0?pin=v93",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0&pin=v93/client",
-    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query?external=react&pin=v93",
+    "react": "https://esm.sh/v122/react@18.2.0",
+    "react-dom/client": "https://esm.sh/v122/react-dom@18.2.0/client",
+    "@tanstack/react-query": "https://esm.sh/v122/@tanstack/react-query?external=react",
     "ultra/server.ts": "https://deno.land/x/ultra/server.ts",
   });
 
@@ -144,21 +144,21 @@ Deno.test("it can resolve and load specifiers", async () => {
   assertEquals(react?.kind, "module");
   assertEquals(
     react?.specifier,
-    "https://esm.sh/stable/react@18.2.0/es2022/react.js",
+    "https://esm.sh/stable/react@18.2.0/es2022/react.mjs",
   );
 
   const reactDom = await load(resolve("react-dom", baseUrl));
   assertEquals(reactDom?.kind, "module");
   assertEquals(
     reactDom?.specifier,
-    "https://esm.sh/v93/react-dom@18.2.0/es2022/react-dom.js",
+    "https://esm.sh/v122/react-dom@18.2.0/es2022/react-dom.mjs",
   );
 
   const reactDomServer = await load(resolve("react-dom/server", baseUrl));
   assertEquals(reactDomServer?.kind, "module");
   assertEquals(
     reactDomServer?.specifier,
-    "https://esm.sh/v93/react-dom@18.2.0/es2022/server.js",
+    "https://esm.sh/v122/react-dom@18.2.0/es2022/server.js",
   );
 
   const jsxRuntime = await load(resolve("react/jsx-runtime", baseUrl));
@@ -192,6 +192,6 @@ Deno.test("it can resolve and load for a specific target", async () => {
   assertEquals(react?.kind, "module");
   assertEquals(
     react?.specifier,
-    "https://esm.sh/stable/react@18.2.0/deno/react.js",
+    "https://esm.sh/stable/react@18.2.0/deno/react.mjs",
   );
 });
