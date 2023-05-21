@@ -20,7 +20,7 @@ export function createImportMapFromModuleGraph(
   const scopes = new Map<string, string[]>();
 
   const modules = graph.modules.values();
-  const redirects = graph.toJSON().redirects;
+  const { redirects } = graph.toJSON();
 
   const bareSpecifiers = resolveBareSpecifierRedirects(
     options.bareSpecifiers,
@@ -101,7 +101,7 @@ export function createImportMapFromModuleGraph(
       } catch (error) {
         throw new Error(
           sprintf(
-            "Failed to resolve from module graph %s",
+            "Failed to resolve from module graph: %s",
             resolvedSpecifier,
           ),
           { cause: error },

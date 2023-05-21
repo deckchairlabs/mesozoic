@@ -43,7 +43,9 @@ export function createResolver(options: CreateLoaderOptions): Resolver {
      */
     if (importMapResolved) {
       resolved = importMapResolved;
-      bareSpecifiers.set(specifier, resolved);
+      if (!resolved.startsWith("file://")) {
+        bareSpecifiers.set(specifier, resolved);
+      }
     } else if (resolved.startsWith("file://")) {
       try {
         resolved = localResolver(resolved, referrer);
