@@ -1,6 +1,7 @@
 import init, {
   browserslistToTargets,
   transform,
+  UrlDependency,
 } from "https://esm.sh/v122/lightningcss-wasm@1.20.0/index.js";
 import { cache, join, toFileUrl } from "../deps.ts";
 import { SourceProcessor } from "../types.ts";
@@ -55,7 +56,7 @@ export async function createCssProcessor(
           customMedia: true,
           nesting: true,
         },
-        analyzeDependencies: true,
+        analyzeDependencies: { preserveImports: true },
       });
 
       let transformedCode = decoder.decode(result.code);
@@ -66,7 +67,11 @@ export async function createCssProcessor(
          * with the resolved path
          */
         for (const dependency of result.dependencies) {
-          if (dependency.type === "url") {
+          const isRemoteDependency = dependency.url.startsWith("http://") ||
+            dependency.url.startsWith("https://");
+          const placeholder = (dependency as UrlDependency).placeholder;
+
+          if (!isRemoteDependency) {
             const relativeRoot = source.dirname().replace(source.root(), ".");
             const lookupPath = `./${join(relativeRoot, dependency.url)}`;
             const dependencySource = await sources.find((file) =>
@@ -76,17 +81,22 @@ export async function createCssProcessor(
             if (dependencySource) {
               const path = dependencySource.relativePath();
               transformedCode = transformedCode.replaceAll(
-                dependency.placeholder,
+                placeholder,
                 path.replace(relativeRoot, "."),
               );
             } else {
               // If no source is found for the dependency, we assume it's a
               // remote URL and replace the placeholder with the original URL
               transformedCode = transformedCode.replaceAll(
-                dependency.placeholder,
+                placeholder,
                 dependency.url,
               );
             }
+          } else {
+            transformedCode = transformedCode.replaceAll(
+              placeholder,
+              dependency.url,
+            );
           }
         }
       }
