@@ -68,7 +68,7 @@ Deno.test(
         prefix: "/",
         ignore: ["./**/*", "!./public/**/*"],
       }).length,
-      2,
+      3,
     );
 
     for (const [, importMap] of result.importMaps) {
@@ -128,7 +128,7 @@ Deno.test("it can copy and compile entrypoints producing valid import maps", asy
       prefix: "/",
       ignore: ["./**/*", "!./public/**/*"],
     }).length,
-    2,
+    3,
   );
 
   for (const [, importMap] of result.importMaps) {

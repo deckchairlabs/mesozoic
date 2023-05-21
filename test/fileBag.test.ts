@@ -9,5 +9,5 @@ Deno.test("constructor", () => {
 Deno.test("matches", async () => {
   const fileBag = await FileBag.from(join(Deno.cwd(), "./test/fixture/app"));
   const publicFiles = fileBag.matches("./public/**");
-  assertEquals(publicFiles.size, 3);
+  assertEquals(publicFiles.size, 4);
 });
