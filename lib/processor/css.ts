@@ -1,8 +1,7 @@
 import init, {
   browserslistToTargets,
   transform,
-  UrlDependency,
-} from "https://esm.sh/v122/lightningcss-wasm@1.20.0/index.js";
+} from "https://esm.sh/v122/lightningcss-wasm@1.21.0/index.js";
 import { cache, join, toFileUrl } from "../deps.ts";
 import { SourceProcessor } from "../types.ts";
 
@@ -25,7 +24,7 @@ export async function createCssProcessor(
   options: CssProcessorOptions = {},
 ): Promise<SourceProcessor> {
   const file = await cache(
-    "https://esm.sh/v122/lightningcss-wasm@1.20.0/lightningcss_node_bg.wasm",
+    "https://esm.sh/v122/lightningcss-wasm@1.21.0/lightningcss_node_bg.wasm",
   );
 
   await init(toFileUrl(file.path));
@@ -69,7 +68,7 @@ export async function createCssProcessor(
         for (const dependency of result.dependencies) {
           const isRemoteDependency = dependency.url.startsWith("http://") ||
             dependency.url.startsWith("https://");
-          const placeholder = (dependency as UrlDependency).placeholder;
+          const placeholder = dependency.placeholder;
 
           if (!isRemoteDependency) {
             const relativeRoot = source.dirname().replace(source.root(), ".");
