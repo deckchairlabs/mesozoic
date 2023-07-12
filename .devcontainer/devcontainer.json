@@ -17,5 +17,9 @@
         "GitHub.vscode-pull-request-github"
       ]
     }
-  }
+  },
+  "remoteEnv": {
+    "PATH": "/home/vscode/.deno/bin:${containerEnv:PATH}"
+  },
+  "postCreateCommand": "deno install --allow-read --allow-write --allow-run -f -n publish https://deno.land/x/publish@v1.15.0/cli.ts"
 }
