@@ -1,5 +1,14 @@
-import { cache, crayon, ImportSpecifier, initModuleLexer, sprintf, toFileUrl } from "../deps.ts";
-import { parseModule } from "../deps.ts";
+import { gte, parse } from "https://deno.land/std@0.193.0/semver/mod.ts";
+import {
+  cache,
+  crayon,
+  ImportSpecifier,
+  initModuleLexer,
+  parseModule,
+  RELOAD_POLICY,
+  sprintf,
+  toFileUrl,
+} from "../deps.ts";
 import { type LoggerImpl } from "../logger.ts";
 import { Patterns } from "../patterns.ts";
 import { IFile } from "../sources/file.ts";
@@ -20,10 +29,16 @@ type CreateLoaderOptions = {
   target: Target;
   dynamicImports: FileBag;
   dynamicImportIgnored?: Patterns;
+  policy?: Policy;
 };
 
+const isEsmShDenoNext = gte(parse(Deno.version.deno), parse("1.33.2"));
+
 export function createLoader(options: CreateLoaderOptions): Loader {
-  const { sources, target, dynamicImportIgnored, dynamicImports } = options;
+  const { sources, dynamicImportIgnored, dynamicImports } = options;
+  const policy = Deno.args.includes("--reload") ? RELOAD_POLICY : options.policy;
+
+  const target: Target = options.target === "deno" && isEsmShDenoNext ? "denonext" : options.target;
 
   return async function loader(specifier: string, isDynamic?: boolean) {
     try {
@@ -32,7 +47,7 @@ export function createLoader(options: CreateLoaderOptions): Loader {
           return Promise.resolve(undefined);
         }
 
-        return loadRemoteSpecifier(specifier, target);
+        return loadRemoteSpecifier(specifier, target, policy);
       } else {
         const [response, source] = await loadLocalSpecifier(specifier, sources);
 
@@ -72,9 +87,21 @@ export function createLoadRequest(specifier: string, target: Target) {
   });
 }
 
+function isDirectModuleSpecifier(specifier: string) {
+  return (
+    specifier.endsWith(".js") ||
+    specifier.endsWith(".jsx") ||
+    specifier.endsWith(".json") ||
+    specifier.endsWith(".mjs") ||
+    specifier.endsWith(".cjs") ||
+    specifier.endsWith(".ts") ||
+    specifier.endsWith(".tsx")
+  );
+}
+
 export async function loadRemoteSpecifier(
   specifier: string,
-  target: "browser" | "deno",
+  target: Target,
   policy?: Policy,
 ): Promise<LoadResponse | undefined> {
   try {
@@ -83,6 +110,7 @@ export async function loadRemoteSpecifier(
 
     const response = await fetch(toFileUrl(cached.path));
     const responseUrl = cached.url;
+    const responseHeaders = new Headers(cached.meta.headers);
 
     if (response.status !== 200) {
       // ensure the body is read as to not leak resources
@@ -91,25 +119,22 @@ export async function loadRemoteSpecifier(
     }
 
     const content = await response.text();
-    const headers: Record<string, string> = {};
 
-    for (const [key, value] of response.headers) {
-      headers[key.toLowerCase()] = value;
-    }
+    if (!isDirectModuleSpecifier(specifier)) {
+      const facadeRedirect = resolveFacadeModuleRedirect(
+        specifier,
+        content,
+      );
 
-    const facadeRedirect = await resolveFacadeModuleRedirect(
-      specifier,
-      content,
-    );
-
-    if (facadeRedirect) {
-      return loadRemoteSpecifier(facadeRedirect.href, target, policy);
+      if (facadeRedirect) {
+        return loadRemoteSpecifier(facadeRedirect.href, target, policy);
+      }
     }
 
     return {
       kind: "module",
       specifier: String(new URL(responseUrl.pathname, responseUrl.origin)),
-      headers,
+      headers: Object.fromEntries(responseHeaders),
       content,
     };
   } catch (error) {
@@ -152,22 +177,22 @@ export function isModuleResponse(
   return response?.kind === "module";
 }
 
-export async function resolveFacadeModuleRedirect(
+export function resolveFacadeModuleRedirect(
   specifier: string,
   content: string,
-): Promise<URL | undefined> {
-  const [imports, exports, facade] = await parseModule(content);
-  /**
-   * If we detect a "facade" and there is only 1 import OR 1 export
-   */
-  if (facade && (exports.length === 1 || imports.length === 1)) {
-    const uniqueSpecifiers = resolveUniqueRemoteSpecifiers(
+): URL | undefined {
+  const [imports, facade] = parseModule(content);
+
+  if (facade) {
+    const uniqueImports = resolveUniqueRemoteSpecifiers(
       imports,
       specifier,
     );
 
-    if (uniqueSpecifiers[0]) {
-      return new URL(uniqueSpecifiers[0]);
+    const lastImport = uniqueImports.at(-1);
+
+    if (lastImport) {
+      return new URL(lastImport);
     }
   }
 }
@@ -201,7 +226,7 @@ export function resolveUniqueRemoteSpecifiers(
 
 export function prepareRequestUrl(
   url: URL,
-  target: "browser" | "deno" = "browser",
+  target: Target = "browser",
 ) {
   switch (url.host) {
     case "esm.sh":
@@ -215,8 +240,9 @@ export function prepareRequestUrl(
        */
       url.searchParams.append(
         "target",
-        target === "browser" ? "es2022" : "deno",
+        target === "browser" ? "es2022" : target,
       );
+
       /**
        * We don't want development sources
        */
