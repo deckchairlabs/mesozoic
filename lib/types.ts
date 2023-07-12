@@ -21,4 +21,4 @@ export type SourceProcessor = (
   sources: FileBag,
 ) => Promise<FileBag> | FileBag;
 
-export type Target = "browser" | "deno";
+export type Target = "browser" | "deno" | "denonext";

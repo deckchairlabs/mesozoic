@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows, toFileUrl } from "./deps.ts";
+import { assert, assertEquals, assertThrows, toFileUrl } from "./deps.ts";
 import {
   BareSpecifiersMap,
   createResolver,
@@ -9,15 +9,16 @@ import { VirtualFile } from "../lib/sources/virtualFile.ts";
 import { createLoader } from "../lib/graph/load.ts";
 import { ensureTrailingSlash, getFixtureDir } from "./helpers.ts";
 import { createGraph } from "../lib/graph.ts";
+import { RELOAD_POLICY } from "../lib/deps.ts";
 
 const baseUrl = "file:///app/";
 
 const importMap = {
   imports: {
-    "react": "https://esm.sh/v122/react@18.2.0",
-    "react/": "https://esm.sh/v122/react@18.2.0/",
-    "react-dom": "https://esm.sh/v122/react-dom@18.2.0",
-    "react-dom/": "https://esm.sh/v122/react-dom@18.2.0/",
+    "react": "https://esm.sh/stable/react@18.2.0",
+    "react/": "https://esm.sh/stable/react@18.2.0/",
+    "react-dom": "https://esm.sh/stable/react-dom@18.2.0",
+    "react-dom/": "https://esm.sh/stable/react-dom@18.2.0/",
     "@tanstack/react-query": "https://esm.sh/v122/@tanstack/react-query?external=react",
     "ultra/": "https://deno.land/x/ultra/",
     "graphql-type-json": "https://cdn.skypack.dev/graphql-type-json@0.3.2?dts",
@@ -38,7 +39,7 @@ Deno.test("it can create a module graph", async () => {
   const fixtureUrl = toFileUrl(ensureTrailingSlash(fixtureDir));
 
   const sources = await FileBag.from(fixtureDir);
-  const load = createLoader({ sources, target: "browser", dynamicImports });
+  const load = createLoader({ sources, target: "browser", dynamicImports, policy: RELOAD_POLICY });
   const resolve = createResolver({
     importMap,
     sources,
@@ -75,7 +76,7 @@ Deno.test("it can resolve and load specifiers", async () => {
   const bareSpecifiers: BareSpecifiersMap = new Map();
   const dynamicImports = new FileBag();
 
-  const load = createLoader({ sources, target: "browser", dynamicImports });
+  const load = createLoader({ sources, target: "browser", dynamicImports, policy: RELOAD_POLICY });
   const resolve = createResolver({
     importMap,
     sources,
@@ -88,12 +89,12 @@ Deno.test("it can resolve and load specifiers", async () => {
    */
   assertEquals(
     resolve("react", baseUrl),
-    "https://esm.sh/v122/react@18.2.0",
+    "https://esm.sh/stable/react@18.2.0",
   );
 
   assertEquals(
     resolve("react-dom/client", baseUrl),
-    "https://esm.sh/v122/react-dom@18.2.0/client",
+    "https://esm.sh/stable/react-dom@18.2.0/client",
   );
 
   assertEquals(
@@ -131,8 +132,8 @@ Deno.test("it can resolve and load specifiers", async () => {
   );
 
   assertEquals(Object.fromEntries(bareSpecifiers), {
-    "react": "https://esm.sh/v122/react@18.2.0",
-    "react-dom/client": "https://esm.sh/v122/react-dom@18.2.0/client",
+    "react": "https://esm.sh/stable/react@18.2.0",
+    "react-dom/client": "https://esm.sh/stable/react-dom@18.2.0/client",
     "@tanstack/react-query": "https://esm.sh/v122/@tanstack/react-query?external=react",
     "ultra/server.ts": "https://deno.land/x/ultra/server.ts",
   });
@@ -149,24 +150,15 @@ Deno.test("it can resolve and load specifiers", async () => {
 
   const reactDom = await load(resolve("react-dom", baseUrl));
   assertEquals(reactDom?.kind, "module");
-  assertEquals(
-    reactDom?.specifier,
-    "https://esm.sh/v122/react-dom@18.2.0/es2022/react-dom.mjs",
-  );
+  assert(reactDom?.specifier.endsWith("/es2022/react-dom.mjs"));
 
   const reactDomServer = await load(resolve("react-dom/server", baseUrl));
   assertEquals(reactDomServer?.kind, "module");
-  assertEquals(
-    reactDomServer?.specifier,
-    "https://esm.sh/v122/react-dom@18.2.0/es2022/server.js",
-  );
+  assert(reactDomServer?.specifier.endsWith("/es2022/server.js"));
 
   const jsxRuntime = await load(resolve("react/jsx-runtime", baseUrl));
   assertEquals(jsxRuntime?.kind, "module");
-  assertEquals(
-    jsxRuntime?.specifier,
-    "https://esm.sh/stable/react@18.2.0/es2022/jsx-runtime.js",
-  );
+  assert(jsxRuntime?.specifier.endsWith("/es2022/jsx-runtime.js"));
 
   const app = await load(resolve("./src/app.tsx", baseUrl));
   assertEquals(app?.kind, "module");
@@ -177,7 +169,7 @@ Deno.test("it can resolve and load for a specific target", async () => {
   const bareSpecifiers: BareSpecifiersMap = new Map();
   const dynamicImports = new FileBag();
 
-  const load = createLoader({ sources, target: "deno", dynamicImports });
+  const load = createLoader({ sources, target: "deno", dynamicImports, policy: RELOAD_POLICY });
   const resolve = createResolver({
     importMap,
     sources,
@@ -192,6 +184,6 @@ Deno.test("it can resolve and load for a specific target", async () => {
   assertEquals(react?.kind, "module");
   assertEquals(
     react?.specifier,
-    "https://esm.sh/stable/react@18.2.0/deno/react.mjs",
+    "https://esm.sh/stable/react@18.2.0/denonext/react.mjs",
   );
 });

@@ -6,8 +6,8 @@ export { deepMerge } from "https://deno.land/std@0.188.0/collections/deep_merge.
 export {
   init as initModuleLexer,
   parse as parseModule,
-} from "https://esm.sh/v122/es-module-lexer@1.2.1";
-export type { ImportSpecifier } from "https://esm.sh/v122/es-module-lexer@1.2.1/types/lexer.d.ts";
+} from "https://esm.sh/v122/es-module-lexer@1.3.0";
+export type { ImportSpecifier } from "https://esm.sh/v122/es-module-lexer@1.3.0/types/lexer.d.ts";
 export {
   parse as parseImportMap,
   resolve as importMapResolve,
