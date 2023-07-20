@@ -37,7 +37,6 @@ export async function compile(
       options.minify ?? true,
     );
   } catch (error) {
-    console.error(error);
-    throw new Error(String(error));
+    throw new Error(error.message);
   }
 }

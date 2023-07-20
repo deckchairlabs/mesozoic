@@ -34,15 +34,15 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.68"
+version = "1.0.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cb2f989d18dd141ab8ae82f64d1a8cdd37e0840f73a406896cf5e99502fab61"
+checksum = "3b13c32d80ecc7ab747b80c3784bce54ee8a7a0cc4fbda9bf4cda2cf6fe90854"
 
 [[package]]
 name = "ast_node"
-version = "0.8.6"
+version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf94863c5fdfee166d0907c44e5fee970123b2b7307046d35d1e671aa93afbba"
+checksum = "70151a5226578411132d798aa248df45b30aa34aea2e580628870b4d87be717b"
 dependencies = [
  "darling",
  "pmutil",
@@ -102,9 +102,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.12.0"
+version = "3.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d261e256854913907f67ed06efbc3338dfe6179796deefc1ff763fc1aee5535"
+checksum = "a3e2c3daef883ecc1b5d58c15adae93470a91d425f3532ba1695849656af3fc1"
 
 [[package]]
 name = "cfg-if"
@@ -265,9 +265,9 @@ checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
 
 [[package]]
 name = "enum_kind"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78b940da354ae81ef0926c5eaa428207b8f4f091d3956c891dfbd124162bed99"
+checksum = "9895954c6ec59d897ed28a64815f2ceb57653fcaaebd317f2edc78b74f5495b6"
 dependencies = [
  "pmutil",
  "proc-macro2",
@@ -298,9 +298,9 @@ dependencies = [
 
 [[package]]
 name = "from_variant"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0981e470d2ab9f643df3921d54f1952ea100c39fdb6a3fdc820e20d2291df6c"
+checksum = "1d449976075322384507443937df2f1d5577afbf4282f12a5a66ef29fa3e6307"
 dependencies = [
  "pmutil",
  "proc-macro2",
@@ -717,18 +717,18 @@ checksum = "dc375e1527247fe1a97d8b7156678dfe7c1af2fc075c9a4db3690ecd2a148068"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.50"
+version = "1.0.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ef7d57beacfaf2d8aee5937dab7b7f28de3cb8b1828479bb5de2a7106f2bae2"
+checksum = "18fb31db3f9bddb2ea821cde30a9f70117e3f119938b5ee630b7403aa6e2ead9"
 dependencies = [
  "unicode-ident",
 ]
 
 [[package]]
 name = "quote"
-version = "1.0.23"
+version = "1.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8856d8364d252a14d474036ea1358d63c9e6965c8e5c1885c18f73d70bff9c7b"
+checksum = "5fe8a65d69dd0808184ebb5f836ab526bb259db23c657efa38711b1072ee47f0"
 dependencies = [
  "proc-macro2",
 ]
@@ -938,9 +938,9 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "string_cache"
-version = "0.8.4"
+version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "213494b7a2b503146286049378ce02b482200519accc31872ee8be91fa820a08"
+checksum = "f91138e76242f575eb1d3b38b4f1362f10d3a43f47d182a5b359af488a02293b"
 dependencies = [
  "new_debug_unreachable",
  "once_cell",
@@ -964,9 +964,9 @@ dependencies = [
 
 [[package]]
 name = "string_enum"
-version = "0.3.2"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "994453cd270ad0265796eb24abf5540091ed03e681c5f3c12bc33e4db33253e1"
+checksum = "91f42363e5ca94ea6f3faee9e3b5e1a4047535ae323f5c0579385fb2ae95874e"
 dependencies = [
  "pmutil",
  "proc-macro2",
@@ -1057,9 +1057,9 @@ dependencies = [
 
 [[package]]
 name = "swc_config"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4de36224eb9498fccd4e68971f0b83326ccf8592c2d424f257f3a1c76b2b211"
+checksum = "89c8fc2c12bb1634c7c32fc3c9b6b963ad8f034cc62c4ecddcf215dc4f6f959d"
 dependencies = [
  "indexmap",
  "serde",
@@ -1069,9 +1069,9 @@ dependencies = [
 
 [[package]]
 name = "swc_config_macro"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb64bc03d90fd5c90d6ab917bb2b1d7fbd31957df39e31ea24a3f554b4372251"
+checksum = "7dadb9998d4f5fc36ef558ed5a092579441579ee8c6fcce84a5228cca9df4004"
 dependencies = [
  "pmutil",
  "proc-macro2",
@@ -1368,9 +1368,9 @@ dependencies = [
 
 [[package]]
 name = "swc_macros_common"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4be988307882648d9bc7c71a6a73322b7520ef0211e920489a98f8391d8caa2"
+checksum = "3e582c3e3c2269238524923781df5be49e011dbe29cf7683a2215d600a562ea6"
 dependencies = [
  "pmutil",
  "proc-macro2",
@@ -1382,6 +1382,7 @@ dependencies = [
 name = "swc_mesozoic"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "deno_ast",
  "js-sys",
  "serde",
@@ -1391,9 +1392,9 @@ dependencies = [
 
 [[package]]
 name = "swc_visit"
-version = "0.5.3"
+version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82f2bcb7223e185c4c7cbf5e0c1207dec6d2bfd5e72e3fb7b3e8d179747e9130"
+checksum = "5f412dd4fbc58f509a04e64f5c8038333142fc139e8232f01b883db0094b3b51"
 dependencies = [
  "either",
  "swc_visit_macros",
@@ -1401,9 +1402,9 @@ dependencies = [
 
 [[package]]
 name = "swc_visit_macros"
-version = "0.5.4"
+version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fb1f3561674d84947694d41fb6d5737d19539222779baeac1b3a071a2b29428"
+checksum = "4cfc226380ba54a5feed2c12f3ccd33f1ae8e959160290e5d2d9b4e918b6472a"
 dependencies = [
  "Inflector",
  "pmutil",

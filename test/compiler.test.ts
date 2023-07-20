@@ -1,4 +1,4 @@
-import { assertEquals } from "./deps.ts";
+import { assertEquals, assertRejects } from "./deps.ts";
 import { compile } from "../lib/compiler.ts";
 
 async function compileTest(
@@ -45,4 +45,20 @@ Deno.test("it can compile TSX", async () => {
 
   assertEquals(dev.includes('"react/jsx-dev-runtime"'), true);
   assertEquals(prod.includes('"react/jsx-runtime"'), true);
+});
+
+Deno.test("it throws errors", async () => {
+  const source = `
+    import { PropsWithChildren } from 'react';
+
+    export default function App({ children }: PropsWithChildren) {
+      return <div>{children};
+    }
+
+    const HomePage = () => <App><div>Hello</div></App>
+  `;
+
+  await assertRejects(async () => {
+    await compileTest(source);
+  });
 });
