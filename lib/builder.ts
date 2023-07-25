@@ -363,18 +363,24 @@ export class Builder {
 
     this.log.debug(`Compile: ${source.path()}`);
 
-    const compiled = await compile(source.path(), content, {
-      development: this.options.compilerOptions?.development,
-      minify: this.options.compilerOptions?.minify,
-      jsxImportSource: this.options.compilerOptions?.jsxImportSource,
-    });
+    try {
+      const compiled = await compile(source.path(), content, {
+        development: this.options.compilerOptions?.development,
+        minify: this.options.compilerOptions?.minify,
+        jsxImportSource: this.options.compilerOptions?.jsxImportSource,
+      });
 
-    const extension = source.extension();
-    const filename = source.filename().replace(extension, ".js");
-    await source.rename(filename);
-    await source.write(compiled, true);
+      const extension = source.extension();
+      const filename = source.filename().replace(extension, ".js");
+      await source.rename(filename);
+      await source.write(compiled, true);
 
-    return source;
+      return source;
+    } catch (error) {
+      throw new Error(`Compilation error: ${source.path()}`, {
+        cause: error,
+      });
+    }
   }
 
   /**
