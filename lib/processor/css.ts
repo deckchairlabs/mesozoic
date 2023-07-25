@@ -2,7 +2,7 @@ import init, {
   browserslistToTargets,
   transform,
 } from "https://esm.sh/v122/lightningcss-wasm@1.21.0/index.js";
-import { cache, join, toFileUrl } from "../deps.ts";
+import { cache, join, relative, toFileUrl } from "../deps.ts";
 import { SourceProcessor } from "../types.ts";
 
 export type CssProcessorOptions = {
@@ -78,7 +78,11 @@ export async function createCssProcessor(
             );
 
             if (dependencySource) {
-              const path = dependencySource.relativePath();
+              const path = relative(
+                source.dirname(),
+                new URL(dependencySource.path(), source.url()).pathname,
+              );
+
               transformedCode = transformedCode.replaceAll(
                 placeholder,
                 path.replace(relativeRoot, "."),

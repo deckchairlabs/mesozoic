@@ -41,9 +41,9 @@ snapshot[`read a file 1`] = `
 ' +
   '        <link rel="shortcut icon" href={useAsset("/favicon.ico")} />
 ' +
-  '        <link rel="preload" as="style" href={useAsset("/style.css")} />
+  '        <link rel="preload" as="style" href={useAsset("/styles/main.css")} />
 ' +
-  '        <link rel="stylesheet" href={useAsset("/style.css")} />
+  '        <link rel="stylesheet" href={useAsset("/styles/main.css")} />
 ' +
   "      </head>
 " +

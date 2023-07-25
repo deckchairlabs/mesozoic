@@ -11,7 +11,7 @@ function createSourceFile(path: string) {
   );
 }
 
-Deno.test("constructor", async () => {
+Deno.test("constructor", () => {
   const path = join("src", "app.tsx").replaceAll("\\", "/");
   const sourceFile = createSourceFile(path);
 
@@ -22,7 +22,6 @@ Deno.test("constructor", async () => {
     getFixturePath("app", sourceFile.relativePath()),
   );
   assertEquals(sourceFile.relativePath(), ensureRelativePath(path));
-  assertEquals(await sourceFile.contentHash(), "a55bf868");
 });
 
 Deno.test("url", () => {

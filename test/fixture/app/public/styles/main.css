@@ -10,9 +10,14 @@
     src: url(https://example.com/test.woff2);
 }
 
+@font-face {
+    font-family: relative;
+    src: url('../font.woff2')
+}
+
 body {
     background-color: black;
-    background-image: url('./image.jpg');
+    background-image: url('../image.jpg');
 
     & main {
         color: var(--red);

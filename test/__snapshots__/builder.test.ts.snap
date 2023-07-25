@@ -4,7 +4,7 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 {
   imports: {
     "./client.tsx": "/client.0774b963.js",
-    "./src/app.tsx": "/src/app.375c911d.js",
+    "./src/app.tsx": "/src/app.4051f35a.js",
     "./src/components/Test.tsx": "/src/components/Test.d8e044d9.js",
     "https://deno.land/": "/vendor/browser/deno.land/",
     "https://esm.sh/": "/vendor/browser/esm.sh/",
@@ -31,7 +31,7 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
 {
   imports: {
     "./server.tsx": "./server.js",
-    "./src/app.tsx": "./src/app.375c911d.js",
+    "./src/app.tsx": "./src/app.4051f35a.js",
     "./src/components/Test.tsx": "./src/components/Test.d8e044d9.js",
     "https://deno.land/": "./vendor/server/deno.land/",
     "https://esm.sh/": "./vendor/server/esm.sh/",
@@ -63,7 +63,7 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 1`] = 
 {
   imports: {
     "./client.tsx": "/client.0774b963.js",
-    "./src/app.tsx": "/src/app.375c911d.js",
+    "./src/app.tsx": "/src/app.4051f35a.js",
     "./src/components/Test.tsx": "/src/components/Test.d8e044d9.js",
     "https://deno.land/": "https://deno.land/",
     "https://esm.sh/": "https://esm.sh/",
@@ -90,7 +90,7 @@ snapshot[`it can copy and compile entrypoints producing valid import maps 2`] = 
 {
   imports: {
     "./server.tsx": "./server.js",
-    "./src/app.tsx": "./src/app.375c911d.js",
+    "./src/app.tsx": "./src/app.4051f35a.js",
     "./src/components/Test.tsx": "./src/components/Test.d8e044d9.js",
     "https://deno.land/": "https://deno.land/",
     "https://esm.sh/": "https://esm.sh/",
