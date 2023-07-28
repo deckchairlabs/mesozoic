@@ -1,6 +1,6 @@
 import { log } from "../lib/deps.ts";
 import { BuildContext, Builder, ContextBuilder } from "../mod.ts";
-import { assert, assertEquals, assertSnapshot } from "./deps.ts";
+import { assertEquals, assertSnapshot } from "./deps.ts";
 import { getFixtureDir, getOutputDir } from "./helpers.ts";
 
 const outputDir = getOutputDir("app");
