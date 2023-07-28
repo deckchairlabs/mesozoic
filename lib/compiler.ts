@@ -9,17 +9,21 @@ export type CompilerOptions = {
   minify?: boolean;
 };
 
-export async function createCompiler() {
-  const url = new URL("./swc_mesozoic_bg.wasm", import.meta.url);
-  const policy: Policy | undefined = url.protocol === "file:" ? RELOAD_POLICY : undefined;
+let compiler: Awaited<ReturnType<typeof instantiate>> | undefined;
 
-  const file = await cache(
-    url,
-    policy,
-    `mesozoic-${VERSION}`,
-  );
+export async function createCompiler(policy: Policy | undefined = RELOAD_POLICY) {
+  if (!compiler) {
+    const url = new URL("./swc_mesozoic_bg.wasm", import.meta.url);
+    const file = await cache(
+      url,
+      policy,
+      `mesozoic-${VERSION}`,
+    );
 
-  return instantiate({ url: toFileUrl(file.path) });
+    compiler = await instantiate({ url: toFileUrl(file.path) });
+  }
+
+  return compiler;
 }
 
 export async function compile(
@@ -37,6 +41,7 @@ export async function compile(
       options.minify ?? true,
     );
   } catch (error) {
-    throw new Error(error.message);
+    console.error(error);
+    throw new Error(String(error));
   }
 }
