@@ -128,6 +128,7 @@ Deno.test("it can copy and compile entrypoints producing valid import maps", asy
   );
 
   assert(stylesheetSource);
+  console.log(stylesheetSource);
 
   const stylesheet = await stylesheetSource.read();
   assertEquals(stylesheet.includes('@import "components.'), true);
