@@ -1,7 +1,7 @@
-import { instantiate } from "./swc_mesozoic.generated.js";
-import { cache, RELOAD_POLICY, toFileUrl } from "./deps.ts";
-import type { Policy } from "./types.ts";
 import { VERSION } from "../version.ts";
+import { cache, toFileUrl } from "./deps.ts";
+import { instantiate } from "./swc_mesozoic.generated.js";
+import type { Policy } from "./types.ts";
 
 export type CompilerOptions = {
   jsxImportSource?: string;
@@ -11,7 +11,7 @@ export type CompilerOptions = {
 
 let compiler: Awaited<ReturnType<typeof instantiate>> | undefined;
 
-export async function createCompiler(policy: Policy | undefined = RELOAD_POLICY) {
+export async function createCompiler(policy: Policy | undefined = undefined) {
   if (!compiler) {
     const url = new URL("./swc_mesozoic_bg.wasm", import.meta.url);
     const file = await cache(
