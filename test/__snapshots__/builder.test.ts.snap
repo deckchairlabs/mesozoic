@@ -9,7 +9,7 @@ snapshot[`it can copy, compile and vendor entrypoints producing valid import map
     "https://deno.land/": "/vendor/browser/deno.land/",
     "https://esm.sh/": "/vendor/browser/esm.sh/",
     "react-dom/client": "/vendor/browser/esm.sh/v127/react-dom@18.2.0/es2022/client.29c54292.js",
-    "react/jsx-runtime": "/vendor/browser/esm.sh/stable/react@18.2.0/es2022/jsx-runtime.f3084922.js",
+    "react/jsx-runtime": "/vendor/browser/esm.sh/stable/react@18.2.0/es2022/jsx-runtime.9bbb30d1.js",
     "ultra/hooks/use-asset.js": "/vendor/browser/deno.land/x/ultra@v2.2.1/hooks/use-asset.d43ee186.js",
     "ultra/hydrate.js": "/vendor/browser/deno.land/x/ultra@v2.2.1/hydrate.c1c2367e.js",
     react: "/vendor/browser/esm.sh/stable/react@18.2.0/es2022/react.mjs",

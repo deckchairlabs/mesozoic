@@ -1,7 +1,7 @@
 import init, {
   browserslistToTargets,
   transform,
-} from "https://esm.sh/v122/lightningcss-wasm@1.21.0/index.js";
+} from "https://esm.sh/lightningcss-wasm@1.21.0/index.js";
 import { cache, join, relative, toFileUrl } from "../deps.ts";
 import { SourceProcessor } from "../types.ts";
 
@@ -24,7 +24,7 @@ export async function createCssProcessor(
   options: CssProcessorOptions = {},
 ): Promise<SourceProcessor> {
   const file = await cache(
-    "https://esm.sh/v122/lightningcss-wasm@1.21.0/lightningcss_node_bg.wasm",
+    "https://esm.sh/lightningcss-wasm@1.21.0/lightningcss_node.wasm",
   );
 
   await init(toFileUrl(file.path));

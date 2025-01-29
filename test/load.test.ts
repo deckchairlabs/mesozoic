@@ -21,7 +21,7 @@ Deno.test("it can load a remote specifier", async () => {
   assertEquals(response?.kind, "module");
   assertEquals(
     response?.specifier,
-    "https://esm.sh/stable/react@18.2.0/deno/react.mjs",
+    "https://esm.sh/react@18.2.0/deno/react.mjs",
   );
 
   if (isModuleResponse(response)) {
